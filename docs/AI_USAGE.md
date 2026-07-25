@@ -35,5 +35,16 @@ design decision, mathematical assumption, test, and submitted line of code.
   Aqua/SwapVM state mapping, and whether active/spectator coupling belongs in a
   later milestone.
 
+## 25 July 2026: Uniswap eligibility update
+
+- Tool: OpenAI Codex
+- Work: removed the conditional API adapter from the plan, fixed Uniswap as the
+  third partner selection, and created the required feedback-document draft.
+- Human-supplied requirement: written sponsor confirmation permits this project
+  to apply without a forced API integration, while `FEEDBACK.md` and the
+  developer feedback form remain mandatory.
+- Human review required: final feedback content, identifying submission note,
+  form completion, and private retention of the original confirmation.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

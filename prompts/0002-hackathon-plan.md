@@ -17,8 +17,9 @@ demo over shallow sponsor integrations.
   canonical `alpha` branches. Do not substitute piecewise-linear approximations
   or arbitrary user code.
 - Make 1inch Aqua and SwapVM the primary settlement target.
-- Leave the Uniswap API integration until an explicit eligibility answer is
-  received; keep it easy to add without coupling it to the core.
+- Do not force a Uniswap API integration. Project-specific written eligibility
+  was confirmed by the sponsor team; complete `FEEDBACK.md` and the required
+  feedback form instead.
 - Use The Graph only where it is load-bearing for live discovery and analytics.
 - Preserve a coherent Git history with one verified capability per commit.
 - Keep the implementation demonstrable and secure enough for a hackathon, but

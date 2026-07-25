@@ -261,38 +261,29 @@ an actionable route rather than wrapping a query.
 
 Official reference: https://ethglobal.com/events/lisbon2026/prizes/the-graph
 
-### Conditional third: Uniswap
+### Third: Uniswap
 
-Do not build this before the core demo is green and an explicit answer about
-API eligibility is received. A friendly invitation is valuable but is not a
-substitute for written qualification.
+The sponsor team provided project-specific written confirmation that Liquid OB
+may enter the classic Best Uniswap API Integration bounty without forcing an
+API integration into this new market primitive. Therefore no Uniswap adapter,
+API key, or artificial routing dependency belongs in the build plan.
 
-If a valid API integration is required, add a server-side adapter for the maker
-`Fund, Rebalance, and Publish` flow: use the Uniswap API and a valid key to
-acquire the desired inventory, execute the returned transaction onchain, then
-publish the funded Aqua position. Keep the key off the client and make the API
-step genuine core functionality for this workflow. Add `FEEDBACK.md`, submit
-the feedback form, identify the project as requested, and point the README to
-the exact integration.
+The confirmation is preserved privately. The public submission must identify
+the project clearly, include a completed `FEEDBACK.md`, and submit the Uniswap
+Developer Feedback Form with a link to that file. The submission note should
+state concisely that sponsor-specific eligibility was confirmed in writing;
+it should not publish private chat screenshots or personal contact details.
 
-If a written exception is granted, follow its exact terms and preserve the
-message privately. If neither path is certain, do not spend demo reliability
-to chase this prize.
+The confirmation only waives the forced API integration. It does not waive the
+published public-repository and open-source requirements. An explicit
+open-source license must therefore be selected before submission.
 
 Official reference: https://ethglobal.com/events/lisbon2026/prizes/uniswap-foundation
 
-### Backup third: World AgentKit
-
-Use this only if Uniswap is unavailable and the core is already complete. A
-human-backed agent receives a short-lived, nonce-bound authorization for a
-specific market, side, maximum volume, and deadline. The executor verifies the
-authorization before allowing the agent to trade. This changes execution rights
-rather than offering a cosmetic login, reputation score, or discount.
-
-Official reference: https://ethglobal.com/events/lisbon2026/prizes/world
-
-Do not target Sui, Hedera, 0G, ENS, or unrelated tracks in the MVP. They would
-fragment implementation time without strengthening the core proof.
+Do not target World, Sui, Hedera, 0G, ENS, or unrelated tracks in the MVP. The
+three partner selections are now fixed to 1inch, The Graph, and Uniswap; a
+fourth integration would fragment implementation time without strengthening
+the core proof.
 
 ## 8. Time-boxed build order
 
@@ -311,7 +302,7 @@ pages. Preserve the final three to four hours as an untouched submission buffer.
 | T+17h to T+20h | Maker and taker UI | Primary demo path works without console intervention |
 | T+20h to T+22h | The Graph index and query tool | Fresh fill appears and changes the next route |
 | T+22h to T+24h | Testnet deploy and seeded market | Two complete rehearsals from funded demo wallets |
-| Conditional, max 2h | Uniswap adapter or World fallback | Sponsor-specific flow works end to end |
+| Final buffer, 30m | Uniswap feedback and form evidence | `FEEDBACK.md`, form, and identifying note complete |
 | Final 3 to 4h | Submission package | CI, links, video, forms, README, and pitch verified |
 
 Feature freeze begins four hours before submission. After freeze, only blockers,
@@ -327,7 +318,7 @@ documentation, rehearsal, and submission work are allowed.
   atomic route as the highest-priority missing feature.
 - If hosted Graph deployment is blocked for more than 60 minutes, switch to a
   supported live provider or self-hosted path rather than mocking indexed data.
-- Never begin the conditional Uniswap or World work while the core demo is red.
+- Never add an artificial Uniswap API call after receiving an explicit waiver.
 - Never sacrifice tests, real transfers, or the final submission buffer for a
   fourth sponsor integration.
 
@@ -348,7 +339,7 @@ Each commit must build and test independently. The intended sequence is:
 11. `feat: build taker routing and execution workflow`
 12. `feat: index live curve liquidity with The Graph`
 13. `chore: deploy and seed demo environment`
-14. Conditional sponsor integration in its own commit
+14. `docs: complete Uniswap feedback and submission evidence`
 15. `docs: finalize submission and demo`
 
 ## 11. Four-minute demo
@@ -370,6 +361,7 @@ indexer or faucet on stage.
 ## 12. Submission checklist
 
 - Public repository, meaningful history, no secrets, clean fresh-clone setup.
+- Explicit open-source license compatible with the selected sponsor tracks.
 - Exact deployed addresses, chain IDs, transaction hashes, and contract links.
 - One-command tests and CI badge; no production-readiness claim.
 - Architecture diagram, curve equation, threat model, and known limitations.
@@ -377,12 +369,12 @@ indexer or faucet on stage.
   the relevant moment in the video.
 - 1inch official-contract evidence and onchain token transfers.
 - The Graph live endpoint, reusable tool documentation, and tool video.
-- Conditional Uniswap API key flow, `FEEDBACK.md`, form, and identifying note,
-  or the exact written exception; otherwise omit the prize claim.
+- Completed Uniswap `FEEDBACK.md`, feedback form, identifying note, and private
+  copy of the written eligibility confirmation.
 - Two-to-four-minute submission video plus the rehearsed four-minute live demo.
 - AI-use disclosures and material prompt specifications.
 - Final mobile/desktop smoke test and a second browser/wallet fallback.
 
 The winning priority order is fixed: correct curve math, official settlement,
-atomic multi-maker routing, understandable UI, live discovery, then conditional
-sponsor expansion.
+atomic multi-maker routing, understandable UI, live discovery, then submission
+evidence for the three selected partners.
