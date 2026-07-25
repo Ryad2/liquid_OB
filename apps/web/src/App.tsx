@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   ActivityItem,
+  Address,
   CurveDraft,
   CurveSample,
   CurveSide,
@@ -14,6 +15,12 @@ import type {
 } from '@liquid-ob/frontend-api'
 import { parseUnits } from '@liquid-ob/frontend-api'
 import { protocolClient } from './protocol/client'
+import {
+  connectInjectedWallet,
+  currentInjectedAccount,
+  executeTransactionPlan,
+  watchInjectedWallet,
+} from './protocol/wallet'
 import './App.css'
 
 type AppView = 'home' | 'trade' | 'portfolio' | 'studio'
@@ -35,6 +42,15 @@ interface ChartSeries {
   reserveLabel: string
   draft?: boolean
 }
+
+interface OperationState {
+  running: boolean
+  message: string | null
+  error: string | null
+}
+
+type ConnectWallet = () => Promise<Address | null>
+type ExecutePlan = (plan: TransactionPlan) => Promise<void>
 
 const numberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
@@ -599,8 +615,8 @@ function AppShell({
             onClick={onWalletToggle}
             aria-pressed={walletAddress !== null}
             title={walletAddress === null
-              ? 'Connect the demo wallet to reveal its portfolio.'
-              : 'Disconnect the demo wallet.'}
+              ? 'Connect a wallet to reveal its portfolio.'
+              : 'Disconnect this wallet from the application.'}
           >
             {walletAddress === null ? 'Connect' : <><i />{shortAddress(walletAddress)}</>}
           </button>
@@ -656,10 +672,12 @@ function FunctionalOrderBook({
   positions,
   selectedId,
   onSelect,
+  mode,
 }: {
   positions: PositionSummary[]
   selectedId: string | null
   onSelect: (id: string | null) => void
+  mode: FrontendBootstrap['mode']
 }) {
   const rows = [
     ...positions.map((position, index) => ({ position, index, side: 'sell' as const })),
@@ -673,7 +691,7 @@ function FunctionalOrderBook({
   return (
     <section className="orderbook panel">
       <header className="panel-header">
-        <div><h2>Curve book</h2><span className="live-label"><i /> live mock</span></div>
+        <div><h2>Curve book</h2><span className="live-label"><i /> {mode}</span></div>
         <button className="density-button" aria-label="Book display settings">≡</button>
       </header>
       <div className="book-columns"><span>Marginal</span><span>Available</span><span>Range / α</span></div>
@@ -697,7 +715,7 @@ function FunctionalOrderBook({
           )
         })}
       </div>
-      <footer className="book-footer"><span>6 executable sides</span><span>Sorted by marginal price</span></footer>
+      <footer className="book-footer"><span>{rows.length} executable sides</span><span>Sorted by marginal price</span></footer>
     </section>
   )
 }
@@ -715,6 +733,9 @@ function TradeTicket({
   setKind,
   slippageBps,
   setSlippageBps,
+  walletAddress,
+  operation,
+  onExecute,
 }: {
   view: GatewayView
   quote: RouteQuote | null
@@ -728,6 +749,9 @@ function TradeTicket({
   setKind: (kind: 'exact-input' | 'exact-output') => void
   slippageBps: number
   setSlippageBps: (slippage: number) => void
+  walletAddress: Address | null
+  operation: OperationState
+  onExecute: () => void
 }) {
   const payToken = side === 'sell' ? view.market.quoteToken : view.market.baseToken
   const receiveToken = side === 'sell' ? view.market.baseToken : view.market.quoteToken
@@ -780,9 +804,16 @@ function TradeTicket({
           </select>
         </div>
 
-        <button className="primary-action" disabled={!view.bootstrap.features.liveWrites} title="Execution is disabled while the deterministic mock adapter is active.">
-          Connect to execute
+        <button
+          className="primary-action"
+          disabled={!view.bootstrap.features.executeRoutes || quote === null || quoteLoading || operation.running}
+          title={view.bootstrap.features.executeRoutes ? 'Simulate the final route and submit it to your wallet.' : 'Execution is disabled in this environment.'}
+          onClick={onExecute}
+        >
+          {operation.running ? operation.message ?? 'Executing…' : walletAddress === null ? 'Connect & execute' : 'Execute route'}
         </button>
+        {operation.error !== null ? <div className="inline-error" role="alert">{operation.error}</div> : null}
+        {operation.error === null && operation.message !== null ? <div className="execution-message">{operation.message}</div> : null}
         <div className="execution-safety">
           <span><i className="status-dot" /> Simulation {quote?.simulation.status ?? 'pending'}</span>
           <span>{quote?.fills.length ?? 0} maker fills</span>
@@ -877,6 +908,9 @@ function TradeView({
   setKind,
   slippageBps,
   setSlippageBps,
+  walletAddress,
+  operation,
+  onExecute,
 }: {
   view: GatewayView
   quote: RouteQuote | null
@@ -890,6 +924,9 @@ function TradeView({
   setKind: (kind: 'exact-input' | 'exact-output') => void
   slippageBps: number
   setSlippageBps: (slippage: number) => void
+  walletAddress: Address | null
+  operation: OperationState
+  onExecute: () => void
 }) {
   const [selectedCurve, setSelectedCurve] = useState<string | null>(null)
   const [chartMode, setChartMode] = useState<'liquidity' | 'route'>('liquidity')
@@ -913,7 +950,7 @@ function TradeView({
           </header>
           <CurveChart series={chartSeries} market={view.market} selectedId={selectedCurve} onSelect={setSelectedCurve} />
         </section>
-        <FunctionalOrderBook positions={view.positions} selectedId={selectedCurve} onSelect={setSelectedCurve} />
+        <FunctionalOrderBook positions={view.positions} selectedId={selectedCurve} onSelect={setSelectedCurve} mode={view.bootstrap.mode} />
         <TradeTicket
           view={view}
           quote={quote}
@@ -927,6 +964,9 @@ function TradeView({
           setKind={setKind}
           slippageBps={slippageBps}
           setSlippageBps={setSlippageBps}
+          walletAddress={walletAddress}
+          operation={operation}
+          onExecute={onExecute}
         />
       </main>
       <PositionTabs view={view} quote={quote} />
@@ -957,11 +997,15 @@ function PortfolioView({
   onNavigate,
   walletAddress,
   onConnect,
+  operation,
+  onDock,
 }: {
   view: GatewayView
   onNavigate: (view: AppView) => void
   walletAddress: string | null
   onConnect: () => void
+  operation: OperationState
+  onDock: (position: PositionSummary) => void
 }) {
   const [filter, setFilter] = useState<CurveFilter>('all')
   const [selectedCurve, setSelectedCurve] = useState<string | null>(null)
@@ -995,7 +1039,7 @@ function PortfolioView({
           <h1>Your liquidity, tied to your address.</h1>
           <p>Connect a wallet to resolve its positions, inventory ranges and maker activity. Until then, no portfolio data is displayed.</p>
           <button className="primary-small wallet-gate-action" onClick={onConnect}>Connect wallet</button>
-          <small>Demo mode connects a seeded maker address. The live wallet adapter will replace this handoff.</small>
+          <small>{view.bootstrap.mode === 'mock' ? 'Demo mode connects a seeded maker address.' : `Transactions target ${view.bootstrap.network.name}.`}</small>
         </section>
       </main>
     )
@@ -1010,8 +1054,8 @@ function PortfolioView({
 
       <section className="portfolio-metrics">
         <MetricCard label="Active positions" value={String(walletPositions.length)} detail={`${walletPositions.length * 2} executable curve sides`} />
-        <MetricCard label="Quote inventory" value={`${formatNumber(totalBuy, 0)} USDC`} detail="Available across buy curves" accent="buy" />
-        <MetricCard label="Base inventory" value={`${formatNumber(totalSell, 2)} WETH`} detail="Available across sell curves" accent="sell" />
+        <MetricCard label="Quote inventory" value={`${formatNumber(totalBuy, 0)} ${view.market.quoteToken.symbol}`} detail="Available across buy curves" accent="buy" />
+        <MetricCard label="Base inventory" value={`${formatNumber(totalSell, 2)} ${view.market.baseToken.symbol}`} detail="Available across sell curves" accent="sell" />
         <MetricCard label="Wallet routed volume" value={`$${formatNumber(routedVolume, 0)}`} detail={`${walletActivity.length} wallet-linked event${walletActivity.length === 1 ? '' : 's'}`} />
       </section>
 
@@ -1048,14 +1092,22 @@ function PortfolioView({
                   <td><div className="position-name"><span>P{index + 1}</span><strong>{view.market.baseToken.symbol}/{view.market.quoteToken.symbol}</strong><small>{shortAddress(position.maker)} · v{position.runtimeVersion}</small></div></td>
                   <td><strong className="positive">{position.buy.policy.startPrice.formatted} → {position.buy.policy.endPrice.formatted}</strong><small>α {position.buy.policy.alpha} · {branchLabel(position.buy.policy.branch)}</small></td>
                   <td><strong className="negative">{position.sell.policy.startPrice.formatted} → {position.sell.policy.endPrice.formatted}</strong><small>α {position.sell.policy.alpha} · {branchLabel(position.sell.policy.branch)}</small></td>
-                  <td><strong>{position.buy.runtime.availableOutput.formatted} USDC</strong><small>{position.sell.runtime.availableOutput.formatted} WETH</small></td>
+                  <td><strong>{position.buy.runtime.availableOutput.formatted} {view.market.quoteToken.symbol}</strong><small>{position.sell.runtime.availableOutput.formatted} {view.market.baseToken.symbol}</small></td>
                   <td>
                     <div className="dual-progress"><span><i style={{ width: `${position.buy.runtime.progressBps / 100}%` }} /></span><span><i style={{ width: `${position.sell.runtime.progressBps / 100}%` }} /></span></div>
                     <small>{formatNumber(position.buy.runtime.progressBps / 100, 1)}% / {formatNumber(position.sell.runtime.progressBps / 100, 1)}%</small>
                   </td>
                   <td><span className="backed-pill"><i /> Backed</span></td>
                   <td><strong>Block {numberFormatter.format(position.lastUpdateBlock)}</strong><small>{view.market.meta.indexLag} block lag</small></td>
-                  <td><button className="row-menu" aria-label={`Manage position P${index + 1}`}>•••</button></td>
+                  <td>
+                    <button
+                      className="row-menu"
+                      aria-label={`Dock position P${index + 1}`}
+                      title="Dock position and release both Aqua allocations"
+                      disabled={operation.running || position.lifecycle !== 'active'}
+                      onClick={() => onDock(position)}
+                    >Dock</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -1092,11 +1144,15 @@ function CurveEditor({
   value,
   onChange,
   preview,
+  baseSymbol,
+  quoteSymbol,
 }: {
   side: CurveSide
   value: CurveDraft
   onChange: (field: keyof CurveDraft, value: string) => void
   preview: PositionPreview | null
+  baseSymbol: string
+  quoteSymbol: string
 }) {
   const sideIssues = preview?.issues.filter((issue) => issue.path.startsWith(`${side}.`)) ?? []
   const branch = preview?.[side]?.branch
@@ -1105,14 +1161,14 @@ function CurveEditor({
   return (
     <section className={`curve-editor curve-editor-${side}`}>
       <header>
-        <div><span className={`side-indicator ${side}`} /><h2>{side === 'sell' ? 'Sell curve' : 'Buy curve'}</h2><small>{side === 'sell' ? 'Release WETH · receive USDC' : 'Release USDC · receive WETH'}</small></div>
+        <div><span className={`side-indicator ${side}`} /><h2>{side === 'sell' ? 'Sell curve' : 'Buy curve'}</h2><small>{side === 'sell' ? `Release ${baseSymbol} · receive ${quoteSymbol}` : `Release ${quoteSymbol} · receive ${baseSymbol}`}</small></div>
         <span className="branch-pill">{branch === undefined ? '—' : branchLabel(branch)}</span>
       </header>
       <div className="field-pair">
-        <label><span>Start price</span><div><input value={value.startPrice} onChange={(event) => onChange('startPrice', event.target.value)} inputMode="decimal" /><small>USDC</small></div></label>
-        <label><span>End price</span><div><input value={value.endPrice} onChange={(event) => onChange('endPrice', event.target.value)} inputMode="decimal" /><small>USDC</small></div></label>
+        <label><span>Start price</span><div><input value={value.startPrice} onChange={(event) => onChange('startPrice', event.target.value)} inputMode="decimal" /><small>{quoteSymbol}</small></div></label>
+        <label><span>End price</span><div><input value={value.endPrice} onChange={(event) => onChange('endPrice', event.target.value)} inputMode="decimal" /><small>{quoteSymbol}</small></div></label>
       </div>
-      <label className="reserve-field"><span>Initial outgoing reserve</span><div><input value={value.initialReserve} onChange={(event) => onChange('initialReserve', event.target.value)} inputMode="decimal" /><small>{reserveSymbol ?? (side === 'sell' ? 'WETH' : 'USDC')}</small></div></label>
+      <label className="reserve-field"><span>Initial outgoing reserve</span><div><input value={value.initialReserve} onChange={(event) => onChange('initialReserve', event.target.value)} inputMode="decimal" /><small>{reserveSymbol ?? (side === 'sell' ? baseSymbol : quoteSymbol)}</small></div></label>
       <div className="alpha-control">
         <div className="alpha-heading">
           <div><span>Curve alpha</span><small>Shapes price distribution; endpoints remain fixed.</small></div>
@@ -1160,11 +1216,15 @@ function PublishReview({
   plan,
   loading,
   onClose,
+  operation,
+  onExecute,
 }: {
   preview: PositionPreview
   plan: TransactionPlan | null
   loading: boolean
   onClose: () => void
+  operation: OperationState
+  onExecute: () => void
 }) {
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -1183,14 +1243,35 @@ function PublishReview({
             <article key={step.id}><span>{index + 1}</span><div><strong>{step.title}</strong><small>{step.description}</small></div><b>{step.expectedEvent}</b></article>
           ))}
         </div>
-        <button className="primary-action" disabled>Mock plan · wallet sending disabled</button>
-        <small className="modal-footnote">The live adapter will enable each step only after the previous receipt is confirmed.</small>
+        <button
+          className="primary-action"
+          disabled={plan?.sendable !== true || loading || operation.running}
+          onClick={onExecute}
+        >
+          {operation.running ? operation.message ?? 'Publishing…' : plan?.sendable === true ? 'Sign & publish position' : 'Wallet sending disabled'}
+        </button>
+        {operation.error !== null ? <div className="inline-error" role="alert">{operation.error}</div> : null}
+        <small className="modal-footnote">Each step is enabled only after the previous transaction receipt is confirmed.</small>
       </section>
     </div>
   )
 }
 
-function MakerStudio({ view, onNavigate }: { view: GatewayView; onNavigate: (view: AppView) => void }) {
+function MakerStudio({
+  view,
+  onNavigate,
+  walletAddress,
+  onConnect,
+  operation,
+  onExecutePlan,
+}: {
+  view: GatewayView
+  onNavigate: (view: AppView) => void
+  walletAddress: Address | null
+  onConnect: ConnectWallet
+  operation: OperationState
+  onExecutePlan: ExecutePlan
+}) {
   const [draft, setDraft] = useState<PositionDraft>({
     baseToken: view.market.baseToken,
     quoteToken: view.market.quoteToken,
@@ -1203,6 +1284,7 @@ function MakerStudio({ view, onNavigate }: { view: GatewayView; onNavigate: (vie
   const [reviewOpen, setReviewOpen] = useState(false)
   const [plan, setPlan] = useState<TransactionPlan | null>(null)
   const [planLoading, setPlanLoading] = useState(false)
+  const [planError, setPlanError] = useState<string | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -1243,12 +1325,17 @@ function MakerStudio({ view, onNavigate }: { view: GatewayView; onNavigate: (vie
 
   const openReview = async () => {
     if (preview === null || !preview.canPublish) return
+    const maker = walletAddress ?? await onConnect()
+    if (maker === null) return
     setReviewOpen(true)
     setPlan(null)
+    setPlanError(null)
     setPlanLoading(true)
     try {
-      const prepared = await protocolClient.preparePublish({ maker: view.positions[0]!.maker, draft })
+      const prepared = await protocolClient.preparePublish({ maker, draft })
       setPlan(prepared)
+    } catch (caught) {
+      setPlanError(caught instanceof Error ? caught.message : 'Could not prepare the publication plan.')
     } finally {
       setPlanLoading(false)
     }
@@ -1285,8 +1372,8 @@ function MakerStudio({ view, onNavigate }: { view: GatewayView; onNavigate: (vie
 
         <aside className="studio-controls panel">
           <header className="controls-header"><div><h2>Position configuration</h2><p>Two independently shaped, self-recycling sides.</p></div><span className="mode-tag">Draft</span></header>
-          <CurveEditor side="sell" value={draft.sell} onChange={(field, value) => updateCurve('sell', field, value)} preview={preview} />
-          <CurveEditor side="buy" value={draft.buy} onChange={(field, value) => updateCurve('buy', field, value)} preview={preview} />
+          <CurveEditor side="sell" value={draft.sell} onChange={(field, value) => updateCurve('sell', field, value)} preview={preview} baseSymbol={view.market.baseToken.symbol} quoteSymbol={view.market.quoteToken.symbol} />
+          <CurveEditor side="buy" value={draft.buy} onChange={(field, value) => updateCurve('buy', field, value)} preview={preview} baseSymbol={view.market.baseToken.symbol} quoteSymbol={view.market.quoteToken.symbol} />
           {preview?.issues.filter((issue) => issue.path === 'market').map((issue) => <div className={`editor-issue market-issue ${issue.severity}`} key={issue.code}>{issue.message}</div>)}
           <div className="publish-summary">
             <div><span>Policy</span><strong>Immutable after publish</strong></div>
@@ -1294,11 +1381,22 @@ function MakerStudio({ view, onNavigate }: { view: GatewayView; onNavigate: (vie
             <div><span>Network</span><strong>{view.bootstrap.network.name}</strong></div>
           </div>
           <button className="primary-action publish-button" disabled={preview?.canPublish !== true || previewLoading} onClick={() => void openReview()}>Review position</button>
-          <p className="control-footnote">The live field maps remaining inventory against each side’s own price range. The production adapter will replace the mock samples without changing this UI contract.</p>
+          <p className="control-footnote">The field maps remaining inventory against each side’s exact compiled price range.</p>
         </aside>
       </div>
 
-      {reviewOpen && preview !== null ? <PublishReview preview={preview} plan={plan} loading={planLoading} onClose={() => setReviewOpen(false)} /> : null}
+      {reviewOpen && preview !== null ? (
+        <PublishReview
+          preview={preview}
+          plan={plan}
+          loading={planLoading}
+          operation={{ ...operation, error: planError ?? operation.error }}
+          onExecute={() => {
+            if (plan !== null) void onExecutePlan(plan)
+          }}
+          onClose={() => setReviewOpen(false)}
+        />
+      ) : null}
     </main>
   )
 }
@@ -1313,10 +1411,24 @@ function LoadingScreen() {
   )
 }
 
+async function loadGateway(signal?: AbortSignal): Promise<GatewayView> {
+  const options = signal === undefined ? {} : { signal }
+  const bootstrap = await protocolClient.getBootstrap(options)
+  const markets = await protocolClient.listMarkets({}, options)
+  const firstMarket = markets.items[0]
+  if (firstMarket === undefined) throw new Error('No market is available.')
+  const [market, positions, activity] = await Promise.all([
+    protocolClient.getMarket(firstMarket.id, options),
+    protocolClient.listPositions({ marketId: firstMarket.id }, options),
+    protocolClient.listActivity({ marketId: firstMarket.id }, options),
+  ])
+  return { bootstrap, market, positions: positions.items, activity: activity.items }
+}
+
 function App() {
   const [activeView, setActiveView] = useState<AppView>(getInitialView)
   const [view, setView] = useState<GatewayView | null>(null)
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [walletAddress, setWalletAddress] = useState<Address | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [quote, setQuote] = useState<RouteQuote | null>(null)
   const [quoteError, setQuoteError] = useState<string | null>(null)
@@ -1325,28 +1437,31 @@ function App() {
   const [side, setSide] = useState<CurveSide>('sell')
   const [kind, setKind] = useState<'exact-input' | 'exact-output'>('exact-input')
   const [slippageBps, setSlippageBps] = useState(50)
+  const [operation, setOperation] = useState<OperationState>({ running: false, message: null, error: null })
 
   useEffect(() => {
     const controller = new AbortController()
-    async function load() {
-      try {
-        const bootstrap = await protocolClient.getBootstrap({ signal: controller.signal })
-        const markets = await protocolClient.listMarkets({}, { signal: controller.signal })
-        const firstMarket = markets.items[0]
-        if (firstMarket === undefined) throw new Error('No market is available.')
-        const [market, positions, activity] = await Promise.all([
-          protocolClient.getMarket(firstMarket.id, { signal: controller.signal }),
-          protocolClient.listPositions({ marketId: firstMarket.id }, { signal: controller.signal }),
-          protocolClient.listActivity({ marketId: firstMarket.id }, { signal: controller.signal }),
-        ])
-        setView({ bootstrap, market, positions: positions.items, activity: activity.items })
-      } catch (caught) {
+    loadGateway(controller.signal).then(setView).catch((caught) => {
         if (!controller.signal.aborted) setError(caught instanceof Error ? caught.message : 'Frontend gateway failed.')
-      }
-    }
-    void load()
+      })
     return () => controller.abort()
   }, [])
+
+  useEffect(() => {
+    if (view?.bootstrap.mode !== 'live') return
+    let active = true
+    currentInjectedAccount().then((account) => {
+      if (active) setWalletAddress(account)
+    }).catch(() => undefined)
+    const unwatch = watchInjectedWallet(
+      (account) => setWalletAddress(account),
+      () => setWalletAddress(null),
+    )
+    return () => {
+      active = false
+      unwatch()
+    }
+  }, [view?.bootstrap.mode])
 
   useEffect(() => {
     if (view === null) return
@@ -1366,6 +1481,7 @@ function App() {
           kind,
           amount: { token: fixedToken.address, raw },
           slippageBps,
+          ...(walletAddress === null ? {} : { recipient: walletAddress }),
         }, { signal: controller.signal }).then(setQuote).catch((caught) => {
           if (!controller.signal.aborted) {
             setQuote(null)
@@ -1384,7 +1500,7 @@ function App() {
       window.clearTimeout(timer)
       controller.abort()
     }
-  }, [view, amount, side, kind, slippageBps])
+  }, [view, amount, side, kind, slippageBps, walletAddress])
 
   const navigate = (nextView: AppView) => {
     setActiveView(nextView)
@@ -1398,6 +1514,74 @@ function App() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
+  const connectWallet: ConnectWallet = async () => {
+    if (view === null) return null
+    if (walletAddress !== null) return walletAddress
+    try {
+      const account = view.bootstrap.mode === 'mock'
+        ? view.positions[0]?.maker ?? null
+        : await connectInjectedWallet(view.bootstrap)
+      setWalletAddress(account)
+      setOperation((current) => ({ ...current, error: null }))
+      return account
+    } catch (caught) {
+      setOperation({ running: false, message: null, error: caught instanceof Error ? caught.message : 'Wallet connection failed.' })
+      return null
+    }
+  }
+
+  const submitPlan = async (plan: TransactionPlan, account: Address) => {
+    if (view === null) return
+    setOperation({ running: true, message: 'Waiting for wallet…', error: null })
+    try {
+      const hashes = await executeTransactionPlan(plan, account, view.bootstrap, (progressValue) => {
+        const position = `${progressValue.index + 1}/${progressValue.total}`
+        const phase = progressValue.state === 'awaiting-signature' ? 'Sign' : progressValue.state === 'confirming' ? 'Confirming' : 'Confirmed'
+        setOperation({ running: true, message: `${phase} ${position}: ${progressValue.step.title}`, error: null })
+      })
+      setOperation({ running: true, message: 'Refreshing indexed protocol state…', error: null })
+      setView(await loadGateway())
+      setOperation({ running: false, message: `${hashes.length} transaction${hashes.length === 1 ? '' : 's'} confirmed.`, error: null })
+    } catch (caught) {
+      setOperation({ running: false, message: null, error: caught instanceof Error ? caught.message : 'Transaction failed.' })
+    }
+  }
+
+  const executePlan: ExecutePlan = async (plan) => {
+    const account = walletAddress ?? await connectWallet()
+    if (account !== null) await submitPlan(plan, account)
+  }
+
+  const executeQuote = async () => {
+    if (view === null || quote === null) return
+    const account = walletAddress ?? await connectWallet()
+    if (account === null) return
+    setOperation({ running: true, message: 'Running final onchain simulation…', error: null })
+    try {
+      const plan = await protocolClient.prepareExecute({
+        payer: account,
+        quote,
+        recipient: account,
+        refundRecipient: account,
+      })
+      await submitPlan(plan, account)
+    } catch (caught) {
+      setOperation({ running: false, message: null, error: caught instanceof Error ? caught.message : 'Could not prepare the executable route.' })
+    }
+  }
+
+  const dockPosition = async (position: PositionSummary) => {
+    const account = walletAddress ?? await connectWallet()
+    if (account === null) return
+    setOperation({ running: true, message: 'Preparing dock transaction…', error: null })
+    try {
+      const dockPlan = await protocolClient.prepareDock({ maker: account, positionId: position.id })
+      await submitPlan(dockPlan, account)
+    } catch (caught) {
+      setOperation({ running: false, message: null, error: caught instanceof Error ? caught.message : 'Could not prepare the dock transaction.' })
+    }
+  }
+
   if (error !== null) {
     return (
       <main className="fatal-error">
@@ -1409,9 +1593,8 @@ function App() {
   if (view === null) return <LoadingScreen />
 
   const toggleWallet = () => {
-    setWalletAddress((current) => (
-      current === null ? view.positions[0]?.maker ?? null : null
-    ))
+    if (walletAddress !== null) setWalletAddress(null)
+    else void connectWallet()
   }
 
   return (
@@ -1437,6 +1620,9 @@ function App() {
           setKind={setKind}
           slippageBps={slippageBps}
           setSlippageBps={setSlippageBps}
+          walletAddress={walletAddress}
+          operation={operation}
+          onExecute={() => void executeQuote()}
         />
       ) : null}
       {activeView === 'portfolio' ? (
@@ -1444,12 +1630,25 @@ function App() {
           view={view}
           onNavigate={navigate}
           walletAddress={walletAddress}
-          onConnect={toggleWallet}
+          onConnect={() => void connectWallet()}
+          operation={operation}
+          onDock={(position) => void dockPosition(position)}
         />
       ) : null}
-      {activeView === 'studio' ? <MakerStudio view={view} onNavigate={navigate} /> : null}
+      {activeView === 'studio' ? (
+        <MakerStudio
+          view={view}
+          onNavigate={navigate}
+          walletAddress={walletAddress}
+          onConnect={connectWallet}
+          operation={operation}
+          onExecutePlan={executePlan}
+        />
+      ) : null}
       <div className="global-statusbar">
-        <span><i className="status-dot" /> Mock solver online</span><span>ARC / FIELD 01</span><span>{view.bootstrap.protocolVersion}</span><span>Writes safely disabled</span>
+        <span><i className="status-dot" /> {view.bootstrap.mode} solver {view.bootstrap.meta.stale ? 'degraded' : 'online'}</span>
+        <span>ARC / FIELD 01</span><span>{view.bootstrap.protocolVersion}</span>
+        <span>{operation.error ?? operation.message ?? (view.bootstrap.features.liveWrites ? 'Writes enabled' : 'Writes safely disabled')}</span>
       </div>
     </AppShell>
   )

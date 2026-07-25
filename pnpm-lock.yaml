@@ -16,6 +16,9 @@ importers:
       '@liquid-ob/frontend-api':
         specifier: workspace:*
         version: link:../../packages/frontend-api
+      '@liquid-ob/frontend-live':
+        specifier: workspace:*
+        version: link:../../packages/frontend-live
       react:
         specifier: ^19.2.7
         version: 19.2.8
