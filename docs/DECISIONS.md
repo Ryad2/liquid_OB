@@ -88,3 +88,43 @@ presented as architecture.
 - Reason: treating a derivative schedule as an invariant or substituting full
   bounds into a partial-fill quote produces economically incorrect execution
   prices even when the underlying closed forms are correct.
+
+## ADR-008: Make the SwapVM router the Aqua app
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: each position is an immutable Aqua strategy whose bytes are a
+  custom SwapVM program. The custom Liquid OB router is the Aqua app, extends
+  the pinned official SwapVM/Aqua path with one curve instruction, and leaves
+  final maker/taker token settlement to SwapVM and Aqua. There is no factory,
+  per-position contract, protocol vault, or parallel settlement path.
+- Reason: Aqua strategy publication already supplies immutable intent,
+  allocation, cancellation, and lifecycle events. Making the curve native to
+  SwapVM keeps the sponsor integration load-bearing while minimizing custody
+  and contract surface.
+
+## ADR-009: Separate Aqua allocation from logical curve accounting
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: Aqua is authoritative for virtual allocation and transfer
+  lifecycle, while router storage is authoritative for each side's logical
+  executable reserve, domain scale, and state version. Only a successful
+  Liquid OB fill mutates logical state. Unsolicited Aqua credits are ignored as
+  curve inventory, and maker top-ups or parameter changes use dock-and-republish.
+- Reason: shared virtual allocation and public credits must not silently alter
+  a maker's committed execution policy or allow a third party to move its
+  marginal state.
+
+## ADR-010: Derive discovery from canonical lifecycle events
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: The Graph decodes immutable strategy bytes from Aqua `Shipped`
+  events and combines Aqua lifecycle events with custom fill and route events.
+  No separate onchain position directory is introduced. The Subgraph remains
+  discovery state only, and the solver refreshes every selected position from
+  the router and Aqua before simulation.
+- Reason: Aqua already emits the full immutable strategy and lifecycle. A
+  second publication registry would duplicate state without improving
+  settlement correctness.

@@ -302,25 +302,26 @@ Solver flow:
 
 1. Query The Graph for every indexed active Liquid OB position in the requested
    market and direction.
-2. Refresh candidate nonces and Aqua balances directly from chain state.
+2. Refresh candidate runtime versions, logical reserves, Aqua allocations,
+   wallet balances, and allowances directly from chain state.
 3. Reproduce exact Solidity quotes, including rounding, in the TypeScript SDK.
 4. Optimize the split and discard economically irrelevant candidates.
 5. Simulate the complete batch with `eth_call`.
 6. Submit only selected fills with aggregate slippage and deadline constraints.
 
 The solver is untrusted. It can propose a poor route but cannot bypass reserve,
-price, nonce, token, deadline, or slippage checks. "All pools" means all
+price, version, token, deadline, or slippage checks. "All pools" means all
 eligible Liquid OB positions discovered for that market; external protocols
 require explicit quote and settlement adapters and are not silently assumed.
 
 ## 10. Atomic Settlement
 
-`BatchExecutor` accepts a bounded list of selected fills. A maximum fill count
-makes gas predictable. For each fill it verifies:
+`LiquidOBBatchExecutor` accepts a bounded list of selected fills. A maximum
+fill count makes gas predictable. For each fill it verifies:
 
-- Active position and current nonce.
+- Active Aqua strategy and current runtime version.
 - Expected token orientation.
-- Live Aqua reserve and valid curve domain.
+- Live logical reserve, sufficient Aqua allocation, and valid curve domain.
 - Exact-input or exact-output quote.
 - Opposite-side credit and rescaling.
 - Per-fill and aggregate amount constraints.
@@ -337,28 +338,33 @@ protection before external token movement.
 | Module | Responsibility |
 | --- | --- |
 | `CurveTypes` | Native `E` state, signed `alpha`, quote results, errors |
-| `FixedPoint` | Full-precision WAD arithmetic and directional rounding |
-| `FixedPointTranscendentals` | Checked `pow`, `exp`, `ln`, and roots |
-| `CurveCodec` | User parameters to compact state and reconstructed views |
+| `FullPrecisionMath` | Full-precision fixed-point arithmetic and directional rounding |
+| `TranscendentalMath` | Checked `pow`, `exp`, and `ln` over explicit domains |
+| `CurveCompiler` | Displayed buy/sell parameters to canonical native state |
+| `PositionCodec` | Canonical two-sided SwapVM strategy encoding and decoding |
 | `CurveMath` | Exact-input/output traversal and flat-order branch |
-| `OrientationMath` | Bid/ask reciprocal normalization |
 | `PositionMath` | Active mutation, opposite credit, rescale, and rearm |
-| `PositionStateStore` | Non-custodial runtime scales, nonces, and activity |
-| `LiquidOBInstruction` | Custom SwapVM execution instruction |
-| `LiquidOBAquaApp` | Aqua strategy lifecycle and balance access |
-| `PositionDirectory` | Publication and lifecycle events for discovery |
-| `PositionQuoter` | Single-position and batch previews |
-| `BatchExecutor` | Atomic multi-position settlement and aggregate limits |
+| `PositionRuntime` | Router-owned logical reserves, scales, and state versions |
+| `LiquidCurveInstruction` | Custom SwapVM curve quote and state-transition opcode |
+| `LiquidOBSwapVMRouter` | Aqua app, SwapVM validation, and single-position settlement |
+| `LiquidOBQuoter` | Static single-position product-level preview |
+| `LiquidOBLens` | Strategy, runtime, Aqua, wallet, and allowance reconciliation |
+| `LiquidOBBatchExecutor` | Atomic multi-position settlement and aggregate limits |
 
 ## 12. Offchain Modules
 
 | Module | Responsibility |
 | --- | --- |
-| Curve SDK | Compile, decode, normalize decimals, quote, and build calldata |
-| Solver service | Discover, refresh, optimize, simulate, and submit routes |
+| Curve math package | Exact TypeScript math and rounding mirror |
+| Position SDK | Compile, decode, normalize decimals, Aqua lifecycle, and calldata |
+| Solver core | Pure deterministic route optimization |
+| Solver API | Discover, refresh, optimize, simulate, and return unsigned routes |
 | Liquid OB Subgraph | Index markets, positions, both curve states, and fills |
 | Liquidity MCP | Reusable live discovery and comparison tools |
 | Web application | Maker builder, taker execution, position management |
+
+The precise module boundaries, protocol calls, flows, and deployment order are
+specified in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 The Graph is the discovery index, not settlement truth. Stale indexed data can
 cause a candidate to be omitted or a transaction to revert, but cannot authorize

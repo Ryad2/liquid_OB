@@ -129,30 +129,34 @@ marginal price. If it was empty, it deterministically rearms at its committed
 
 ### Settlement layer
 
-- `CurveCodec`: compiles and validates the external and compact curve state,
-  then reconstructs bounds and marginal prices.
+- `CurveCompiler` and `PositionCodec`: compile displayed buy/sell parameters,
+  validate numerical domains, and encode the canonical two-sided SwapVM
+  strategy.
 - `CurveMath`: implements one continuous `alpha` family, its exact analytical
   limits, and the degenerate flat-order path over compact curve state.
-- `FixedPoint` and `FixedPointTranscendentals`: provide full-precision WAD
-  arithmetic, powers, logarithms, and exponentials with checked domains.
+- `FullPrecisionMath` and `TranscendentalMath`: provide checked fixed-point
+  arithmetic, directional rounding, powers, logarithms, and exponentials.
 - `LiquidCurveInstruction`: custom SwapVM instruction that decodes the compact
-  curve state, reads the relevant Aqua balance, computes a fill, and applies
-  the required maker/taker balance deltas.
+  curve state, reads logical runtime state, computes a fill, updates SwapVM
+  registers, and commits the two-sided transition on successful execution.
 - `PositionMath`: applies the active-curve transition, credits the full input to
   the opposite curve, rescales it, and validates the two post-trade states.
-- `PositionStateStore`: records mutable domain scales, nonces, and activity;
-  token inventory remains in Aqua rather than this contract.
-- `LiquidCurveRouter`: validates tokens, amounts, deadline, and minimum output
-  or maximum input before invoking SwapVM in Aqua mode.
-- `BatchExecutor`: executes multiple selected position fills atomically and
-  enforces aggregate conservation and slippage.
-- `PositionDirectory`: emits typed publication, replacement, cancellation, and
-  fill metadata for two-sided positions. It is not settlement truth.
+- `PositionRuntime`: router-owned logical reserves, mutable domain scales, and
+  state versions; it is an internal storage module rather than a custody layer.
+- `LiquidOBSwapVMRouter`: the Aqua app and custom SwapVM deployment; it retains
+  official SwapVM validation and delegates final transfer settlement to Aqua.
+- `LiquidOBQuoter` and `LiquidOBLens`: static single-position previews and full
+  reconciliation of strategy bytes, logical state, and Aqua allocation.
+- `LiquidOBBatchExecutor`: executes multiple selected position fills atomically
+  and enforces aggregate conservation and slippage.
 
-Official Aqua balances remain the source of maker inventory. Liquid OB must not
-introduce a parallel custody vault. Static curve programs are immutable;
-runtime scales evolve atomically with fills, while parameter updates use a
-cancel-and-republish lifecycle.
+Maker wallets contain the actual assets, Aqua is authoritative for virtual
+allocation and lifecycle, and router storage is authoritative for logical curve
+inventory. Liquid OB introduces no parallel custody vault. Strategy bytes are
+immutable and included in Aqua `Shipped` events; runtime scales evolve
+atomically with fills, while parameter or reserve updates use a
+dock-and-republish lifecycle. The complete boundary and brick map is normative
+in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ### SDK and solver
 
@@ -183,8 +187,8 @@ balance, domain transition, deadline, and aggregate slippage condition.
 ### Data layer
 
 The Liquid OB Subgraph indexes `Market`, `Position`, `CurveState`, `Fill`, and
-`Maker` entities from directory and settlement events. A reusable query tool
-exposes at least:
+`Maker` entities from Aqua lifecycle events plus custom fill and route events.
+A reusable query tool exposes at least:
 
 - `discover_positions(market, side, amount)`
 - `compare_executable_liquidity(market, amount)`

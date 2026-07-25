@@ -88,5 +88,24 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Human review required: maker-facing parameter vocabulary, fixed-point
   tolerances near singular branches, and all fee-inclusive UI quote semantics.
 
+## 25 July 2026: end-to-end implementation architecture
+
+- Tool: OpenAI Codex
+- Work: decomposed the complete product into onchain math, canonical strategy
+  encoding, a custom SwapVM/Aqua execution path, logical runtime accounting,
+  atomic routing, TypeScript packages, solver services, The Graph indexing and
+  MCP tooling, web flows, security tests, deployment profiles, and submission
+  operations.
+- Architecture corrections: removed the redundant position directory and
+  parallel custody concepts; Aqua lifecycle events carry immutable strategy
+  bytes, while the custom router keeps only logical executable state and final
+  transfers remain in the official Aqua path.
+- Imported implementation during this step: none.
+- Human review required: exact upstream versions and licenses, target public
+  network, custom SwapVM interface details, numerical storage widths, and every
+  security assumption before implementation.
+- Output: `docs/ARCHITECTURE.md` and
+  `prompts/0007-end-to-end-architecture.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.
