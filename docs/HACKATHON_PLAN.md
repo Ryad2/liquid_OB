@@ -37,6 +37,16 @@ The core is demo-ready only when all of the following are true:
 This remains hackathon software. Audit, formal verification, economic stress
 testing, and production operations are explicitly outside the submission claim.
 
+### Finalist Live Gate
+
+The finalist rules require an auditable repository and an open-source,
+deployed, live project. Localhost is valid for development and fallback but may
+not be required by the canonical demo. A fresh browser must reach the public
+app, public contracts, live index, and public or browser-side solver without a
+team laptop serving any dependency. The complete page-by-page interpretation
+and acceptance test are in
+[`ETHGLOBAL_RULES_COMPLIANCE.md`](ETHGLOBAL_RULES_COMPLIANCE.md).
+
 ## 3. Frozen MVP
 
 ### In scope
@@ -391,6 +401,7 @@ indexer or faucet on stage.
 
 - Public repository, meaningful history, no secrets, clean fresh-clone setup.
 - Explicit open-source license compatible with the selected sponsor tracks.
+- Public HTTPS application whose canonical path has no localhost-only service.
 - Exact deployed addresses, chain IDs, transaction hashes, and contract links.
 - One-command tests and CI badge; no production-readiness claim.
 - Architecture diagram, curve equation, threat model, and known limitations.
@@ -401,6 +412,8 @@ indexer or faucet on stage.
 - Completed Uniswap `FEEDBACK.md`, feedback form, identifying note, and private
   copy of the written eligibility confirmation.
 - Two-to-four-minute submission video plus the rehearsed four-minute live demo.
+- Optional finalist add-on selected and no more than three partner
+  organizations selected.
 - AI-use disclosures and material prompt specifications.
 - Final mobile/desktop smoke test and a second browser/wallet fallback.
 

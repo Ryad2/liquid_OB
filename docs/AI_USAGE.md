@@ -154,5 +154,20 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: `docs/IMPLEMENTATION_ORDER.md`, ADR-012, and
   `prompts/0010-protocol-implementation-order.md`.
 
+## 25 July 2026: ETHGlobal rules compliance audit
+
+- Tool: OpenAI Codex
+- Work: extracted and visually reviewed all eight pages of the supplied event
+  rules, separated partner and finalist judging, audited the public repository
+  and live architecture, and defined a zero-localhost acceptance test and
+  submission release gate.
+- Decision: localhost is permitted for development and fallback, but no local
+  process may be required by the canonical finalist demo.
+- Human review required: root license, public deployment and hosting profile,
+  finalist add-on, selected partners, and written answers to any rule
+  clarification.
+- Output: `docs/ETHGLOBAL_RULES_COMPLIANCE.md` and
+  `prompts/0011-ethglobal-rules-compliance.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

@@ -30,6 +30,12 @@ official dependencies
 
 Every arrow is a gate. A later layer must not hide a failing earlier layer.
 
+Finalist compliance is also a cross-cutting gate. Localhost is permitted for
+development, tests, and fallback, but no laptop-local process may be required
+by the canonical submitted demo. The complete interpretation and acceptance
+test are normative in
+[`ETHGLOBAL_RULES_COMPLIANCE.md`](ETHGLOBAL_RULES_COMPLIANCE.md).
+
 ## 2. Development Loop For Every Phase
 
 Use this loop for every implementation commit:
@@ -49,6 +55,9 @@ in one commit.
 
 ## 3. Phase 0: Protect The Critical Path
 
+Implementation status: partial. Reproducible tooling and CI exist; the root
+open-source license and final public hosting topology remain release blockers.
+
 ### Objective
 
 Turn the empty scaffold into a reproducible build without writing protocol
@@ -64,6 +73,9 @@ logic yet.
   check/lint/test/build.
 - Define secrets and deployment manifests without committing RPC URLs, private
   keys, or API keys.
+- Freeze the public network, web host, Graph deployment path, and either a
+  browser-side or publicly hosted solver topology. Do not assume a local fork
+  alone satisfies finalist live-deployment rules.
 - Keep the existing Uniswap v4 hook evaluation out of the implementation
   backlog.
 
@@ -72,6 +84,7 @@ logic yet.
 - A clean checkout installs and passes all empty-workspace checks.
 - CI uses the same pinned Node, pnpm, Foundry, and compiler setup as local.
 - The repository has an explicit license and no secret in Git history.
+- The public demo topology has no unresolved localhost-only component.
 
 ## 4. Phase 1: Pin And Prove Aqua/SwapVM First
 
@@ -549,6 +562,8 @@ This phase begins only after the native Subgraph and solver are real.
 - Public deployment verification.
 - Gas report and known-limitations document.
 - No secret, mock address, stale ABI, or local-only URL in production config.
+- The zero-localhost acceptance test passes twice from a clean browser or
+  second machine.
 - Demo reset/reseed and fallback local-fork procedure.
 - Two uninterrupted rehearsals and one recorded backup demo.
 
@@ -563,6 +578,8 @@ After feature freeze, implement no new protocol feature.
   confirmation without publishing private messages.
 - Verify The Graph endpoint, MCP instructions, video, public app, deployments,
   and transaction evidence from a fresh browser.
+- Select the optional finalist add-on and no more than three partner
+  organizations in the submission flow.
 - Submit only after every mandatory field and bounty checkbox is independently
   reviewed.
 

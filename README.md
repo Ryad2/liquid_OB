@@ -23,6 +23,10 @@ The dependency-ordered development sequence, exit gates, tests, and intended
 commit history are documented in
 [`docs/IMPLEMENTATION_ORDER.md`](docs/IMPLEMENTATION_ORDER.md).
 
+The page-by-page ETHGlobal rules audit, public-demo topology, and mandatory
+zero-localhost submission gate are documented in
+[`docs/ETHGLOBAL_RULES_COMPLIANCE.md`](docs/ETHGLOBAL_RULES_COMPLIANCE.md).
+
 The decision to keep Uniswap v4 custom accounting as a post-MVP alternative,
 rather than the hackathon settlement core, is documented in
 [`docs/UNISWAP_V4_HOOK_EVALUATION.md`](docs/UNISWAP_V4_HOOK_EVALUATION.md).
