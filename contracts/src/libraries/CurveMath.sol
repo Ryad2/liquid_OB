@@ -67,6 +67,36 @@ library CurveMath {
         return _toRate(marginalRateAt(curve, state, AmountWad.unwrap(state.y)));
     }
 
+    /// @notice Rebinds a mathematical quote to the raw amounts that can actually be transferred.
+    function withTransferAmounts(
+        CurveQuote memory quote,
+        QuoteKind kind,
+        CurveSide side,
+        uint256 amountIn,
+        uint256 amountOut,
+        AmountWad amountInWad,
+        AmountWad amountOutWad
+    ) internal pure returns (CurveQuote memory normalized) {
+        uint256 inputWad = AmountWad.unwrap(amountInWad);
+        uint256 outputWad = AmountWad.unwrap(amountOutWad);
+        if (amountIn == 0 || amountOut == 0 || inputWad == 0 || outputWad == 0) revert LiquidOBZeroAmount();
+
+        uint256 effectiveRate = FullPrecisionMath.divWad(outputWad, inputWad, Rounding.Down);
+        if (effectiveRate == 0) revert LiquidOBCurveOutOfDomain();
+
+        normalized = quote;
+        normalized.kind = kind;
+        normalized.side = side;
+        normalized.amountIn = amountIn;
+        normalized.amountOut = amountOut;
+        normalized.amountInWad = amountInWad;
+        normalized.amountOutWad = amountOutWad;
+        normalized.nativeEffectiveRate = _toRate(effectiveRate);
+        normalized.displayedEffectivePrice = _toPrice(
+            side == CurveSide.Buy ? effectiveRate : FullPrecisionMath.divWad(inputWad, outputWad, Rounding.Up)
+        );
+    }
+
     function marginalRateAt(NativeCurve memory curve, CurveState memory state, uint256 yWad)
         internal
         pure

@@ -25,7 +25,12 @@ library PositionMath {
         pure
         returns (PositionRuntime memory afterState)
     {
-        afterState = beforeState;
+        afterState = PositionRuntime({
+            sell: CurveState({y: beforeState.sell.y, yInt: beforeState.sell.yInt}),
+            buy: CurveState({y: beforeState.buy.y, yInt: beforeState.buy.yInt}),
+            version: beforeState.version,
+            initialized: beforeState.initialized
+        });
 
         if (activeSide == CurveSide.Sell) {
             afterState.sell = curveQuote.activeAfter;

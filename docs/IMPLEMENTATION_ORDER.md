@@ -217,10 +217,12 @@ Create expected results that do not call Solidity implementation code.
 
 ## 7. Phase 4: Implement The Pure Solidity Kernel
 
-Implementation status: Phases 4A and 4B completed on 25 July 2026. Checked
-512-bit arithmetic, signed rounding, bounded logarithm/exponential/real powers,
-stable near-zero transforms, exact identities, and approximation intervals are
-covered by deterministic and fuzz tests. Phases 4C through 4E remain pending.
+Implementation status: hackathon kernel completed on 25 July 2026. The checked
+arithmetic and transcendental layers feed a displayed-to-native compiler,
+integrated coordinate/inverse quote kernel, exact-input/exact-output paths, and
+two-sided recycling transition. Representative tests cover every alpha branch,
+both directions, flat levels, quote inversion, and progress-preserving credit.
+Exhaustive differential and stateful campaigns remain part of Phase 9.
 
 ### Exact File Order
 
@@ -284,6 +286,14 @@ and empty-side rearm as a pure function. Do not touch storage or tokens yet.
 
 ## 8. Phase 5: Mirror Math And Encoding In TypeScript Immediately
 
+Implementation status: hackathon SDK completed on 25 July 2026 in
+`@liquid-ob/curve-math`. It compiles maker policy, previews both quote kinds,
+applies recycling, emits the canonical 269-byte payload, builds the
+payload-prefixed Aqua/SwapVM order, and hashes the exact ABI strategy. The
+payload matches the committed Solidity vector byte-for-byte. Interactive
+previews deliberately use JavaScript transcendental numbers; the Solidity
+Quoter is authoritative before execution.
+
 ### Why This Happens Now
 
 Waiting until the frontend phase to discover SDK/Solidity disagreement would
@@ -304,6 +314,15 @@ force changes to contracts, events, strategies, and deployed addresses.
 - Strategy encoding is frozen before custom router implementation.
 
 ## 9. Phase 6: Prove One Complete Position Vertically
+
+Implementation status: completed as a local hackathon vertical slice on 25
+July 2026. `LiquidCurveInstruction`, `LiquidOBSwapVMRouter`, and
+`LiquidOBQuoter` execute the same kernel through official Aqua/SwapVM. The
+integration test ships a two-sided strategy, proves static quotes do not
+materialize storage, executes exact input, recycles the received asset,
+executes exact output in the reverse direction, advances runtime versions, and
+proves Aqua and the router retain no token custody. Public-network deployment
+and broader adversarial/fork coverage remain later gates.
 
 ### Build Order
 
