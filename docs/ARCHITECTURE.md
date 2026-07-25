@@ -25,6 +25,13 @@ A taker submits one exact-input or exact-output order. An offchain solver finds
 the best split across all indexed positions. One onchain transaction recomputes
 every selected fill, checks the complete route, and settles it atomically.
 
+Computationally, every maker position is a **single-maker programmable
+micro-pool**: it has its own two token reserves, curve parameters, marginal
+state, and capacity. The protocol calls it a `Position`, rather than a `Pool`,
+because it has one maker, no pooled ownership, no LP shares, and no common curve
+shared with other depositors. The solver nevertheless treats every live side
+exactly as an independent liquidity venue.
+
 The MVP deliberately has:
 
 - one curve family rather than maker-provided arbitrary code;
@@ -94,7 +101,7 @@ The protocol must not treat one database as truth for every concern.
 | Immutable policy | Aqua `strategyHash = keccak256(strategy)` | Execution always receives and rehashes the exact strategy bytes. |
 | Logical curve state | Custom router runtime keyed by maker and strategy hash | This stores executable reserves, domain scales, and version. |
 | Active or docked lifecycle | Aqua strategy state | A docked strategy cannot execute even if stale runtime data exists. |
-| Candidate discovery | Liquid OB Subgraph | Indexed data is a cache and is refreshed against chain state. |
+| Global micro-pool universe | Liquid OB Subgraph | One indexed query supplies our own positions and curve states without one RPC read per maker. |
 | Candidate route | Untrusted solver | Contracts recompute it; no solver signature grants correctness. |
 | User protection | Onchain deadline and aggregate amount limit | A stale or degraded route reverts atomically. |
 
@@ -457,12 +464,17 @@ transactions.
 
 This stateless service orchestrates, but never settles, an order:
 
-1. query the Liquid OB Subgraph for all active candidates;
-2. refresh runtime, Aqua allocation, wallet balance, and allowance through RPC;
-3. quote candidates with `solver-core`;
-4. optimize and cap the split;
-5. run final `eth_call` simulation against `LiquidOBBatchExecutor`;
-6. return transparent route details and unsigned calldata.
+1. query the Liquid OB Subgraph for our complete active micro-pool universe at
+   indexed block `B`;
+2. reproduce exact quotes and solve globally over that indexed snapshot;
+3. retain the selected fills plus a bounded reserve shortlist;
+4. refresh only that shortlist's runtime, Aqua allocation, wallet balance, and
+   allowance through batched RPC reads at the current chain head;
+5. recompute the route, replacing invalid or stale candidates from the reserve
+   shortlist when necessary;
+6. run final `eth_call` simulation against `LiquidOBBatchExecutor`;
+7. return transparent route details, indexed block, chain-head block, and
+   unsigned calldata.
 
 Suggested endpoints are `POST /quote`, `POST /route`, and `GET /health`. Any
 caller may reproduce or replace this service. Contracts never authenticate a
@@ -529,6 +541,42 @@ different venue schemas into one explicit `ExecutableLiquidityVenue` response.
 
 The solver treats Subgraph results as candidate discovery only. A block lag or
 mapping bug can cause a stale route to revert, but cannot authorize a bad fill.
+
+### 9.2 Critical Solver Read Path
+
+The first and most important Graph integration is **our own Liquid OB
+Subgraph**, not the external standardized-DEX comparison. Every maker position
+is materialized as a queryable micro-pool with:
+
+- market, direction, maker, strategy hash, and active/docked status;
+- immutable bounds, signed alpha, branch type, and initial commitments;
+- current logical `Y`, `YInt`, marginal price, capacity, and runtime version;
+- Aqua virtual allocation changes;
+- last update block, transaction, and log index.
+
+For one market and side, the Subgraph filters inactive and exhausted positions
+and returns all economically eligible `CurveSide` records in one paginated
+GraphQL dataset. The TypeScript solver evaluates exact curve math locally and
+finds the global split over that snapshot. It does **not** issue an RPC call for
+every maker position.
+
+Only the winning fills and a small reserve shortlist are refreshed through an
+RPC multicall. This yields the intended complexity:
+
+```text
+Without The Graph: N independent RPC state reads + optimization
+With The Graph:    one indexed dataset + local optimization + K RPC refreshes
+where K is bounded by maxFills plus a small reserve set, and K << N
+```
+
+The query records the Subgraph's indexed block through `_meta`. If index lag
+exceeds the configured threshold, the solver reports the quote as stale and
+waits, switches provider, or uses an explicitly labelled degraded path. It
+must not claim best execution at the chain head from an old snapshot.
+
+The second Graph integration, a standardized DEX Subgraph, is used by the
+reusable MCP comparison tool. It is not a substitute for indexing Liquid OB's
+own micro-pools and is not in the MVP settlement route.
 
 Protocol dependency: **The Graph** hosted/live Subgraph infrastructure and one
 standardized DEX AMM Subgraph for the composability demonstration.
@@ -616,15 +664,18 @@ No factory or protocol administrator approves the position.
 ### 11.2 Discover And Build A Route
 
 1. Taker requests an exact-input or exact-output quote.
-2. Solver queries every indexed active position in that market and direction.
-3. Solver refreshes each candidate through Lens/Aqua/RPC.
-4. Solver discards stale, docked, unbacked, exhausted, unsupported, or
-   economically irrelevant candidates.
-5. `solver-core` computes the optimal bounded split.
-6. Solver constructs every fill with maker, exact strategy bytes/hash,
+2. Solver queries every indexed active micro-pool in that market and direction
+   from the Liquid OB Subgraph at block `B`.
+3. `solver-core` computes the global split from the indexed curve states and
+   keeps a bounded reserve shortlist.
+4. Solver refreshes only selected and reserve positions through
+   Lens/Aqua/RPC, then recomputes if any are stale, docked, unbacked, exhausted,
+   or unsupported.
+5. Solver constructs every fill with maker, exact strategy bytes/hash,
    expected runtime version, amount, and limit.
-7. Solver simulates the complete batch with `eth_call`.
-8. UI shows the route and prepares unsigned transaction calldata.
+6. Solver simulates the complete batch with `eth_call`.
+7. UI shows indexed-block freshness, the route, and unsigned transaction
+   calldata.
 
 ### 11.3 Execute Exact Input
 
@@ -769,7 +820,7 @@ Subgraph all consume the same validated schema.
 | --- | --- | --- |
 | 1inch Aqua | Position publication, virtual allocation, maker-wallet settlement, cancellation, and lifecycle events | Liquid OB cannot publish or settle a position without Aqua. |
 | 1inch SwapVM | Canonical strategy program, custom curve opcode, quote/swap register execution, validation, and Aqua mode | The curve is a native programmable SwapVM position, not a cosmetic API call. |
-| The Graph | Live position discovery for the solver, market history, and route/fill analytics | The solver cannot globally discover the order set efficiently through bounded onchain execution. |
+| The Graph | Our complete micro-pool state, live position discovery for the solver, market history, and route/fill analytics | One indexed dataset replaces one RPC read per maker and makes global route search operationally realistic. |
 | The Graph MCP/standardized data | Reusable curve-aware liquidity tools composed with a standardized DEX source | The artifact exposes a new executable-liquidity model beyond the application UI. |
 | Uniswap Foundation | Submission documentation only: public repository, completed `FEEDBACK.md`, feedback form, and identifying eligibility note | Written sponsor-specific confirmation removes the runtime API requirement; no artificial Uniswap dependency belongs in settlement. |
 

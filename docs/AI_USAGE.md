@@ -107,5 +107,20 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: `docs/ARCHITECTURE.md` and
   `prompts/0007-end-to-end-architecture.md`.
 
+## 25 July 2026: native micro-pool indexing clarification
+
+- Tool: OpenAI Codex
+- Work: clarified that every maker position is a single-maker programmable
+  micro-pool for routing purposes and that the Liquid OB Subgraph indexes the
+  protocol's own complete position and curve-state universe.
+- Architecture correction: the solver first optimizes over one indexed market
+  snapshot, then refreshes only selected fills and a bounded reserve shortlist
+  through batched RPC reads; it does not perform one RPC read per position.
+- Imported implementation during this step: none.
+- Human review required: shortlist size, maximum acceptable index lag, fallback
+  provider policy, and final GraphQL pagination/index design.
+- Output: architecture, product, and hackathon specifications plus
+  `prompts/0008-native-subgraph-solver-path.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

@@ -163,8 +163,10 @@ in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 - Compile both `(startPrice, endPrice, alpha, reserve)` sides, token direction,
   and decimals into a canonical position program and strategy hash.
 - Reproduce contract quotes exactly in TypeScript, including rounding.
-- Discover candidate positions, validate their current onchain state, and
-  optimize allocations using each curve's exact quote function.
+- Query our Liquid OB Subgraph for the complete indexed micro-pool snapshot and
+  optimize allocations locally using each curve's exact quote function.
+- Refresh only selected fills and a bounded reserve shortlist through batched
+  RPC reads, then recompute if indexed state was stale.
 - Re-quote the final route onchain immediately before building calldata.
 - Return a transparent route: maker, input, output, `alpha`, `pBefore`,
   `pAfter`, and effective price for every fill.
@@ -188,7 +190,10 @@ balance, domain transition, deadline, and aggregate slippage condition.
 
 The Liquid OB Subgraph indexes `Market`, `Position`, `CurveState`, `Fill`, and
 `Maker` entities from Aqua lifecycle events plus custom fill and route events.
-A reusable query tool exposes at least:
+Every maker position is indexed as an independent single-maker programmable
+micro-pool, including both live logical curve states and runtime version. This
+native Subgraph is the solver's primary market-state input; it avoids one RPC
+read per maker. A reusable query tool exposes at least:
 
 - `discover_positions(market, side, amount)`
 - `compare_executable_liquidity(market, amount)`

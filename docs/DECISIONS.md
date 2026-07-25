@@ -55,13 +55,16 @@ presented as architecture.
 
 - Date: 25 July 2026
 - Status: accepted
-- Decision: The Graph discovers all eligible live positions and an untrusted
-  solver computes a candidate split offchain. Contracts revalidate selected
-  nonces, balances, quotes, state transitions, deadline, and aggregate slippage
-  before atomic settlement.
+- Decision: The Liquid OB Subgraph materializes every maker position as an
+  independent programmable micro-pool and supplies the complete indexed market
+  snapshot to an untrusted solver. The solver optimizes locally, then refreshes
+  only its selected fills and a bounded reserve shortlist through batched RPC
+  reads. Contracts revalidate selected versions, balances, quotes, state
+  transitions, deadline, and aggregate slippage before atomic settlement.
 - Reason: iterating over an unbounded global order set inside one EVM
-  transaction is not gas-bounded. Offchain optimization provides global search
-  without weakening settlement correctness.
+  transaction is not gas-bounded, while one RPC read per maker is too slow at
+  scale. Indexed global search plus bounded onchain refresh provides realistic
+  routing without weakening settlement correctness.
 
 ## ADR-006: Separate displayed price from native exchange rate
 

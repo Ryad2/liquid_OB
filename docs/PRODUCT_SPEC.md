@@ -301,13 +301,22 @@ final allocation.
 Solver flow:
 
 1. Query The Graph for every indexed active Liquid OB position in the requested
-   market and direction.
-2. Refresh candidate runtime versions, logical reserves, Aqua allocations,
-   wallet balances, and allowances directly from chain state.
-3. Reproduce exact Solidity quotes, including rounding, in the TypeScript SDK.
-4. Optimize the split and discard economically irrelevant candidates.
+   market and direction at indexed block `B`. Each position is an independent
+   single-maker programmable micro-pool for routing purposes.
+2. Reproduce exact Solidity quotes, including rounding, and optimize globally
+   over that indexed snapshot in the TypeScript SDK.
+3. Keep the selected fills plus a bounded reserve shortlist and refresh only
+   those runtime versions, logical reserves, Aqua allocations, wallet balances,
+   and allowances through batched RPC reads.
+4. Recompute the final split and discard stale or unavailable candidates.
 5. Simulate the complete batch with `eth_call`.
 6. Submit only selected fills with aggregate slippage and deadline constraints.
+
+The Graph is therefore load-bearing for Liquid OB's own order set. It replaces
+an unbounded sequence of per-position RPC reads with one indexed dataset; the
+RPC refresh is bounded by `maxFills` plus a small reserve set. External
+standardized Subgraphs are additional comparison inputs for the MCP artifact,
+not substitutes for the native Liquid OB Subgraph.
 
 The solver is untrusted. It can propose a poor route but cannot bypass reserve,
 price, version, token, deadline, or slippage checks. "All pools" means all
