@@ -57,6 +57,22 @@ importers:
         specifier: ^4.1.10
         version: 4.1.10(@types/node@24.13.3)(jsdom@29.1.1(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3))
 
+  packages/curve-math:
+    dependencies:
+      viem:
+        specifier: ^2.55.8
+        version: 2.55.8(typescript@6.0.3)
+    devDependencies:
+      oxlint:
+        specifier: ^1.71.0
+        version: 1.75.0
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.3
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@24.13.3)(jsdom@29.1.1(@noble/hashes@1.8.0))(vite@8.1.5(@types/node@24.13.3))
+
   packages/frontend-api:
     devDependencies:
       oxlint:
