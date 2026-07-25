@@ -1,0 +1,27 @@
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+out = "out"
+cache_path = "cache"
+libs = ["lib"]
+solc_version = "0.8.36"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+via_ir = false
+ffi = false
+fs_permissions = []
+
+[profile.default.fuzz]
+runs = 256
+
+[profile.default.invariant]
+runs = 128
+depth = 64
+fail_on_revert = true
+
+[profile.ci]
+verbosity = 3
+fuzz = { runs = 1024 }
+invariant = { runs = 256, depth = 128, fail_on_revert = true }

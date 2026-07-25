@@ -1,0 +1,140 @@
+main {
+  box-sizing: border-box;
+  width: min(1120px, calc(100% - 40px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 64px 0 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8vh 0;
+  animation: reveal 500ms ease-out both;
+}
+
+.eyebrow,
+.index,
+footer {
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: 0 0 24px;
+  color: #bd3c20;
+}
+
+h1 {
+  margin: 0;
+  max-width: 900px;
+  font-family: 'Bodoni 72', Didot, Georgia, serif;
+  font-size: clamp(4.5rem, 14vw, 10rem);
+  font-weight: 400;
+  line-height: 0.78;
+  letter-spacing: -0.075em;
+}
+
+h1 span {
+  color: #bd3c20;
+  font-style: italic;
+}
+
+.lede {
+  max-width: 580px;
+  margin: 42px 0 0 auto;
+  font-size: clamp(1.15rem, 2.2vw, 1.75rem);
+  line-height: 1.35;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid #1e211d;
+  border-bottom: 1px solid #1e211d;
+}
+
+.status-grid article {
+  min-height: 150px;
+  padding: 24px;
+}
+
+.status-grid article + article {
+  border-left: 1px solid #1e211d;
+}
+
+.index {
+  color: #bd3c20;
+}
+
+h2 {
+  margin: 28px 0 8px;
+  font-family: 'Bodoni 72', Didot, Georgia, serif;
+  font-size: 1.65rem;
+  font-weight: 400;
+}
+
+.status-grid p {
+  margin: 0;
+  max-width: 280px;
+  color: #565b52;
+  line-height: 1.5;
+}
+
+footer {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 24px;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 720px) {
+  main {
+    width: min(100% - 28px, 1120px);
+    padding-top: 28px;
+  }
+
+  .hero {
+    min-height: 54vh;
+  }
+
+  .lede {
+    margin: 30px 0 0;
+  }
+
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .status-grid article {
+    min-height: auto;
+  }
+
+  .status-grid article + article {
+    border-top: 1px solid #1e211d;
+    border-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero {
+    animation: none;
+  }
+}

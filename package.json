@@ -1,0 +1,22 @@
+{
+  "name": "liquid-ob",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A functional order book for bounded, executable maker curves.",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @liquid-ob/web dev",
+    "build": "pnpm -r --if-present build",
+    "check": "pnpm -r --if-present check",
+    "lint": "pnpm -r --if-present lint",
+    "test": "pnpm -r --if-present test",
+    "contracts:build": "forge build --root contracts",
+    "contracts:fmt": "forge fmt --root contracts --check",
+    "contracts:lint": "forge lint --root contracts",
+    "contracts:test": "forge test --root contracts"
+  }
+}

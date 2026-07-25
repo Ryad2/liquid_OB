@@ -1,0 +1,20 @@
+:root {
+  color: #1e211d;
+  background: #f1efe6;
+  font-family: 'Avenir Next', 'Trebuchet MS', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(30, 33, 29, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 33, 29, 0.055) 1px, transparent 1px),
+    #f1efe6;
+  background-size: 44px 44px;
+}
