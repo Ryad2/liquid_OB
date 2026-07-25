@@ -504,6 +504,13 @@ page. Every maker position is an independent programmable micro-pool.
 
 ## 17. Phase 14: Build The Product UI Against Real Services
 
+Early parallel work status: the framework-neutral frontend contract,
+deterministic mock adapter, and web integration harness are implemented before
+this phase to unblock product design. This does not satisfy Phase 14: the final
+UI must still switch to deployed contracts, the live Subgraph, exact SDK math,
+and a simulated solver route. Mock transaction plans are intentionally
+unsendable.
+
 Do not create separate mock-only protocol behavior. Component tests may mock
 transport, but the primary development flow uses the deployed contracts,
 Subgraph, and solver API.

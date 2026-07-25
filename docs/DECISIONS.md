@@ -199,3 +199,21 @@ presented as architecture.
   does not preselect the EVM transcendental implementation or claim that
   Decimal's unbounded domain is executable onchain.
 - Specification: [`REFERENCE_MODEL.md`](REFERENCE_MODEL.md).
+
+## ADR-015: Isolate parallel frontend work behind one product gateway
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: let UI development begin before contract completion, but require
+  every component to consume `LiquidOBFrontendClient`. Provide a deterministic
+  mock with final product-level shapes and unsendable transaction plans. Later
+  compose exact math, Subgraph, solver, RPC and generated clients behind one
+  live implementation selected only in the web composition root.
+- Reason: waiting for every backend phase would lose critical design time;
+  importing mock fixtures or provisional ABIs into screens would instead
+  create an expensive and unsafe rewrite. One stable boundary preserves
+  parallelism without misrepresenting mock execution as protocol truth.
+- Safety: live mode fails closed, mock mode is visibly labelled, raw integer
+  amounts remain authoritative, and `sendable: false` prevents mock calldata
+  from entering wallet flows.
+- Guide: [`FRONTEND_HANDOFF.md`](FRONTEND_HANDOFF.md).

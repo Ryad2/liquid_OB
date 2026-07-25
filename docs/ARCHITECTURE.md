@@ -465,6 +465,21 @@ Implements deterministic candidate filtering and route optimization:
 The package is pure and independently testable. It does not fetch data or send
 transactions.
 
+### 7.5 `packages/frontend-api`
+
+Defines the framework-neutral product boundary consumed by every UI component:
+tokens and raw amounts, displayed prices, markets, two-sided positions, route
+quotes, fills, freshness metadata, stable errors, and ordered transaction
+plans. Its deterministic mock permits parallel UI work, but marks every mock
+plan `sendable: false`.
+
+The eventual live implementation composes deployment manifests, exact
+`curve-math`, the position SDK, the Liquid OB Subgraph, solver simulation,
+Lens/RPC reconciliation, and generated contract clients. Only the web
+composition root selects mock or live mode; components never import those
+transports directly. The complete boundary is documented in
+[`FRONTEND_HANDOFF.md`](FRONTEND_HANDOFF.md).
+
 ## 8. Services
 
 ### 8.1 `services/solver-api`
@@ -851,6 +866,7 @@ contracts/
   test/                     unit, fuzz, invariant, integration, and fork tests
 
 packages/
+  frontend-api/             stable UI gateway and deterministic mock
   curve-math/               exact TypeScript math mirror
   position-sdk/             strategy and Aqua lifecycle SDK
   contracts/                generated ABIs and deployment clients

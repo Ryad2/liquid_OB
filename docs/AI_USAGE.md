@@ -200,5 +200,21 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: `tools/reference/`, `test/vectors/`, `docs/REFERENCE_MODEL.md`,
   ADR-014, and `prompts/0013-independent-mathematical-oracle.md`.
 
+## 25 July 2026: parallel frontend handoff boundary
+
+- Tool: OpenAI Codex
+- Work: audited implemented and missing protocol layers; defined a
+  framework-neutral frontend client, explicit amount and freshness models,
+  deterministic mock markets/positions/routes, maker preview, unsendable
+  transaction plans, package tests, and a web integration harness.
+- Decision: frontend components consume one product gateway and never import
+  fixtures, provisional ABIs or transport clients. The future live adapter
+  replaces only the composition root and may not silently fall back to mock.
+- Human review required: final screen design, wallet stack, live adapter,
+  deployment manifest, exact SDK math, service URLs and every enabled write.
+- Output: `packages/frontend-api/`, `docs/IMPLEMENTATION_STATUS.md`,
+  `docs/FRONTEND_HANDOFF.md`, ADR-015, and
+  `prompts/0014-parallel-frontend-handoff.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

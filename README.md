@@ -9,8 +9,9 @@ This repository was initialized from an empty GitHub repository on 25 July
 2026 during ETHGlobal Lisbon. The reproducible Aqua/SwapVM integration boundary,
 real-transfer smoke tests, and canonical Phase 2 ABI/wire format are complete;
 the independent high-precision mathematical oracle and committed Phase 3
-vectors are also complete. The Solidity curve kernel and production protocol
-are not implemented yet.
+vectors are also complete. A typed frontend gateway and deterministic mock now
+allow product UI work in parallel. The Solidity curve kernel and production
+protocol are not implemented yet.
 
 Protocol work will be introduced through small, reviewable commits. External
 tools and dependencies are recorded as they are introduced.
@@ -50,6 +51,12 @@ The independent `Decimal` oracle, deterministic vector schema, regeneration
 procedure, and trust boundary are documented in
 [`docs/REFERENCE_MODEL.md`](docs/REFERENCE_MODEL.md).
 
+The exact implemented/missing capability inventory is documented in
+[`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md). Frontend
+developers should use [`docs/FRONTEND_HANDOFF.md`](docs/FRONTEND_HANDOFF.md)
+and [`packages/frontend-api/`](packages/frontend-api/README.md) as their entry
+point.
+
 The working Uniswap developer feedback document is available in
 [`FEEDBACK.md`](FEEDBACK.md) and will be finalized before submission.
 
@@ -58,6 +65,7 @@ The working Uniswap developer feedback document is available in
 - `contracts/`: Foundry workspace for EVM contracts and tests.
 - `apps/web/`: React and TypeScript demo application.
 - `packages/`: Shared TypeScript packages such as the future SDK.
+- `packages/frontend-api/`: stable UI contract, amount helpers, and mock client.
 - `services/`: Offchain services such as the future solver or API proxy.
 - `tools/reference/`: development-only high-precision mathematical oracle.
 - `test/vectors/`: committed language-neutral protocol vectors.

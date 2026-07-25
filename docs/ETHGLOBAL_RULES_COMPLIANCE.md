@@ -144,7 +144,7 @@ Audit date: 25 July 2026.
 | Auditable repository | Public GitHub repository, documented architecture, CI, provenance, and coherent local history | PARTIAL | Push every submission commit and link exact source lines, tests, deployment manifests, and transaction evidence |
 | Open source | Third-party notices are preserved, but independent Liquid OB code has no root license | BLOCKED | Select and commit an explicit compatible open-source license before publishing protocol implementation |
 | Deployed | No Liquid OB public deployment or deployment manifest exists | BLOCKED | Deploy the frozen protocol to the selected public network and publish verified addresses and start blocks |
-| Live product | The web app is only a local bootstrap page; no public application URL is recorded in the repository or GitHub metadata | BLOCKED | Publish the production build over HTTPS and verify it from a clean browser |
+| Live product | The web app is a local typed-mock integration harness; no public application URL or live adapter exists | BLOCKED | Connect real deployments and services, publish over HTTPS, and verify from a clean browser |
 | Live data | No Liquid OB Subgraph or equivalent public index endpoint is implemented or recorded | BLOCKED | Deploy the Subgraph and expose health/indexed-block evidence |
 | Live solver | No solver package, browser solver, or hosted API exists | BLOCKED | Ship either a deterministic browser solver or a public service with health and quote endpoints |
 | Demo video | No submitted video URL exists | BLOCKED | Record, upload, and test the final video link without team credentials |
