@@ -46,5 +46,18 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Human review required: final feedback content, identifying submission note,
   form completion, and private retention of the original confirmation.
 
+## 25 July 2026: end-to-end product specification
+
+- Tool: OpenAI Codex
+- Work: specified one `alpha`-parameterized curve family, its zero-order and
+  flat-order limits, two-sided maker positions, automatic inventory recycling,
+  deterministic rescaling, multi-position solving, settlement, data, UI,
+  tests, and sponsor relationships.
+- Human decisions: all numerically safe `alpha` values are permitted; received
+  assets immediately fund the opposite curve; equal endpoint prices produce a
+  standard flat price-and-volume position.
+- Human review required: exact fixed-point domains, empty-side rearming,
+  maker-favorable rounding, solver optimality, and Aqua/SwapVM accounting.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

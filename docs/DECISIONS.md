@@ -27,9 +27,36 @@ presented as architecture.
 
 - Date: 25 July 2026
 - Status: accepted
-- Decision: every maker order uses the compact curve state
-  `(y, yInt, aHat, bHat, alpha)` and its five exact closed-form `alpha`
-  branches. Piecewise-linear approximations are not part of the protocol.
+- Decision: every directional side uses one compact, signed-`alpha`
+  parameterized curve family. Every representable and numerically safe
+  `alpha` is accepted. Continuous analytical limits and the equal-endpoint
+  flat order are exact internal paths, not distinct maker-facing curve modes.
+  Piecewise-linear approximations are not part of the protocol.
 - Reason: the bounding-curve family is the project's core financial primitive.
   Liquid OB's product advantage comes from publishing and aggregating these
   expressive execution policies rather than reducing orders to price points.
+
+## ADR-004: Use two-sided self-recycling maker positions
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: one maker position contains an independently configured sell curve
+  and buy curve. Every active-side input is credited to the opposite side. A
+  nonempty opposite curve is rescaled proportionally in reserve and domain so
+  its normalized progress and current marginal price do not move; an empty side
+  rearms at its committed starting price.
+- Reason: received inventory becomes immediately executable without forcing bid
+  and ask curves to meet, while preserving explicit maker control over spread
+  and shape.
+
+## ADR-005: Keep global search offchain and validation onchain
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: The Graph discovers all eligible live positions and an untrusted
+  solver computes a candidate split offchain. Contracts revalidate selected
+  nonces, balances, quotes, state transitions, deadline, and aggregate slippage
+  before atomic settlement.
+- Reason: iterating over an unbounded global order set inside one EVM
+  transaction is not gas-bounded. Offchain optimization provides global search
+  without weakening settlement correctness.

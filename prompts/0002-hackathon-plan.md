@@ -13,9 +13,10 @@ demo over shallow sponsor integrations.
 ## Constraints
 
 - Treat Liquid OB as a new functional order book, not as a pool AMM.
-- Makers publish the exact Liquid OB bounded curves, including all five
-  canonical `alpha` branches. Do not substitute piecewise-linear approximations
-  or arbitrary user code.
+- Makers publish one exact Liquid OB bounded-curve family parameterized by
+  signed `alpha`, including exact analytical limits and the flat-order case.
+  Do not substitute named curve modes, piecewise-linear approximations, or
+  arbitrary user code.
 - Make 1inch Aqua and SwapVM the primary settlement target.
 - Do not force a Uniswap API integration. Project-specific written eligibility
   was confirmed by the sponsor team; complete `FEEDBACK.md` and the required

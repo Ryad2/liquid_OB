@@ -4,21 +4,23 @@
 
 Build the smallest complete proof that a functional order book is useful:
 
-> Liquid OB is an order book where each maker order is an exact bounded
-> execution curve. A solver routes one taker order across competing curves,
-> and the resulting fills settle from self-custodied 1inch Aqua balances.
+> Liquid OB is an order book where each maker position is a two-sided,
+> self-recycling execution policy. A solver routes one taker order across
+> competing positions, and the resulting fills settle from self-custodied
+> 1inch Aqua balances.
 
 The project wins by making this claim visible in one transaction, not by
-shipping the largest protocol. The live demo must show three curves with
-different bounds and shape parameters, a better split than any single curve,
-actual token transfers, and indexed post-trade state.
+shipping the largest protocol. The live demo must show three two-sided maker
+positions with different bounds and `alpha`, a better split than any single
+position, automatic inventory recycling, actual token transfers, and indexed
+post-trade state.
 
 ## 2. Definition of success
 
 The core is demo-ready only when all of the following are true:
 
-1. A maker can define, validate, fund, publish, replace, and cancel a curve
-   order from `pLow`, `pHigh`, `pMgnl`, reserve, and `alpha`.
+1. A maker can define, validate, fund, publish, replace, and cancel a two-sided
+   position containing one sell curve and one buy curve.
 2. A taker can request exact-input and exact-output quotes from a single curve.
 3. A solver can compare live curves and split one order across at least three
    maker positions.
@@ -28,6 +30,9 @@ The core is demo-ready only when all of the following are true:
    balance changes, transaction hash, and indexed fill history.
 6. Unit, fuzz, invariant, and end-to-end tests are green from a fresh clone.
 7. A four-minute demo can be completed twice without manual repair.
+8. Every execution transfers the received asset into the opposite curve and
+   rescales that curve without changing its current marginal price.
+9. `startPrice == endPrice` executes as an exact flat price-and-volume order.
 
 This remains hackathon software. Audit, formal verification, economic stress
 testing, and production operations are explicitly outside the submission claim.
@@ -36,13 +41,18 @@ testing, and production operations are explicitly outside the submission claim.
 
 ### In scope
 
-- Independent one-direction maker orders. A two-sided maker publishes one bid
-  curve and one ask curve; the protocol does not force them to meet or share a
-  shape parameter.
-- The exact Liquid OB curve family with all five canonical `alpha` branches:
-  `alpha > 1`, `alpha = 1`, `0 < alpha < 1`, `alpha = 0`, and `alpha < 0`.
-- The compact runtime state `(y, yInt, aHat, bHat, alpha)` and closed-form
-  exact-input and exact-output quote functions.
+- Two-sided maker positions. Each position contains an independently
+  parameterized sell curve and buy curve with a maker-defined spread.
+- One continuous curve family parameterized by signed `alpha`; there are no
+  maker-facing curve modes or whitelisted shape values.
+- The exact `alpha = 0` continuous limit and every other removable singular
+  path required by closed-form quote evaluation.
+- An exact flat-order branch when `startPrice == endPrice`, reducing the
+  position side to one price and one available volume.
+- Compact immutable shape state `(aHat, bHat, alphaInternal, orientation)` plus
+  non-custodial runtime state `(y, yInt)` and closed-form quotes.
+- Automatic cross-curve inventory recycling and deterministic homothetic
+  rescaling after every fill.
 - Exact price bounds and marginal-price reconstruction with maker-favorable
   rounding at token-transfer boundaries.
 - Aqua-backed maker inventory and a custom SwapVM instruction/router if the
@@ -54,10 +64,7 @@ testing, and production operations are explicitly outside the submission claim.
 
 ### Explicitly out of scope
 
-- LP shares, fungible pools, pair factories, and forced bonding-curve symmetry.
-- Active/spectator pair coupling in the first order-book demo. It is a
-  composition layer between two curves, not a replacement for the single-curve
-  kernel, and can be added without changing order math.
+- LP shares, fungible shared pools, pair factories, and forced bid/ask symmetry.
 - Piecewise-linear approximations of the core curve.
 - Arbitrary maker-provided bytecode or unrestricted mathematical expressions.
 - Oracles as a settlement dependency. Makers quote prices; arbitrage and the
@@ -68,66 +75,36 @@ testing, and production operations are explicitly outside the submission claim.
 
 ## 4. Order semantics and math
 
-Each order uses a canonical reserve/input frame. The maker supplies reserve
-token `y` and receives input token `x`. The curve stores only:
+The complete state transitions and module boundaries are specified in
+`docs/PRODUCT_SPEC.md`. Each directional curve is configured from:
 
 ```text
-(y, yInt, aHat, bHat, alpha)
+(startPrice, endPrice, alpha, reserve)
 ```
 
-`x`, `pLow`, `pHigh`, and `pMgnl` are derived views, not persistent state. Let:
+For normalized execution progress `t` in `[0, 1]`, the single curve family is:
 
 ```text
-r = y / yInt
-s = bHat / aHat
+P_alpha(t) = ((1-t) * startPrice^alpha
+              + t * endPrice^alpha)^(1/alpha)             if alpha != 0
+
+P_0(t)     = startPrice^(1-t) * endPrice^t                 if alpha = 0
+
+P_flat(t)  = startPrice                                   if startPrice = endPrice
 ```
 
-The exact marginal-price function is:
+Every non-flat `alpha` is accepted if its signed fixed-point representation and
+the resulting powers remain inside explicit numerical safety domains. There is
+no semantic allowlist. `alpha = 0` is evaluated by its continuous geometric
+limit, never by division by zero. The flat branch bypasses shape math and uses
+constant-price multiplication or division with directional rounding.
 
-```text
-           s * exp(aHat * r)                              if alpha = 0
-p(y) =     bHat * (1 / aHat + r - 1)                     if alpha = 1
-           s * (1 - aHat * r)^(1 / alpha)                if alpha < 0
-           s * (1 - aHat * (1 - r))^(1 / alpha)          if alpha > 0, alpha != 1
-```
-
-The maker-facing configuration is `(y, pLow, pHigh, pMgnl, alpha)`, normalized
-to WAD units. The codec derives:
-
-```text
-aHat = ln(pHigh / pLow)                                  if alpha = 0
-aHat = 1 - (pLow / pHigh)^abs(alpha)                     otherwise
-
-bHat = aHat * pHigh                                      if alpha > 0
-bHat = aHat * pLow                                       if alpha <= 0
-```
-
-For an interior initial state, `yInt` is recovered from the chosen marginal
-price:
-
-```text
-yInt = y * ln(pHigh / pLow) / ln(pMgnl / pLow)           if alpha = 0
-
-yInt = y * (pHigh^alpha - pLow^alpha)
-           / (pMgnl^alpha - pLow^alpha)                  otherwise
-```
-
-The implementation dispatches the five `alpha` branches exactly because
-`alpha = 0` and `alpha = 1` are singular closed forms, not neighborhoods to be
-approximated. It uses fixed-point `pow`, `exp`, and `ln` primitives with explicit
-domain checks and no segment approximation or iterative swap-time root solver.
-
-`pMgnl` selects the initial point on one curve. It is not a global market price
-and does not force a maker's bid and ask curves to meet. Reverse-facing prices,
-bounds, coordinates, and `alpha` are normalized with a canonical reciprocal
-transform before curves are compared.
-
-The immutable Aqua program commits `yInt`, `aHat`, `bHat`, `alpha`, token
-orientation, and maker. The live Aqua reserve balance supplies `y`; execution
-requires `0 <= y <= yInt`. A fill moves `y` through the exact quote function.
-Maker reconfiguration uses cancel-and-republish, while taker deadlines and
-aggregate slippage protect against state changes between discovery and
-execution.
+When one side executes, its reserve decreases and its progress advances toward
+`endPrice`. The entire input asset is credited to the opposite side. If the
+opposite reserve was nonzero, both its reserve and domain scale are multiplied
+by the same factor, preserving normalized progress, `alpha`, bounds, and current
+marginal price. If it was empty, it deterministically rearms at its committed
+`startPrice`. No asset waits unallocated in a generic position balance.
 
 ## 5. Architecture
 
@@ -135,33 +112,38 @@ execution.
 
 - `CurveCodec`: compiles and validates the external and compact curve state,
   then reconstructs bounds and marginal prices.
-- `CurveMath`: implements the five closed-form exact-input and exact-output
-  branches over `(y, yInt, aHat, bHat, alpha)`.
+- `CurveMath`: implements one continuous `alpha` family, its exact analytical
+  limits, and the degenerate flat-order path over compact curve state.
 - `FixedPoint` and `FixedPointTranscendentals`: provide full-precision WAD
   arithmetic, powers, logarithms, and exponentials with checked domains.
 - `LiquidCurveInstruction`: custom SwapVM instruction that decodes the compact
   curve state, reads the relevant Aqua balance, computes a fill, and applies
   the required maker/taker balance deltas.
+- `PositionMath`: applies the active-curve transition, credits the full input to
+  the opposite curve, rescales it, and validates the two post-trade states.
+- `PositionStateStore`: records mutable domain scales, nonces, and activity;
+  token inventory remains in Aqua rather than this contract.
 - `LiquidCurveRouter`: validates tokens, amounts, deadline, and minimum output
   or maximum input before invoking SwapVM in Aqua mode.
-- `BatchExecutor`: executes multiple selected maker orders atomically and
+- `BatchExecutor`: executes multiple selected position fills atomically and
   enforces aggregate conservation and slippage.
-- `CurveDirectory`: emits typed publication, replacement, cancellation, and
-  fill metadata for discovery. It is not the source of settlement truth.
+- `PositionDirectory`: emits typed publication, replacement, cancellation, and
+  fill metadata for two-sided positions. It is not settlement truth.
 
 Official Aqua balances remain the source of maker inventory. Liquid OB must not
-introduce a parallel custody vault. Curve programs are immutable; updates use a
+introduce a parallel custody vault. Static curve programs are immutable;
+runtime scales evolve atomically with fills, while parameter updates use a
 cancel-and-republish lifecycle.
 
 ### SDK and solver
 
-- Compile `(reserve, pLow, pHigh, pMgnl, alpha)`, direction, and token decimals
-  into a canonical compact curve program and strategy hash.
+- Compile both `(startPrice, endPrice, alpha, reserve)` sides, token direction,
+  and decimals into a canonical position program and strategy hash.
 - Reproduce contract quotes exactly in TypeScript, including rounding.
-- Discover candidate orders, validate their current onchain state, and optimize
-  allocations using each curve's exact branch-specific quote function.
+- Discover candidate positions, validate their current onchain state, and
+  optimize allocations using each curve's exact quote function.
 - Re-quote the final route onchain immediately before building calldata.
-- Return a transparent route: maker, input, output, `alpha` branch, `pBefore`,
+- Return a transparent route: maker, input, output, `alpha`, `pBefore`,
   `pAfter`, and effective price for every fill.
 
 For exact output `Y`, the solver minimizes the sum of the exact curve input
@@ -174,17 +156,18 @@ subject to  sum(deltaY_i) = Y
 ```
 
 The solver must not assume that a naive greedy algorithm is globally optimal
-for every `alpha` branch. It uses branch-aware optimization offchain and submits
-only a candidate allocation; contracts independently verify every quote,
-balance, domain transition, deadline, and aggregate slippage condition.
+across the continuous `alpha` domain. It performs curve-aware optimization
+offchain and submits only a candidate allocation; contracts independently
+verify every quote, balance, domain transition, deadline, and aggregate
+slippage condition.
 
 ### Data layer
 
-The Liquid OB Subgraph indexes `Market`, `CurveOrder`, `CurveState`, `Fill`, and
+The Liquid OB Subgraph indexes `Market`, `Position`, `CurveState`, `Fill`, and
 `Maker` entities from directory and settlement events. A reusable query tool
 exposes at least:
 
-- `discover_curves(market, side, amount)`
+- `discover_positions(market, side, amount)`
 - `compare_executable_liquidity(market, amount)`
 - `build_candidate_route(market, amount, side)`
 
@@ -194,15 +177,16 @@ all balances and final quotes are revalidated onchain.
 
 ### Interface
 
-The maker screen draws the marginal-rate curve and cumulative cost, validates
-all parameters, previews inventory requirements, and publishes or replaces the
-position. The taker screen shows all candidate curves, the solver split, blended
-price, worst marginal price, pre/post curve states, and one execution action.
+The maker screen draws both sides, their spread, marginal-rate paths, and
+cumulative execution. It validates parameters, previews both inventories, and
+publishes or replaces the position. The taker screen shows all candidate
+positions, solver split, blended price, worst marginal price, pre/post states,
+recycled inventory, and one execution action.
 
-The interface must prioritize the visual proof: three exact bounded curves with
-visibly different `alpha`, price bounds, and available reserves competing for
-the same trade. Raw encoded parameters belong behind an advanced disclosure,
-not in the primary demo path.
+The interface must prioritize the visual proof: three exact bounded positions
+with visibly different `alpha`, price ranges, and reserves competing for the
+same trade. One position must be flat to prove the classic order-book limit.
+Raw encoded parameters belong behind an advanced disclosure.
 
 ## 6. Correctness gates
 
@@ -210,29 +194,34 @@ No milestone is complete until its tests pass. Required properties are:
 
 1. Exact quote and execution return the same amounts and post-trade state.
 2. Exact-input and exact-output are near-inverses within documented rounding.
-3. Recovered `pLow`, `pHigh`, and `pMgnl` match configuration across all five
-   exact `alpha` branches within documented fixed-point tolerances.
+3. Recovered start, end, and current marginal prices match configuration for
+   representative positive, negative, zero, extreme-safe, and flat cases.
 4. Splitting a fill along one curve is path-consistent with one combined fill.
 5. Every rounding decision is maker-favorable.
 6. Every transition preserves `0 <= yAfter <= yInt`, valid bounds, and the
-   branch-specific price monotonicity required by the native orientation.
+   price monotonicity required by the native orientation.
 7. Zero amounts, malformed encodings, invalid `alpha`, transcendental overflow
    domains, stale deadlines, and invalid token directions revert.
 8. Batch execution conserves both tokens and is all-or-nothing.
 9. Reentrancy and callback behavior cannot bypass accounting or slippage.
 10. Official Aqua integration tests show real token transfers, not mocked
     success values.
+11. Every active-side input is credited exactly once to the opposite curve; no
+    received asset is orphaned or double-counted.
+12. Rescaling preserves the opposite curve's marginal price within tolerance,
+    including empty-side rearming and flat-order recycling.
 
 Use Forge unit and fuzz tests, SwapVM `CoreInvariants`, and differential vectors
-against an independent high-precision reference model for every `alpha` branch.
+against an independent high-precision reference model across the supported
+`alpha` domain and all exact analytical limits.
 
 ## 7. Sponsor strategy
 
 ### Primary: 1inch Aqua and SwapVM
 
-This is the architectural center, not an adapter. Liquid OB turns each exact
-bounded curve into a sophisticated Aqua position, keeps maker assets
-self-custodied, and uses SwapVM for programmable settlement. The demo must
+This is the architectural center, not an adapter. Liquid OB turns each
+two-sided execution policy into a sophisticated Aqua app position, keeps maker
+assets self-custodied, and uses SwapVM for programmable settlement. The demo must
 include official contracts, real token transfers, tests or UI, and a credible
 commit history. A custom SwapVM instruction is the preferred implementation
 because the prize states that SwapVM projects score higher.
@@ -294,9 +283,9 @@ pages. Preserve the final three to four hours as an untouched submission buffer.
 | Window | Deliverable | Exit test |
 | --- | --- | --- |
 | T0 to T+1h | Freeze wire format, threat model, dependency commits, and licenses | Written spec and no unresolved license blocker |
-| T+1h to T+4h | Curve codec and five closed-form math branches | Unit, boundary, differential, fuzz, and rounding tests green |
+| T+1h to T+4h | General `alpha` math, exact limits, and flat-order path | Unit, boundary, differential, fuzz, and rounding tests green |
 | T+4h to T+8h | SwapVM instruction and router | Official invariant harness plus one quoted fill green |
-| T+8h to T+11h | Aqua lifecycle and settlement | Publish, fund, fill, cancel, and real transfer E2E green |
+| T+8h to T+11h | Aqua lifecycle and settlement | Two-sided publish, recycle, fill, cancel, and real transfer E2E green |
 | T+11h to T+14h | Atomic multi-order executor | Three-maker route settles or fully reverts |
 | T+14h to T+17h | TypeScript compiler and solver | Differential vectors match Solidity exactly |
 | T+17h to T+20h | Maker and taker UI | Primary demo path works without console intervention |
@@ -328,29 +317,30 @@ Each commit must build and test independently. The intended sequence is:
 
 1. `docs: freeze hackathon execution plan`
 2. `build: add official Aqua and SwapVM dependencies`
-3. `feat: define bounded curve types and codec`
+3. `feat: define bounded curve and two-sided position types`
 4. `feat: implement closed-form curve quote math`
 5. `test: cover curve branches, invariants, and rounding`
-6. `feat: add Liquid Curve SwapVM instruction and router`
-7. `test: integrate Aqua settlement and token transfers`
-8. `feat: add atomic multi-order execution`
-9. `feat: add TypeScript curve compiler and solver`
-10. `feat: build maker curve workflow`
-11. `feat: build taker routing and execution workflow`
-12. `feat: index live curve liquidity with The Graph`
-13. `chore: deploy and seed demo environment`
-14. `docs: complete Uniswap feedback and submission evidence`
-15. `docs: finalize submission and demo`
+6. `feat: implement automatic opposite-curve rescaling`
+7. `feat: add Liquid Curve SwapVM instruction and router`
+8. `test: integrate Aqua recycling and token transfers`
+9. `feat: add atomic multi-position execution`
+10. `feat: add TypeScript position compiler and solver`
+11. `feat: build maker position workflow`
+12. `feat: build taker routing and execution workflow`
+13. `feat: index live position liquidity with The Graph`
+14. `chore: deploy and seed demo environment`
+15. `docs: complete Uniswap feedback and submission evidence`
+16. `docs: finalize submission and demo`
 
 ## 11. Four-minute demo
 
 | Time | What the audience sees |
 | --- | --- |
 | 0:00 to 0:20 | One sentence: traditional orders are constants; Liquid OB orders are bounded executable functions. |
-| 0:20 to 0:50 | Three bounded orders with different `alpha` and price ranges for the same market. |
-| 0:50 to 1:30 | Three makers publish funded positions through Aqua and SwapVM. |
+| 0:20 to 0:50 | Three two-sided positions, including one flat order, with different `alpha` and ranges. |
+| 0:50 to 1:30 | Three makers publish both sides through Aqua and SwapVM. |
 | 1:30 to 2:30 | A taker enters size; the solver visibly splits the route and executes one transaction. |
-| 2:30 to 3:10 | Wallet/Aqua balances change and The Graph surfaces the indexed fills and new liquidity state. |
+| 2:30 to 3:10 | The received assets appear in the opposite curves; The Graph surfaces the indexed new state. |
 | 3:10 to 3:40 | Show the sponsor-specific architecture and one focused test or transaction trace. |
 | 3:40 to 4:00 | Close on the shift from one price point to an entire bounded execution policy. |
 

@@ -15,6 +15,9 @@ tools and dependencies are recorded as they are introduced.
 The current execution plan is documented in
 [`docs/HACKATHON_PLAN.md`](docs/HACKATHON_PLAN.md).
 
+The complete product and protocol specification is documented in
+[`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md).
+
 The working Uniswap developer feedback document is available in
 [`FEEDBACK.md`](FEEDBACK.md) and will be finalized before submission.
 
