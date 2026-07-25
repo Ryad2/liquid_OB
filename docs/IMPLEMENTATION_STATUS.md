@@ -7,8 +7,9 @@ completion claims come only from this file and passing tests.
 ## Executive Status
 
 Liquid OB has a reproducible settlement dependency proof, frozen structural
-protocol language, independent high-precision mathematical oracle, and a typed
-frontend boundary with deterministic mock data. It does **not** yet have the
+protocol language, independent high-precision mathematical oracle, checked
+full-precision Solidity arithmetic, and a typed frontend boundary with
+deterministic mock data. It does **not** yet have transcendental math, the
 Solidity curve kernel, custom curve execution, two-sided runtime, batch router,
 live solver, Subgraph, public deployment, or final product UI.
 
@@ -25,6 +26,7 @@ for real funds, production claims, or a live protocol demo.
 | Position payload | Versioned 269-byte `PositionCodec`, structural validation, deterministic hashing tests | Immutable two-sided policy has one canonical structural encoding |
 | Mathematical specification | Native direction, actual integrated bonding curve, exact input/output, dual means, singular branches, flat orders and recycling policy | Economic equations and orientation are frozen independently of Solidity |
 | Independent oracle | 120-digit Decimal model, 14 curve vectors, 3 recycling vectors, 19 invalid-domain vectors, WAD intervals | Future Solidity and TypeScript math have language-neutral expected results |
+| Full-precision arithmetic | 512-bit unsigned `mulDiv`, signed floor/ceiling, WAD helpers, checked casts, token normalization and reserve scaling with 17 deterministic/fuzz tests | Phase 4A integer operations preserve declared rounding and representation boundaries |
 | Frontend contract | `@liquid-ob/frontend-api` types, amount helpers, client interface and stable errors | UI can be built without importing unfinished ABIs or backend transports |
 | Frontend mock | Three makers, market/position/activity reads, maker preview, exact-in/out routes and transaction plans | Every major screen can be developed with deterministic data |
 | Web integration harness | One composition root consuming only `LiquidOBFrontendClient` | Mock-to-live replacement is isolated from components |
@@ -33,20 +35,19 @@ for real funds, production claims, or a live protocol demo.
 
 | Dependency order | Missing deliverable | Blocks |
 | ---: | --- | --- |
-| 1 | `FullPrecisionMath.sol`: signed/unsigned WAD arithmetic and directional rounding | Every curve calculation |
-| 2 | `TranscendentalMath.sol`: bounded `ln`, `exp`, real powers and stable near-singular transformations | General alpha execution |
-| 3 | `CurveCompiler.sol`, `CurveMath.sol`, `PositionMath.sol` | Exact preview, swaps and recycling |
-| 4 | Exact TypeScript `curve-math` and canonical strategy encoder | Live maker preview and publish calldata |
-| 5 | Custom SwapVM curve instruction, router runtime and single-position settlement | Real position execution |
-| 6 | Product Quoter, Lens and two-sided lifecycle integration | Live frontend reads and backing status |
-| 7 | Atomic exact-input and exact-output batch executor | Multi-maker settlement |
-| 8 | Security/fuzz/invariant/fork hardening and ABI freeze | Public deployment |
-| 9 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
-| 10 | Generated contract clients and position SDK | Wallet transaction plans |
-| 11 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
-| 12 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
-| 13 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
-| 14 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
+| 1 | `TranscendentalMath.sol`: bounded `ln`, `exp`, real powers and stable near-singular transformations | General alpha execution |
+| 2 | `CurveCompiler.sol`, `CurveMath.sol`, `PositionMath.sol` | Exact preview, swaps and recycling |
+| 3 | Exact TypeScript `curve-math` and canonical strategy encoder | Live maker preview and publish calldata |
+| 4 | Custom SwapVM curve instruction, router runtime and single-position settlement | Real position execution |
+| 5 | Product Quoter, Lens and two-sided lifecycle integration | Live frontend reads and backing status |
+| 6 | Atomic exact-input and exact-output batch executor | Multi-maker settlement |
+| 7 | Security/fuzz/invariant/fork hardening and ABI freeze | Public deployment |
+| 8 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
+| 9 | Generated contract clients and position SDK | Wallet transaction plans |
+| 10 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
+| 11 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
+| 12 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
+| 13 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
 
 ## Current User-Visible Capabilities
 

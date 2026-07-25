@@ -217,6 +217,11 @@ Create expected results that do not call Solidity implementation code.
 
 ## 7. Phase 4: Implement The Pure Solidity Kernel
 
+Implementation status: Phase 4A completed on 25 July 2026. Checked 512-bit
+multiply/divide, signed mathematical floor/ceiling, WAD operations, raw-token
+normalization, uint128 reserve boundaries, and proportional scaling are covered
+by deterministic and fuzz tests. Phases 4B through 4E remain pending.
+
 ### Exact File Order
 
 1. `FullPrecisionMath.sol`
@@ -609,30 +614,31 @@ Each commit below must pass the complete available suite:
 2. `test: prove official aqua and swapvm settlement smoke path`
 3. `feat: define protocol units types errors and events`
 4. `test: add independent high precision curve vectors`
-5. `feat: implement checked fixed point and transcendental math`
-6. `feat: implement curve compilation and exact quotes`
-7. `feat: implement two sided position transitions`
-8. `test: enforce curve differential fuzz and invariants`
-9. `feat: mirror curve math and strategy encoding in typescript`
-10. `feat: encode canonical swapvm position strategies`
-11. `feat: execute one curve through swapvm and aqua`
-12. `feat: add exact output quotes and single position quoter`
-13. `feat: integrate two sided recycling and lifecycle lens`
-14. `test: harden aqua lifecycle and runtime rollback`
-15. `feat: execute atomic exact input routes`
-16. `feat: execute atomic exact output routes`
-17. `test: harden batch security invariants and gas bounds`
-18. `chore: deploy and seed the public protocol environment`
-19. `feat: generate contract clients and position sdk`
-20. `feat: implement deterministic solver core`
-21. `feat: index native liquid ob micro pools with the graph`
-22. `feat: connect subgraph rpc refresh and route simulation`
-23. `feat: build live maker position workflow`
-24. `feat: build live taker routing and execution workflow`
-25. `feat: add position manager and market explorer`
-26. `feat: expose reusable graph liquidity tools`
-27. `test: verify complete deployed protocol lifecycle`
-28. `docs: finalize sponsor evidence feedback and demo`
+5. `feat: implement checked full precision arithmetic`
+6. `feat: implement bounded transcendental math`
+7. `feat: implement curve compilation and exact quotes`
+8. `feat: implement two sided position transitions`
+9. `test: enforce curve differential fuzz and invariants`
+10. `feat: mirror curve math and strategy encoding in typescript`
+11. `feat: encode canonical swapvm position strategies`
+12. `feat: execute one curve through swapvm and aqua`
+13. `feat: add exact output quotes and single position quoter`
+14. `feat: integrate two sided recycling and lifecycle lens`
+15. `test: harden aqua lifecycle and runtime rollback`
+16. `feat: execute atomic exact input routes`
+17. `feat: execute atomic exact output routes`
+18. `test: harden batch security invariants and gas bounds`
+19. `chore: deploy and seed the public protocol environment`
+20. `feat: generate contract clients and position sdk`
+21. `feat: implement deterministic solver core`
+22. `feat: index native liquid ob micro pools with the graph`
+23. `feat: connect subgraph rpc refresh and route simulation`
+24. `feat: build live maker position workflow`
+25. `feat: build live taker routing and execution workflow`
+26. `feat: add position manager and market explorer`
+27. `feat: expose reusable graph liquidity tools`
+28. `test: verify complete deployed protocol lifecycle`
+29. `docs: finalize sponsor evidence feedback and demo`
 
 ## 22. What Must Not Happen
 
@@ -651,15 +657,15 @@ Each commit below must pass the complete available suite:
 
 ## 23. Immediate Next Action
 
-The next implementation prompt should begin **Phase 4A only**:
+The next implementation prompt should begin **Phase 4B only**:
 
-1. implement checked unsigned and signed fixed-point primitives in
-   `FullPrecisionMath.sol`;
-2. encode explicit floor and ceiling operations for every division and scale
-   conversion;
-3. enforce the frozen 128-bit WAD and raw-token boundaries;
-4. test overflow, underflow, sign conversion, and directional rounding against
-   committed vectors.
+1. audit candidate fixed-point `ln`, `exp`, `expm1`, and `log1p` algorithms and
+   their exact licenses before importing or adapting code;
+2. publish explicit input, output, and intermediate overflow domains;
+3. implement bounded signed WAD transcendental primitives with exact zero and
+   identity cases;
+4. test deterministic values, monotonicity, inverse bounds, singular neighbors,
+   and rejected domains against the independent oracle.
 
-Do not implement logarithms, exponentials, powers, or curve formulas until the
-arithmetic layer passes independently.
+Do not implement `CurveCompiler`, curve coordinate formulas, or swap maps until
+the transcendental layer passes independently.

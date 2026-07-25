@@ -141,6 +141,28 @@ These results detect algebraic and orientation mistakes but do not establish
 safe EVM fixed-point bounds. Solidity still requires differential, fuzz,
 rounding, overflow-domain, and conservation tests.
 
+## Phase 4A Integer Arithmetic Evidence
+
+`FullPrecisionMath.sol` wraps the pinned OpenZeppelin v5.4.0 512-bit product and
+division primitives behind Liquid OB's own checked contract. Its tests cover:
+
+- full-width products that overflow an intermediate uint256 but have a valid
+  quotient;
+- floor and ceiling for positive and negative rational results;
+- the exact `int256.min` magnitude and both signed overflow directions;
+- zero denominators, uint256 ceiling overflow, uint128 reserve overflow, and
+  reserve underflow;
+- exact normalization for every supported ERC-20 decimal count and directional
+  WAD-to-raw conversion;
+- proportional reserve scaling and the committed
+  `909762010458269005..006` reference interval; and
+- 256-run fuzz properties for unsigned division, signed correction, and raw/WAD
+  round trips.
+
+This closes the integer arithmetic layer only. It does not establish safe EVM
+domains or error bounds for logarithm, exponential, real power, curve
+compilation, or coordinate inversion.
+
 ## Final Boundary
 
 The verified mathematical claim is one bounded curve with exact marginal,

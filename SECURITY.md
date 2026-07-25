@@ -16,3 +16,8 @@ field and must never submit mock addresses or calldata. Future live mode must
 fail closed when its deployment manifest, network, services, quote freshness,
 or final simulation cannot be validated. It must never silently fall back to
 mock data.
+
+The Phase 4A arithmetic library has deterministic boundary tests and fuzz tests,
+but this does not validate the future transcendental or curve domains. No
+configuration, quote, or settlement path may accept value-bearing assets until
+those layers and their differential invariants are complete.

@@ -227,6 +227,12 @@ execution:
 The future arithmetic modules must name `Rounding.Up` or `Rounding.Down` at
 every division and conversion. Nearest rounding is not a settlement rule.
 
+`Rounding.Down` is mathematical floor and `Rounding.Up` is mathematical
+ceiling, including for signed intermediate values. Arithmetic failures use
+canonical custom errors: zero denominator, mathematical overflow, reserve
+underflow, negative-to-unsigned conversion, amount-domain overflow, and
+unsupported token decimals never fall back to truncation or wrapped values.
+
 ## 10. Indexed Event Contract
 
 Lifecycle publication and cancellation remain authoritative in Aqua:

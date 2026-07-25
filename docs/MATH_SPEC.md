@@ -35,6 +35,39 @@ remain raw `uint256` token units. Mathematical formulas below describe real
 values, while implementation applies the directional rounding contract from
 that wire specification.
 
+### 1.1 Integer Arithmetic Contract
+
+`FullPrecisionMath` evaluates an unsigned rational product as:
+
+```text
+Down(x*y/d) = floor(x*y/d)
+Up(x*y/d)   = ceil(x*y/d)
+```
+
+using the complete 512-bit product. A zero denominator, a result outside
+`uint256`, or a ceiling above `uint256.max` reverts. Signed operations use the
+same mathematical meanings, not Solidity's truncation-toward-zero convention:
+
+```text
+Down(-10/6) = -2
+Up(-10/6)   = -1
+```
+
+All WAD multiplication, division, and reciprocal helpers require an explicit
+rounding argument. Signed magnitude conversion supports `int256.min` exactly
+and rejects a result outside the asymmetric signed range.
+
+Raw ERC-20 normalization is restricted to `0 <= decimals <= 18`:
+
+```text
+amountWad = rawAmount * 10^(18-decimals)
+```
+
+This direction is exact and must fit the canonical `uint128 AmountWad` domain.
+The reverse conversion divides by the same factor and applies the caller's
+explicit floor or ceiling. Reserve addition, subtraction, and proportional
+rescaling also reject uint128 overflow or underflow rather than truncating.
+
 ## 2. User-Facing Marginal Schedule
 
 One side is configured as:

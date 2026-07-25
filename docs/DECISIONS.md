@@ -217,3 +217,20 @@ presented as architecture.
   amounts remain authoritative, and `sendable: false` prevents mock calldata
   from entering wallet flows.
 - Guide: [`FRONTEND_HANDOFF.md`](FRONTEND_HANDOFF.md).
+
+## ADR-016: Define signed rounding as mathematical floor and ceiling
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: `Rounding.Down` always means floor and `Rounding.Up` always means
+  ceiling, including for negative results. Build every WAD operation on a
+  checked 512-bit rational product, retain raw token amounts as uint256, and
+  reject any normalized reserve outside uint128. Use the already pinned
+  OpenZeppelin v5.4.0 `Math` and `SafeCast` primitives behind Liquid OB errors
+  rather than copying or weakening their arithmetic.
+- Reason: Solidity signed division truncates toward zero, which is neither a
+  general floor nor a general ceiling. One mathematical convention prevents
+  hidden one-unit direction changes in later logarithm, power, quote, and
+  settlement code while reusing a reviewed full-product implementation.
+- Evidence: `FullPrecisionMath.t.sol` deterministic boundaries, committed
+  reference interval, and three independent fuzz properties.

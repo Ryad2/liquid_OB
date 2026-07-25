@@ -216,5 +216,22 @@ design decision, mathematical assumption, test, and submitted line of code.
   `docs/FRONTEND_HANDOFF.md`, ADR-015, and
   `prompts/0014-parallel-frontend-handoff.md`.
 
+## 25 July 2026: full-precision Solidity arithmetic
+
+- Tool: OpenAI Codex
+- Work: implemented Phase 4A checked 512-bit rational arithmetic, mathematical
+  signed floor/ceiling, WAD multiplication/division/reciprocal, safe signed
+  conversion, uint128 amount boundaries, token-decimal normalization, reserve
+  addition/subtraction/scaling, deterministic boundary tests, and fuzz tests.
+- Imported implementation: no copied source. The wrapper calls the already
+  pinned OpenZeppelin v5.4.0 `Math` and `SafeCast` libraries recorded in
+  `PROVENANCE.md`.
+- Decision: keep transcendental and curve formulas out of this commit; make
+  Phase 4B the next independent gate.
+- Human review required: signed rounding semantics, every overflow boundary,
+  gas profile, and the future transcendental numerical domain.
+- Output: `FullPrecisionMath.sol`, its unit tests, ADR-016, and
+  `prompts/0015-full-precision-math.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

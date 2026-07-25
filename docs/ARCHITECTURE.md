@@ -188,8 +188,14 @@ Every output amount rounds against the caller and every required input rounds
 up, unless the math specification explicitly names another maker-favorable
 rule.
 
-Protocol dependency: none. Any imported math library requires an exact version,
-license review, and differential tests before adoption.
+Implementation status: Phase 4A complete. The wrapper uses only the pinned
+OpenZeppelin v5.4.0 `Math.mul512`, `Math.mulDiv`, and `SafeCast` primitives. It
+owns Liquid OB's zero-denominator, overflow, underflow, signed floor/ceiling,
+uint128 amount, token-decimal, and reserve-scaling contract. Deterministic,
+boundary, committed-vector, and fuzz tests cover the wrapper independently.
+
+Protocol dependency: none. Code dependency: pinned MIT-licensed OpenZeppelin
+math utilities already recorded in `PROVENANCE.md`.
 
 ### 5.3 `TranscendentalMath.sol`
 

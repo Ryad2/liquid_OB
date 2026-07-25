@@ -19,3 +19,8 @@ The fixed-rate router is a disposable dependency probe, not Liquid OB pricing
 logic and not a production deployment target. The Phase 2 codec validates
 structural canonicality only; curve commitment correctness begins with the
 independent reference oracle and mathematical kernel.
+
+Phase 4A adds checked full-precision signed and unsigned arithmetic, explicit
+mathematical floor/ceiling, WAD and raw-token conversions, and uint128 reserve
+scaling in `FullPrecisionMath.sol`. Transcendental and curve evaluation remain
+unimplemented.

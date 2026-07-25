@@ -10,8 +10,9 @@ This repository was initialized from an empty GitHub repository on 25 July
 real-transfer smoke tests, and canonical Phase 2 ABI/wire format are complete;
 the independent high-precision mathematical oracle and committed Phase 3
 vectors are also complete. A typed frontend gateway and deterministic mock now
-allow product UI work in parallel. The Solidity curve kernel and production
-protocol are not implemented yet.
+allow product UI work in parallel. Phase 4A full-precision signed and unsigned
+arithmetic is implemented; transcendental math, the Solidity curve kernel, and
+the production protocol are not implemented yet.
 
 Protocol work will be introduced through small, reviewable commits. External
 tools and dependencies are recorded as they are introduced.
