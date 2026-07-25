@@ -122,7 +122,7 @@ export function rawToWad(raw: RawAmount, tokenDecimals: number): bigint {
   if (!Number.isInteger(tokenDecimals) || tokenDecimals < 0 || tokenDecimals > 18) {
     throw new FrontendGatewayError(
       'INVALID_ARGUMENT',
-      'Liquid OB MVP supports token decimals up to 18.',
+      'ArcBook MVP supports token decimals up to 18.',
     )
   }
   return BigInt(raw) * (10n ** BigInt(18 - tokenDecimals))
@@ -133,7 +133,7 @@ export function wadToRawDown(wad: bigint, tokenDecimals: number): RawAmount {
     || tokenDecimals < 0 || tokenDecimals > 18) {
     throw new FrontendGatewayError(
       'INVALID_ARGUMENT',
-      'Liquid OB MVP supports token decimals up to 18.',
+      'ArcBook MVP supports token decimals up to 18.',
     )
   }
   return (wad / (10n ** BigInt(18 - tokenDecimals))).toString() as RawAmount
@@ -144,7 +144,7 @@ export function wadToRawUp(wad: bigint, tokenDecimals: number): RawAmount {
     || tokenDecimals < 0 || tokenDecimals > 18) {
     throw new FrontendGatewayError(
       'INVALID_ARGUMENT',
-      'Liquid OB MVP supports token decimals up to 18.',
+      'ArcBook MVP supports token decimals up to 18.',
     )
   }
   const scale = 10n ** BigInt(18 - tokenDecimals)
