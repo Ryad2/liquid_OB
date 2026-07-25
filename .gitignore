@@ -14,6 +14,8 @@ coverage/
 *.tsbuildinfo
 subgraph/build/
 subgraph/generated/
+subgraph/tests/.bin/
+subgraph/tests/.latest.json
 
 # Python development tools
 __pycache__/
