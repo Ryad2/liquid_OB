@@ -24,16 +24,15 @@ design decision, mathematical assumption, test, and submitted line of code.
   semantics, mathematical assumptions, and every release decision.
 - Output: `docs/HACKATHON_PLAN.md` and `prompts/0002-hackathon-plan.md`.
 
-## 25 July 2026: curve-family correction
+## 25 July 2026: exact curve architecture
 
 - Tool: OpenAI Codex
-- Work: removed an incorrect piecewise-linear proposal from the execution plan
-  and restored the exact Richardson bounding-curve state, equations, branch
-  model, solver requirements, tests, and demo language.
-- Human decision: the project owner explicitly required the Richardson curve
-  family and rejected any segmented approximation.
+- Work: documented the exact bounded-curve state, equations, branch model,
+  solver requirements, tests, and product-facing demo language.
+- Human decision: the project uses one analytical curve family rather than a
+  segmented approximation or arbitrary maker-provided code.
 - Human review required: single-curve orientation, fixed-point domains,
-  Aqua/SwapVM state mapping, and whether Section 7.1 pair coupling belongs in a
+  Aqua/SwapVM state mapping, and whether active/spectator coupling belongs in a
   later milestone.
 
 Material future specifications and implementation plans are stored in
