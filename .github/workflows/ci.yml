@@ -17,9 +17,6 @@ jobs:
   contracts:
     name: Foundry
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: contracts
     env:
       FOUNDRY_PROFILE: ci
     steps:
@@ -32,20 +29,22 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.5.1
           cache: true
 
       - name: Check formatting
-        run: forge fmt --check
+        run: forge fmt --root contracts --check
 
       - name: Run linter
-        run: forge lint
+        run: forge lint --root contracts
 
       - name: Build contracts
-        run: forge build --sizes
+        run: forge build --root contracts --sizes
 
       - name: Run contract tests
-        run: forge test -vvv
+        # Force recompilation so a preceding build cannot leave test discovery
+        # dependent on Foundry's artifact cache.
+        run: forge test --root contracts --force -vvv
 
   web:
     name: TypeScript

@@ -7,3 +7,7 @@
 *.webp binary
 *.woff binary
 *.woff2 binary
+
+# Preserve third-party legal texts byte-for-byte, including upstream spacing.
+LICENSES/*.txt -whitespace
+LICENSES/*_THIRD_PARTY_NOTICES -whitespace

@@ -75,6 +75,11 @@ logic yet.
 
 ## 4. Phase 1: Pin And Prove Aqua/SwapVM First
 
+Implementation status: completed on 25 July 2026. The exact dependency matrix,
+license boundary, local settlement proof, and official Base fork evidence are
+recorded in [`DEPENDENCY_AUDIT.md`](DEPENDENCY_AUDIT.md). This status covers the
+integration boundary only; no Liquid OB curve math is part of Phase 1.
+
 ### Why This Is First
 
 The current Foundry scaffold pins Solidity `0.8.36`, while upstream contracts

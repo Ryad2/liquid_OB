@@ -6,8 +6,9 @@ executable pricing curves instead of only flat price-and-size orders.
 ## Status
 
 This repository was initialized from an empty GitHub repository on 25 July
-2026 during ETHGlobal Lisbon. It currently contains project scaffolding only.
-No protocol implementation has been written yet.
+2026 during ETHGlobal Lisbon. The reproducible Aqua/SwapVM integration boundary
+and real-transfer smoke tests are complete; the Liquid OB curve kernel and
+production protocol are not implemented yet.
 
 Protocol work will be introduced through small, reviewable commits. External
 tools and dependencies are recorded as they are introduced.
@@ -51,11 +52,13 @@ The working Uniswap developer feedback document is available in
 
 - Node.js 24.18.0
 - pnpm 10.32.1
-- Foundry stable
+- Foundry 1.5.1
+- Solidity 0.8.30 (installed automatically by Foundry)
 
 With `asdf` installed, run:
 
 ```bash
+git submodule update --init --recursive
 asdf install
 pnpm install --frozen-lockfile
 ```
@@ -73,13 +76,24 @@ pnpm contracts:build
 pnpm contracts:test
 ```
 
+The optional official Base fork proof requires `BASE_MAINNET_RPC_URL`; without
+it, that suite is reported as skipped. See
+[`docs/DEPENDENCY_AUDIT.md`](docs/DEPENDENCY_AUDIT.md) for the exact command and
+verified deployment matrix.
+
 ## Security
 
 This is hackathon software and is not production-ready or audited. Do not use
 it with assets of value. See `SECURITY.md` before reporting a vulnerability.
 
-## License
+## License And Attribution
 
-No license has been selected yet. A license will be chosen explicitly before
-the first protocol implementation is published. Third-party dependencies keep
-their respective licenses.
+No root license has been selected for independent Liquid OB code. Files with a
+specific SPDX identifier are governed by that license; full Aqua and SwapVM
+terms and notices are preserved in [`LICENSES/`](LICENSES/README.md).
+
+Powered by Aqua — © Degensoft Ltd 2025
+
+Powered by SwapVM — © Degensoft Ltd 2025
+
+These are factual integration attributions and do not imply endorsement.

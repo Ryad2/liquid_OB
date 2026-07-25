@@ -17,6 +17,6 @@
     "contracts:build": "forge build --root contracts",
     "contracts:fmt": "forge fmt --root contracts --check",
     "contracts:lint": "forge lint --root contracts",
-    "contracts:test": "forge test --root contracts"
+    "contracts:test": "forge test --root contracts --force"
   }
 }
