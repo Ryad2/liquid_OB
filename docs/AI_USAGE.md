@@ -122,5 +122,21 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: architecture, product, and hackathon specifications plus
   `prompts/0008-native-subgraph-solver-path.md`.
 
+## 25 July 2026: Uniswap v4 hook architecture evaluation
+
+- Tool: OpenAI Codex
+- Work: compared the accepted Aqua/SwapVM backend with a genuine Uniswap v4
+  custom-accounting hook across maker accounting, custody, solvency, callbacks,
+  flash-accounting gas potential, routing, security, sponsor eligibility, and
+  implementation risk.
+- Decision: keep Aqua/SwapVM as the only hackathon settlement backend; retain a
+  v4-native hook as a separately benchmarked post-MVP alternative rather than
+  nesting both settlement systems.
+- Imported implementation during this step: none.
+- Human review required: sponsor interpretation, future PoolManager backing
+  design, comparative gas benchmarks, and specialized hook security review.
+- Output: `docs/UNISWAP_V4_HOOK_EVALUATION.md`, ADR-011, and
+  `prompts/0009-uniswap-v4-hook-evaluation.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

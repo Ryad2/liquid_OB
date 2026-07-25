@@ -827,6 +827,11 @@ Subgraph all consume the same validated schema.
 World, Sui, Hedera, 0G, ENS, and other sponsor protocols are not architecture
 bricks for this MVP. Adding them would weaken rather than complete the product.
 
+A Uniswap v4 custom-accounting hook is a viable alternative settlement design,
+but not an additional MVP brick and not a wrapper around Aqua. Its custody,
+solvency, gas, security, and bounty tradeoffs are evaluated separately in
+[`UNISWAP_V4_HOOK_EVALUATION.md`](UNISWAP_V4_HOOK_EVALUATION.md).
+
 ## 16. Workspace Target
 
 ```text

@@ -131,3 +131,21 @@ presented as architecture.
 - Reason: Aqua already emits the full immutable strategy and lifecycle. A
   second publication registry would duplicate state without improving
   settlement correctness.
+
+## ADR-011: Keep a Uniswap v4 hook out of the MVP settlement core
+
+- Date: 25 July 2026
+- Status: accepted for the hackathon MVP
+- Decision: use Aqua/SwapVM as the only MVP settlement backend. Do not wrap it
+  inside a Uniswap v4 hook and do not replace it during the critical build. A
+  v4 custom-accounting hook remains a post-MVP alternative backend that may
+  share curve semantics, solver abstractions, and test vectors, but not custody
+  state or callback logic.
+- Reason: a hook can implement the curve through return deltas and may reduce
+  aggregate token transfers, but it also requires a new maker-deposit and
+  solvency ledger, custom delta accounting, and additional callback security.
+  It weakens the direct Aqua bounty fit, the v4 stack prize is Continuity-only,
+  and hook deployment alone does not guarantee Uniswap routing.
+- Reconsider when: the complete Aqua MVP is working and an independent v4
+  backend can be benchmarked for gas, solvency, security, and integration cost.
+- Analysis: [`UNISWAP_V4_HOOK_EVALUATION.md`](UNISWAP_V4_HOOK_EVALUATION.md).
