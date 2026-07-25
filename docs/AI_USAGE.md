@@ -73,5 +73,20 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Human review required: fixed-point domain constants, production rounding
   policy, and the product-specific empty-side rearming rule.
 
+## 25 July 2026: bonding-curve and effective-price re-audit
+
+- Tool: OpenAI Codex
+- Work: independently re-derived the reserve curve by integrating the
+  reciprocal marginal schedule; verified secant-rate, dual-mean, reciprocal
+  direction, reduced encoding, derivative, and inverse identities at
+  90-to-100-digit precision across signed alpha values and both singular
+  branches.
+- Corrections: renamed the maker function as a marginal schedule, documented
+  the actual integrated bonding curve, distinguished buy quote progress from
+  sell base progress, and required partial-fill effective prices to use actual
+  pre-fill and post-fill marginal rates.
+- Human review required: maker-facing parameter vocabulary, fixed-point
+  tolerances near singular branches, and all fee-inclusive UI quote semantics.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

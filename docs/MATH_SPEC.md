@@ -19,11 +19,16 @@ adds `x` and removes `y`, so `deltaX > 0`, `deltaY < 0`, and:
 P_effective = -deltaY / deltaX
 ```
 
+`P` and `P_effective` are different quantities. `P` is the slope at one
+state. `P_effective` is the positive secant slope between two states. Neither
+is the reserve curve itself.
+
 This output-per-input convention is mandatory throughout Solidity, the SDK,
 the solver, tests, and event data. Conversion to quote-per-base happens only at
-the market boundary.
+the market boundary. Kernel effective rates exclude protocol fees, solver fees,
+and gas; any all-in user quote must report those separately.
 
-## 2. User-Facing Curve
+## 2. User-Facing Marginal Schedule
 
 One side is configured as:
 
@@ -32,11 +37,15 @@ Side(side, startPrice, endPrice, alpha, reserve)
 ```
 
 `startPrice` and `endPrice` are displayed quote-per-base marginal prices.
-`reserve` is the side's outgoing token. Let `t` be consumed inventory fraction:
+`reserve` is the side's outgoing token. Let `t` be the fraction of the current
+outgoing-inventory scale that has been consumed:
 
 ```text
 t = 1 - y / yInt
 ```
+
+Consequently, `t` measures quote spent on a buy side and base sold on a sell
+side. It is not cumulative base volume on both sides.
 
 The displayed marginal path is the weighted Holder path:
 
@@ -47,8 +56,11 @@ p_alpha(t) = ((1-t) * startPrice^alpha
 p_0(t)     = startPrice^(1-t) * endPrice^t           if alpha = 0
 ```
 
-This is one continuous family. Internal formula dispatch does not create
-maker-facing curve modes.
+This function is a marginal-price schedule. It is not the bonding curve and it
+must not be used directly as a token-reserve invariant. The bonding curve is
+obtained only after direction conversion and integration as defined below.
+The schedule is one continuous family; internal formula dispatch does not
+create maker-facing curve modes.
 
 A buy side starts with a high bid and moves lower:
 
@@ -64,7 +76,7 @@ A sell side starts with a low ask and moves higher:
 
 Equal endpoint prices select the exact flat-order extension described below.
 
-## 3. Compilation to the Native Curve
+## 3. Compilation to the Native Marginal Schedule
 
 The buy side releases quote and receives base. Its displayed price is already
 native output per input:
@@ -101,7 +113,65 @@ P_native(t) = ((1-t) * PHigh^alphaNative
 
 with the geometric limit at `alphaNative = 0`.
 
-## 4. Dual Parameter and Finite-Traversal Law
+## 4. Actual Bonding Curve
+
+Write:
+
+```text
+a    = alphaNative
+H    = PHigh
+L    = PLow
+A(t) = (1-t) * H^a + t * L^a
+```
+
+The native marginal schedule is `P(t) = A(t)^(1/a)`, with its geometric
+limit at `a = 0`. The actual curve in token coordinates is the parametric
+graph:
+
+```text
+y(t) = yInt * (1-t)
+x(t) = yInt * integral from 0 to t of (1 / P(s)) ds
+```
+
+Therefore:
+
+```text
+dx/dt = yInt / P(t)
+dy/dt = -yInt
+dy/dx = -P(t)
+```
+
+For `a` outside `{0, 1}`, the integrated coordinate is:
+
+```text
+x(t) = yInt * a/(a-1)
+       * (A(t)^((a-1)/a) - H^(a-1))
+       / (L^a - H^a)
+```
+
+The exact singular branches are:
+
+```text
+x_1(t) = yInt/(H-L) * ln(H / P_1(t))
+
+x_0(t) = yInt/(H * ln(H/L)) * ((H/L)^t - 1)
+```
+
+The reserve-form bonding curve is `x = x_E(y)`; the forward graph is its exact
+inverse `y = y_E(x)`. The closed forms in the native-coordinate section are a
+compact reparameterization of this integral, not a different curve family.
+
+Equivalently, set `b = a - 1` and `xInt = x(1)`. In the conjugate orientation:
+
+```text
+P_b(x) = ((x/xInt) * L^b + (1-x/xInt) * H^b)^(1/b)
+y(x)   = integral from x to xInt of P_b(u) du
+```
+
+with the geometric limit at `b = 0`. This forward integral and the reciprocal
+reserve integral above describe the same graph only because `a - b = 1`.
+
+## 5. Dual Parameter and Finite-Traversal Law
 
 The native reserve-oriented parameter is `alphaNative`. Its conjugate
 coordinate parameter is not independent:
@@ -110,16 +180,35 @@ coordinate parameter is not independent:
 betaNative = alphaNative - 1
 ```
 
-The `y`-oriented marginal path uses `alphaNative`; the derived `x` coordinate
+The `y`-oriented marginal schedule uses `alphaNative`; the derived `x` coordinate
 uses `betaNative`. This relation is required for the two coordinate functions
 to be mutual inverses.
 
-For endpoint native marginal rates `PStart` and `PEnd`, every finite traversal
-satisfies:
+For a traversal from progress `t0` to `t1`, with `t1 > t0`, define the native
+marginal rates immediately before and after that fill:
 
 ```text
-P_effective = D_up_alphaNative(PStart, PEnd)
-            = D_down_betaNative(PStart, PEnd)
+PBefore = P_native(t0)
+PAfter  = P_native(t1)
+```
+
+The curve-only native effective rate is:
+
+```text
+P_effective
+  = yInt * (t1-t0) / (x(t1)-x(t0))
+  = (1/(x1-x0)) * integral from x0 to x1 of P_b(x) dx
+  = 1 / ((1/(t1-t0)) * integral from t0 to t1 of (1/P(t)) dt)
+```
+
+where `x0 = x(t0)` and `x1 = x(t1)`. It is simultaneously the arithmetic
+average of the native marginal rate over incoming-coordinate progress and the
+harmonic average over outgoing-reserve progress. Because both marginal
+schedules are dual Holder paths, the integrals have the exact endpoint form:
+
+```text
+P_effective = D_up_alphaNative(PBefore, PAfter)
+            = D_down_betaNative(PBefore, PAfter)
 ```
 
 For `alphaNative` outside `{0, 1}`:
@@ -139,12 +228,18 @@ D_up_1(a, b) = (a - b) / (ln(a) - ln(b))
 D_up_0(a, b) = a * b * ln(a / b) / (a - b)
 ```
 
-In displayed quote-per-base units, the two sides expose the dual laws:
+In displayed quote-per-base units, let `pBefore` and `pAfter` be the marginal
+prices around the specific fill. The two sides expose the dual laws:
 
 ```text
-buy effective price  = D_up_alpha(startPrice, endPrice)
-sell effective price = D_down_alpha(startPrice, endPrice)
+buy effective price  = D_up_alpha(pBefore, pAfter)
+sell effective price = D_down_alpha(pBefore, pAfter)
 ```
+
+Configured `startPrice` and `endPrice` may replace `pBefore` and `pAfter` only
+for a traversal of the entire freshly armed side. A partial fill, or a fill
+after prior execution, must use its actual pre-fill and post-fill marginal
+prices.
 
 For displayed sell `alpha` outside `{-1, 0}`:
 
@@ -156,7 +251,15 @@ D_down_alpha(a, b)
 ```
 
 Its `alpha = 0` limit is logarithmic and its `alpha = -1` limit is harmonic
-logarithmic. Useful checkpoints, not separate modes, are:
+logarithmic:
+
+```text
+D_down_0(a, b)  = (a - b) / (ln(a) - ln(b))
+D_down_-1(a, b) = a * b * ln(a / b) / (a - b)
+```
+
+All power-difference expressions use the continuous diagonal value
+`D(a, a) = a`. Useful checkpoints, not separate modes, are:
 
 | Effective mean | Buy alpha | Sell alpha |
 | --- | ---: | ---: |
@@ -172,7 +275,14 @@ The full-domain intercept ratio is:
 yInt / xInt = D_up_alphaNative(PLow, PHigh)
 ```
 
-## 5. Reduced Native Encoding
+For example, a buy schedule with displayed `alpha = 0` traversed from `200` to
+`100` has effective price `138.629436...`, not the geometric midpoint
+`141.421356...` and not the arithmetic midpoint `150`. A sell schedule with
+the same displayed `alpha` traversed from `100` to `200` has effective price
+`144.269504...`. The difference follows from which token quantity is linear in
+the progress coordinate.
+
+## 6. Reduced Native Encoding
 
 A non-flat side is encoded as:
 
@@ -254,7 +364,7 @@ alphaNative < 0
 
 The exact `0` and `1` paths are continuous limits, not approximations.
 
-## 6. Native Coordinate Functions
+## 7. Native Coordinate Functions
 
 Let:
 
@@ -301,7 +411,7 @@ y_E(x) = yInt/mu * (1 - ((1-mu)^gamma + kappa*x/yInt)^(1/gamma))
 Implementations must use full-precision signed fixed-point operations and
 branch-specific domain checks before every power, logarithm, and exponential.
 
-## 7. Exact Swap Maps
+## 8. Exact Swap Maps
 
 For exact output `amountOut`:
 
@@ -329,7 +439,7 @@ Required input rounds up. Delivered output rounds down. State mutation must use
 the same rounded amounts transferred at settlement. No swap-time numerical root
 solver is required.
 
-## 8. Flat-Order Extension
+## 9. Flat-Order Extension
 
 The strict bounded family assumes `PLow < PHigh`. Liquid OB adds its continuous
 equal-endpoint limit explicitly:
@@ -352,7 +462,7 @@ exact input:  amountOut = amountIn * PFlat
 `alpha` has no economic effect and is canonicalized in the encoded hash. The
 UI still displays the correct quote-per-base value after direction conversion.
 
-## 9. Homothetic Recycling
+## 10. Homothetic Recycling
 
 When an active side receives tokens, those tokens become the opposite side's
 outgoing reserve. For a nonempty opposite side:
@@ -384,7 +494,7 @@ If the opposite reserve is zero, proportional scaling is undefined. The MVP
 rearms it at its configured start rate with `y = yInt = received`. This rule is
 explicit product policy and must be tested separately.
 
-## 10. Solver Consequence
+## 11. Solver Consequence
 
 For a requested native output `q`, define the exact cost:
 
@@ -408,7 +518,7 @@ Discovery and optimization are offchain. Contracts validate only the bounded
 selected fill list, exact quotes, nonces, reserves, deadlines, and aggregate
 slippage.
 
-## 11. Numerical Safety
+## 12. Numerical Safety
 
 The mathematical family accepts every real `alpha`. The EVM implementation
 accepts every signed fixed-point `alpha` whose configured rates and intermediate
@@ -436,23 +546,26 @@ Configuration must reject:
 - A non-flat encoding whose rounded endpoints collapse to equality.
 - States outside `0 <= y <= yInt`.
 
-## 12. Required Mathematical Tests
+## 13. Required Mathematical Tests
 
 - Differential checks of `P_E`, `x_E`, and `y_E` against high precision.
+- Direct integration of `1/P(t)` against the closed-form bonding curve.
 - Exact inverse checks `y_E(x_E(y)) = y` within directional rounding.
 - Exact-input and exact-output near-inversion.
-- Effective-rate equality with the power-difference mean.
+- Partial-fill effective-rate equality using actual pre-fill and post-fill
+  marginal rates, plus the full-range boundary case.
 - Continuity around native `alpha = 0` and `alpha = 1`.
 - Representative large positive and negative safe `alpha` values.
 - Values immediately around native `alpha = 0` and `alpha = 1` at the chosen
   fixed-point resolution.
 - Flat-limit correctness and alpha-independence.
 - Display/native conversion for buy and sell sides.
+- Buy quote-progress and sell base-progress semantics.
 - Homothetic price preservation and coordinate scaling.
 - Split-versus-combined path consistency.
 - Domain, overflow, zero-amount, and reserve-exhaustion reverts.
 
-## 13. Kernel Boundary
+## 14. Kernel Boundary
 
 The mathematical kernel proves one bounded curve and its inverse coordinate.
 It does not define:

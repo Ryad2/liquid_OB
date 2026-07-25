@@ -33,7 +33,7 @@ presented as architecture.
   `alpha` is accepted. Native `alpha = 0`, native `alpha = 1`, and the
   equal-endpoint flat order are exact internal paths, not maker-facing curve
   modes. Piecewise-linear approximations are not part of the protocol.
-- Reason: the bounding-curve family is the project's core financial primitive.
+- Reason: the bonding-curve family is the project's core financial primitive.
   Liquid OB's product advantage comes from publishing and aggregating these
   expressive execution policies rather than reducing orders to price points.
 
@@ -75,3 +75,16 @@ presented as architecture.
 - Reason: silently mixing input-per-output and output-per-input reverses quote
   equations and breaks directional curve equivalence. One explicit boundary
   conversion lets both sides share the same native swap kernel.
+
+## ADR-007: Separate marginal schedule, bonding curve, and effective price
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: `P_alpha(t)` denotes only a marginal-price schedule. The actual
+  bonding curve is the integrated token-coordinate graph `xE(y)` with inverse
+  `yE(x)`. A finite fill's effective price is its secant rate and is computed
+  from the fill's actual pre-state and post-state marginal prices, not from the
+  configured full-range boundaries unless the entire fresh side is consumed.
+- Reason: treating a derivative schedule as an invariant or substituting full
+  bounds into a partial-fill quote produces economically incorrect execution
+  prices even when the underlying closed forms are correct.

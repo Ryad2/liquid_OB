@@ -15,7 +15,7 @@ The sides can use different prices, volumes, and `alpha` values. Their starting
 prices define the maker's spread. They are economically connected by automatic
 inventory recycling, but no rule forces their marginal prices to meet.
 
-## 2. One Curve Family
+## 2. One Marginal-Shape Family
 
 Every side uses the same user-facing configuration:
 
@@ -28,8 +28,9 @@ consumed. `endPrice` is the terminal marginal price. `reserve` is the currently
 available outgoing asset. Prices are displayed in quote per base. `alpha`
 controls how liquidity density is distributed between the endpoints.
 
-Let `t` be normalized execution progress, from `0` at the starting point to `1`
-at the terminal point. The marginal price is:
+Let `t` be normalized outgoing-inventory consumption, from `0` at the starting
+point to `1` at the terminal point. On a sell side it measures base sold; on a
+buy side it measures quote spent. The marginal price is:
 
 ```text
 P_alpha(t) = ((1-t) * startPrice^alpha
@@ -38,6 +39,12 @@ P_alpha(t) = ((1-t) * startPrice^alpha
 P_0(t)     = startPrice^(1-t) * endPrice^t                 if alpha = 0
 ```
 
+`P_alpha(t)` is the maker-facing marginal-price schedule, not the token-reserve
+bonding curve. The actual bonding curve is obtained by compiling this schedule
+to native output-per-input units and integrating its reciprocal. Quotes use the
+resulting closed-form coordinate functions, never the marginal schedule as if
+it were an invariant.
+
 There are no named curve modes. Positive, zero, and negative `alpha` values are
 members of one family. Solidity represents `alpha` as signed WAD fixed point.
 The protocol applies numerical domain bounds for safe `pow`, `exp`, and `ln`,
@@ -45,8 +52,8 @@ but does not maintain a semantic whitelist of shape values.
 
 `alpha = 0` is evaluated directly as the continuous geometric limit. It is not
 approximated with a small nonzero value. The direction-normalized evaluator also
-has an exact continuous path at native `alpha = 1`. These are arithmetic paths,
-not additional maker-facing curve types.
+has an exact continuous path at native `alpha = 1`. These are analytical
+branches, not additional maker-facing curve types.
 
 Every endpoint price must be strictly positive. A buy side requires
 `startPrice > endPrice`; a sell side requires `startPrice < endPrice`. Equal
@@ -59,11 +66,13 @@ normative in `docs/MATH_SPEC.md`.
 ## 3. Canonical Direction and Displayed Prices
 
 Every market has a canonical base token and quote token. The interface always
-displays price as quote units per base unit. The native curve rate is instead
-outgoing token per incoming token:
+displays price as quote units per base unit. The native kernel instead uses
+outgoing token per incoming token and distinguishes marginal from effective
+rate:
 
 ```text
-P_native = -deltaY / deltaX
+P_native_marginal = -dy / dx
+P_native_effective = -deltaY / deltaX
 ```
 
 - A buy side releases quote and receives base, so its displayed rate is already
@@ -86,6 +95,19 @@ outgoing reserve is consumed.
 The conjugate coordinate uses `betaNative = alphaNative - 1`. This second
 symbol is derived, never maker-selected. The relation is required for the
 reserve and conjugate coordinate functions to be exact mutual inverses.
+
+For one finite fill, let `pBefore` and `pAfter` be its displayed marginal
+prices. Its curve-only displayed effective price is:
+
+```text
+buy:  D_up_alpha(pBefore, pAfter)
+sell: D_down_alpha(pBefore, pAfter)
+```
+
+The configured `startPrice` and `endPrice` are used in this formula only when a
+fresh side is traversed completely. Partial fills always use their actual
+pre-fill and post-fill marginal prices. User-facing all-in execution also
+reports any fees separately from this curve-only effective price.
 
 ## 4. Flat Order Limit
 

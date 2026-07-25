@@ -83,7 +83,8 @@ from displayed quote-per-base values:
 (startPrice, endPrice, alpha, reserve)
 ```
 
-For normalized execution progress `t` in `[0, 1]`, the single curve family is:
+For normalized outgoing-inventory consumption `t` in `[0, 1]`, the single
+maker-facing marginal schedule is:
 
 ```text
 P_alpha(t) = ((1-t) * startPrice^alpha
@@ -93,6 +94,11 @@ P_0(t)     = startPrice^(1-t) * endPrice^t                 if alpha = 0
 
 P_flat(t)  = startPrice                                   if startPrice = endPrice
 ```
+
+On sells, `t` is base sold; on buys, `t` is quote spent. `P_alpha(t)` is not
+the bonding curve. The settlement curve is the integral coordinate
+`x(t) = yInt * integral(1/P(t))`, represented onchain by `xE(y)` and its exact
+inverse `yE(x)`.
 
 Every non-flat `alpha` is accepted if its signed fixed-point representation and
 the resulting powers remain inside explicit numerical safety domains. There is
@@ -105,6 +111,12 @@ flat branch bypasses shape math with directional rounding.
 The conjugate parameter is derived as `betaNative = alphaNative - 1`; it is not
 maker-selected. Swaps evaluate the closed-form coordinate `xE(y)` and inverse
 `yE(x)`, not an approximate segmented curve or swap-time root search.
+
+For a partial fill, effective price is the secant rate between its actual
+pre-fill and post-fill states. In displayed units this is
+`D_up_alpha(pBefore, pAfter)` for buys and
+`D_down_alpha(pBefore, pAfter)` for sells. Configured boundary prices apply
+only to a complete fresh-side traversal.
 
 When one side executes, its reserve decreases and its progress advances toward
 `endPrice`. The entire input asset is credited to the opposite side. If the
@@ -218,7 +230,8 @@ No milestone is complete until its tests pass. Required properties are:
 12. Rescaling preserves the opposite curve's marginal price within tolerance,
     including empty-side rearming and flat-order recycling.
 13. `yE(xE(y))` recovers reserve state within directional rounding, and every
-    finite traversal matches its power-difference effective rate.
+    finite traversal matches the power-difference rate of its actual pre-fill
+    and post-fill marginal prices.
 14. Buy compilation is identity while sell compilation reciprocates prices and
     negates displayed `alpha`; both reconstruct the displayed curve.
 15. Homothetic rescaling preserves native price and scales the derived

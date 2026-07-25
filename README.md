@@ -21,6 +21,9 @@ The complete product and protocol specification is documented in
 The normative fixed-point and exchange-rate model is documented in
 [`docs/MATH_SPEC.md`](docs/MATH_SPEC.md).
 
+The independent derivation and validation record is documented in
+[`docs/MATH_AUDIT.md`](docs/MATH_AUDIT.md).
+
 The working Uniswap developer feedback document is available in
 [`FEEDBACK.md`](FEEDBACK.md) and will be finalized before submission.
 
