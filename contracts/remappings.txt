@@ -3,3 +3,4 @@ forge-std/=lib/forge-std/src/
 @1inch/solidity-utils/=lib/solidity-utils/
 @1inch/aqua/=lib/aqua/
 @1inch/swap-vm/=lib/swap-vm/
+solady/=lib/solady/src/

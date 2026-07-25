@@ -68,6 +68,37 @@ The reverse conversion divides by the same factor and applies the caller's
 explicit floor or ceiling. Reserve addition, subtraction, and proportional
 rescaling also reject uint128 overflow or underflow rather than truncating.
 
+### 1.2 Transcendental Arithmetic Contract
+
+`TranscendentalMath` wraps the pinned Solady v0.1.26 monotone approximation
+backend behind narrower Liquid OB domains:
+
+```text
+lnWad:    1 <= input <= uint128.max
+expWad:   -40e18 <= input <= 47e18
+log1pWad: -1e18 < input <= uint128.max - 1e18
+powWad:   0 < base <= uint128.max
+```
+
+A generic power is accepted only when the complete uncertainty-expanded
+`exponent * ln(base)` interval remains in the exponential domain. Exact
+`x^0 = 1`, `1^a = 1`, and `x^1 = x` identities bypass generic evaluation.
+
+For `abs(x) <= 1e9`, `expm1Wad(x)` and `log1pWad(x)` return `x` directly; the
+discarded Taylor remainder is at most one WAD integer unit. The selected
+backend estimates are accompanied by explicit intervals:
+
+```text
+ln error bound  = 2 WAD integer units
+exp error bound = ceil(exp estimate / 1e18) + 2 WAD integer units
+```
+
+These are approximation envelopes, not directional settlement rounding.
+Later curve code must consume the lower or upper interval endpoint appropriate
+to maker-favorable rounding and then apply `FullPrecisionMath` floor/ceiling.
+The exact dependency and conditioning analysis is recorded in
+`TRANSCENDENTAL_MATH_AUDIT.md`.
+
 ## 2. User-Facing Marginal Schedule
 
 One side is configured as:
@@ -564,6 +595,11 @@ The mathematical family accepts every real `alpha`. The EVM implementation
 accepts every signed fixed-point `alpha` whose configured rates and intermediate
 values stay inside explicitly documented numerical domains. This is a numerical
 restriction, not a semantic whitelist.
+
+The Phase 4B EVM exponential domain is concretely `[-40e18, 47e18]`. A
+configuration with otherwise representable alpha is rejected when any widened
+power argument leaves that interval. This dynamic numerical rejection is not
+an alpha mode or hardcoded semantic allowlist.
 
 Near native `alpha = 0` and `alpha = 1`, naive subtraction of nearly equal
 powers loses fixed-point precision even though the mathematical limit is well

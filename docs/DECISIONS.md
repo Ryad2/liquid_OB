@@ -234,3 +234,23 @@ presented as architecture.
   settlement code while reusing a reviewed full-product implementation.
 - Evidence: `FullPrecisionMath.t.sol` deterministic boundaries, committed
   reference interval, and three independent fuzz properties.
+
+## ADR-017: Bound a pinned transcendental backend behind protocol intervals
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: pin unmodified Solady v0.1.26 for monotone `lnWad` and `expWad`
+  approximations, but do not call its generic `powWad`. Compose powers through
+  Liquid OB's 512-bit signed arithmetic, accept exponential arguments only in
+  `[-40e18, 47e18]`, preserve exact identities, use cancellation-safe
+  `log1p`/`expm1` near zero, and expose widened lower/upper intervals.
+- Reason: reimplementing rational transcendental approximations during a
+  hackathon would add avoidable audit risk, while importing a permissive
+  approximation without protocol-owned domains or uncertainty propagation
+  would make directional settlement claims unsound.
+- Boundary: the selected error envelopes are engineering bounds validated
+  against upstream evidence and independent vectors, not a formal proof of the
+  approximation coefficients. Production use still requires specialist
+  review.
+- Evidence: `TranscendentalMath.t.sol` and
+  [`TRANSCENDENTAL_MATH_AUDIT.md`](TRANSCENDENTAL_MATH_AUDIT.md).

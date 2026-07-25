@@ -8,10 +8,10 @@ completion claims come only from this file and passing tests.
 
 Liquid OB has a reproducible settlement dependency proof, frozen structural
 protocol language, independent high-precision mathematical oracle, checked
-full-precision Solidity arithmetic, and a typed frontend boundary with
-deterministic mock data. It does **not** yet have transcendental math, the
-Solidity curve kernel, custom curve execution, two-sided runtime, batch router,
-live solver, Subgraph, public deployment, or final product UI.
+full-precision and bounded transcendental Solidity arithmetic, and a typed
+frontend boundary with deterministic mock data. It does **not** yet have the
+curve compiler/quote kernel, custom curve execution, two-sided runtime, batch
+router, live solver, Subgraph, public deployment, or final product UI.
 
 The current repository is safe for parallel UI construction. It is not safe
 for real funds, production claims, or a live protocol demo.
@@ -27,6 +27,7 @@ for real funds, production claims, or a live protocol demo.
 | Mathematical specification | Native direction, actual integrated bonding curve, exact input/output, dual means, singular branches, flat orders and recycling policy | Economic equations and orientation are frozen independently of Solidity |
 | Independent oracle | 120-digit Decimal model, 14 curve vectors, 3 recycling vectors, 19 invalid-domain vectors, WAD intervals | Future Solidity and TypeScript math have language-neutral expected results |
 | Full-precision arithmetic | 512-bit unsigned `mulDiv`, signed floor/ceiling, WAD helpers, checked casts, token normalization and reserve scaling with 17 deterministic/fuzz tests | Phase 4A integer operations preserve declared rounding and representation boundaries |
+| Transcendental arithmetic | Pinned Solady backend behind bounded `ln`, `exp`, `log1p`, `expm1`, signed real powers, exact identities and conservative intervals with 17 deterministic/fuzz tests | Phase 4B has explicit numerical domains and approximation propagation independent of curve formulas |
 | Frontend contract | `@liquid-ob/frontend-api` types, amount helpers, client interface and stable errors | UI can be built without importing unfinished ABIs or backend transports |
 | Frontend mock | Three makers, market/position/activity reads, maker preview, exact-in/out routes and transaction plans | Every major screen can be developed with deterministic data |
 | Web integration harness | One composition root consuming only `LiquidOBFrontendClient` | Mock-to-live replacement is isolated from components |
@@ -35,19 +36,18 @@ for real funds, production claims, or a live protocol demo.
 
 | Dependency order | Missing deliverable | Blocks |
 | ---: | --- | --- |
-| 1 | `TranscendentalMath.sol`: bounded `ln`, `exp`, real powers and stable near-singular transformations | General alpha execution |
-| 2 | `CurveCompiler.sol`, `CurveMath.sol`, `PositionMath.sol` | Exact preview, swaps and recycling |
-| 3 | Exact TypeScript `curve-math` and canonical strategy encoder | Live maker preview and publish calldata |
-| 4 | Custom SwapVM curve instruction, router runtime and single-position settlement | Real position execution |
-| 5 | Product Quoter, Lens and two-sided lifecycle integration | Live frontend reads and backing status |
-| 6 | Atomic exact-input and exact-output batch executor | Multi-maker settlement |
-| 7 | Security/fuzz/invariant/fork hardening and ABI freeze | Public deployment |
-| 8 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
-| 9 | Generated contract clients and position SDK | Wallet transaction plans |
-| 10 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
-| 11 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
-| 12 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
-| 13 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
+| 1 | `CurveCompiler.sol`, `CurveMath.sol`, `PositionMath.sol` | Exact preview, swaps and recycling |
+| 2 | Exact TypeScript `curve-math` and canonical strategy encoder | Live maker preview and publish calldata |
+| 3 | Custom SwapVM curve instruction, router runtime and single-position settlement | Real position execution |
+| 4 | Product Quoter, Lens and two-sided lifecycle integration | Live frontend reads and backing status |
+| 5 | Atomic exact-input and exact-output batch executor | Multi-maker settlement |
+| 6 | Security/fuzz/invariant/fork hardening and ABI freeze | Public deployment |
+| 7 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
+| 8 | Generated contract clients and position SDK | Wallet transaction plans |
+| 9 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
+| 10 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
+| 11 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
+| 12 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
 
 ## Current User-Visible Capabilities
 
@@ -101,7 +101,7 @@ requires rewriting product components, the frontend boundary has been broken.
    root license before finalist submission.
 2. The selected official Aqua/SwapVM Base generation and Aqua SDK embedded
    address differ; deployment configuration must inject the audited address.
-3. No protocol-specific math has executed through SwapVM yet.
+3. No compiled curve or protocol-specific math has executed through SwapVM yet.
 4. No public deployment, manifest, Subgraph or hosted/browser solver exists.
 5. No external security audit exists. Current software must use valueless demo
    assets only even after a public test deployment.

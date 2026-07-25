@@ -30,6 +30,11 @@ version, license, and purpose.
 | 1inch Solidity utilities | https://github.com/1inch/solidity-utils | `29043f22422fde454951e9733129cce5d67e6a39` (`6.9.7`) | MIT | Token transfer and low-level Solidity utilities required by Aqua/SwapVM |
 | OpenZeppelin Contracts | https://github.com/OpenZeppelin/openzeppelin-contracts | `c64a1edb67b6e3f4a15cca8909c9482ad33a02b0` (`v5.4.0`) | MIT | ERC-20, ownership, cryptography, and math dependencies |
 | forge-std | https://github.com/foundry-rs/forge-std | `8e40513d678f392f398620b3ef2b418648b33e89` (`v1.11.0`) | MIT or Apache-2.0 | Solidity test framework |
+| Solady | https://github.com/Vectorized/solady | `acd959aa4bd04720d640bf4e6a5c71037510cc4b` (`v0.1.26`) | MIT | Pinned monotone fixed-point `lnWad` and `expWad` approximation backend |
 
 The full compatibility, deployment-address, compiler, and license analysis is
 recorded in [`DEPENDENCY_AUDIT.md`](DEPENDENCY_AUDIT.md).
+
+The selection, rejected alternatives, numerical wrapper, and approximation
+boundary for Solady are recorded separately in
+[`TRANSCENDENTAL_MATH_AUDIT.md`](TRANSCENDENTAL_MATH_AUDIT.md).

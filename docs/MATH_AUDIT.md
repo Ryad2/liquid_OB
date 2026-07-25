@@ -163,6 +163,25 @@ This closes the integer arithmetic layer only. It does not establish safe EVM
 domains or error bounds for logarithm, exponential, real power, curve
 compilation, or coordinate inversion.
 
+## Phase 4B Transcendental Evidence
+
+`TranscendentalMath.sol` pins Solady v0.1.26 for monotone `lnWad` and `expWad`
+approximations, but owns all protocol domains and composition. It adds exact
+zero/identity branches, stable one-wei-neighbor `log1p` and `expm1`, checked
+full-precision signed power products, and uncertainty-propagating bounds.
+
+The accepted generic exponential argument is `[-40e18, 47e18]`; logarithm and
+power bases must be positive canonical uint128 WAD values. Seventeen targeted
+tests compare independent Decimal intervals, exercise both domain endpoints,
+prove exact identities, fuzz monotonicity and condition-aware inversion, and
+reject singular or overflow configurations. The complete dependency,
+approximation, and conditioning record is
+[`TRANSCENDENTAL_MATH_AUDIT.md`](TRANSCENDENTAL_MATH_AUDIT.md).
+
+This closes the standalone transcendental layer only. It does not yet prove
+that curve compilation chooses interval endpoints correctly or that coordinate
+and inverse-coordinate rounding preserve settlement conservation.
+
 ## Final Boundary
 
 The verified mathematical claim is one bounded curve with exact marginal,

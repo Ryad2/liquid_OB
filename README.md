@@ -10,9 +10,9 @@ This repository was initialized from an empty GitHub repository on 25 July
 real-transfer smoke tests, and canonical Phase 2 ABI/wire format are complete;
 the independent high-precision mathematical oracle and committed Phase 3
 vectors are also complete. A typed frontend gateway and deterministic mock now
-allow product UI work in parallel. Phase 4A full-precision signed and unsigned
-arithmetic is implemented; transcendental math, the Solidity curve kernel, and
-the production protocol are not implemented yet.
+allow product UI work in parallel. Phase 4A full-precision arithmetic and Phase
+4B bounded transcendental math are implemented; curve compilation, the
+Solidity quote kernel, and the production protocol are not implemented yet.
 
 Protocol work will be introduced through small, reviewable commits. External
 tools and dependencies are recorded as they are introduced.
@@ -47,6 +47,10 @@ The normative fixed-point and exchange-rate model is documented in
 
 The independent derivation and validation record is documented in
 [`docs/MATH_AUDIT.md`](docs/MATH_AUDIT.md).
+
+The pinned transcendental backend, numerical domains, approximation intervals,
+and conditioning limits are documented in
+[`docs/TRANSCENDENTAL_MATH_AUDIT.md`](docs/TRANSCENDENTAL_MATH_AUDIT.md).
 
 The independent `Decimal` oracle, deterministic vector schema, regeneration
 procedure, and trust boundary are documented in

@@ -35,3 +35,7 @@ error LiquidOBMathUnderflow();
 error LiquidOBNegativeToUnsigned(int256 value);
 error LiquidOBAmountOverflow(uint256 amount);
 error LiquidOBNormalizationLoss(address token, uint256 amount, uint8 decimals);
+error LiquidOBInvalidLogarithmInput(uint256 inputWad);
+error LiquidOBInvalidLog1pInput(int256 inputWad);
+error LiquidOBExponentialOutOfDomain(int256 inputWad);
+error LiquidOBPowerOutOfDomain(uint256 baseWad, int256 exponentWad);

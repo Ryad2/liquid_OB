@@ -217,10 +217,10 @@ Create expected results that do not call Solidity implementation code.
 
 ## 7. Phase 4: Implement The Pure Solidity Kernel
 
-Implementation status: Phase 4A completed on 25 July 2026. Checked 512-bit
-multiply/divide, signed mathematical floor/ceiling, WAD operations, raw-token
-normalization, uint128 reserve boundaries, and proportional scaling are covered
-by deterministic and fuzz tests. Phases 4B through 4E remain pending.
+Implementation status: Phases 4A and 4B completed on 25 July 2026. Checked
+512-bit arithmetic, signed rounding, bounded logarithm/exponential/real powers,
+stable near-zero transforms, exact identities, and approximation intervals are
+covered by deterministic and fuzz tests. Phases 4C through 4E remain pending.
 
 ### Exact File Order
 
@@ -241,6 +241,10 @@ curves.
 Implement or import pinned `ln`, `exp`, and signed real powers. Exact flat,
 native-alpha-zero, and native-alpha-one branches must bypass unstable generic
 expressions.
+
+Completed with pinned Solady v0.1.26 behind Liquid OB-owned domains,
+full-precision power composition, stable `log1p`/`expm1`, exact identities, and
+companion uncertainty intervals. See `TRANSCENDENTAL_MATH_AUDIT.md`.
 
 ### 4C. Direction Compiler Third
 
@@ -657,15 +661,17 @@ Each commit below must pass the complete available suite:
 
 ## 23. Immediate Next Action
 
-The next implementation prompt should begin **Phase 4B only**:
+The next implementation prompt should begin **Phase 4C only**:
 
-1. audit candidate fixed-point `ln`, `exp`, `expm1`, and `log1p` algorithms and
-   their exact licenses before importing or adapting code;
-2. publish explicit input, output, and intermediate overflow domains;
-3. implement bounded signed WAD transcendental primitives with exact zero and
-   identity cases;
-4. test deterministic values, monotonicity, inverse bounds, singular neighbors,
-   and rejected domains against the independent oracle.
+1. implement buy-side displayed-to-native bounds directly;
+2. implement sell-side reciprocal endpoint conversion and alpha sign change;
+3. derive `betaNative = alphaNative - 1` without narrowing or overflow;
+4. select and canonicalize the exact equal-endpoint flat branch;
+5. derive deterministic `mu` and `kappa` commitments while using the Phase 4B
+   intervals to reject nonpositive, overflowed, or numerically ambiguous
+   configurations;
+6. compare every compiler branch and rejected domain against the independent
+   Phase 3 vectors.
 
-Do not implement `CurveCompiler`, curve coordinate formulas, or swap maps until
-the transcendental layer passes independently.
+Do not implement coordinate functions, exact-input/output swap maps, or
+two-sided transitions until `CurveCompiler` passes independently.

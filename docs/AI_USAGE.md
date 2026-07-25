@@ -233,5 +233,26 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: `FullPrecisionMath.sol`, its unit tests, ADR-016, and
   `prompts/0015-full-precision-math.md`.
 
+## 25 July 2026: bounded Solidity transcendental arithmetic
+
+- Tool: OpenAI Codex
+- Work: audited fixed-point logarithm/exponential candidates; pinned Solady
+  v0.1.26; implemented protocol-owned domains, exact identities, stable
+  `log1p`/`expm1`, full-precision signed real powers, conservative intervals,
+  oracle regressions, monotonicity fuzzing, condition-aware inverse tests, and
+  rejected-domain tests.
+- Imported implementation: unmodified Solady
+  `FixedPointMathLib.lnWad`/`expWad`, MIT, exact commit and purpose recorded in
+  `PROVENANCE.md`. No source was copied; Solady `powWad` is not used.
+- Decision: treat every returned scalar as an approximation and require later
+  curve arithmetic to consume the documented interval in its maker-favorable
+  direction.
+- Human review required: formal approximation-error proof, accepted domain,
+  downstream interval composition, gas profile, and specialist production
+  audit.
+- Output: `TranscendentalMath.sol`, its unit tests,
+  `TRANSCENDENTAL_MATH_AUDIT.md`, ADR-017, and
+  `prompts/0016-bounded-transcendental-math.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.
