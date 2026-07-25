@@ -1,0 +1,185 @@
+enum CurveSideKind {
+  SELL
+  BUY
+}
+
+enum CurveBranchKind {
+  GENERAL
+  NATIVE_ALPHA_ZERO
+  NATIVE_ALPHA_ONE
+  FLAT
+}
+
+enum QuoteKind {
+  EXACT_INPUT
+  EXACT_OUTPUT
+}
+
+type Protocol @entity(immutable: false) {
+  id: ID!
+  positionCount: BigInt!
+  activePositionCount: BigInt!
+  fillCount: BigInt!
+  routeCount: BigInt!
+  lastUpdateBlock: BigInt!
+  lastUpdateTimestamp: BigInt!
+}
+
+type Token @entity(immutable: false) {
+  id: ID!
+  address: Bytes!
+  symbol: String!
+  name: String!
+  decimals: Int!
+}
+
+type Market @entity(immutable: false) {
+  id: ID!
+  marketId: Bytes!
+  baseToken: Token!
+  quoteToken: Token!
+  positionCount: BigInt!
+  activePositionCount: BigInt!
+  fillCount: BigInt!
+  routeCount: BigInt!
+  volumeBaseRaw: BigInt!
+  volumeQuoteRaw: BigInt!
+  lastUpdateBlock: BigInt!
+  lastUpdateTimestamp: BigInt!
+  positions: [Position!]! @derivedFrom(field: "market")
+  sides: [CurveSide!]! @derivedFrom(field: "market")
+  routes: [Route!]! @derivedFrom(field: "market")
+}
+
+type Maker @entity(immutable: false) {
+  id: ID!
+  address: Bytes!
+  positionCount: BigInt!
+  activePositionCount: BigInt!
+  fillCount: BigInt!
+  volumeBaseRaw: BigInt!
+  volumeQuoteRaw: BigInt!
+  lastUpdateBlock: BigInt!
+  positions: [Position!]! @derivedFrom(field: "maker")
+}
+
+type Position @entity(immutable: false) {
+  id: ID!
+  positionKey: Bytes!
+  strategyHash: Bytes!
+  policyHash: Bytes!
+  strategy: Bytes!
+  maker: Maker!
+  market: Market!
+  baseToken: Token!
+  quoteToken: Token!
+  salt: Bytes!
+  encodingVersion: Int!
+  active: Boolean!
+  docked: Boolean!
+  initialized: Boolean!
+  runtimeVersion: BigInt!
+  baseAllocationRaw: BigInt!
+  quoteAllocationRaw: BigInt!
+  sufficientlyAllocated: Boolean!
+  createdBlock: BigInt!
+  createdTimestamp: BigInt!
+  createdTransaction: Bytes!
+  lastUpdateBlock: BigInt!
+  lastUpdateTimestamp: BigInt!
+  lastUpdateTransaction: Bytes!
+  sides: [CurveSide!]! @derivedFrom(field: "position")
+  fills: [Fill!]! @derivedFrom(field: "position")
+}
+
+type CurveSide @entity(immutable: false) {
+  id: ID!
+  position: Position!
+  market: Market!
+  maker: Maker!
+  side: CurveSideKind!
+  branch: CurveBranchKind!
+  tokenIn: Token!
+  tokenOut: Token!
+  startPriceWad: BigInt!
+  endPriceWad: BigInt!
+  alphaWad: BigInt!
+  alphaNativeWad: BigInt!
+  betaNativeWad: BigInt!
+  pLowWad: BigInt!
+  pHighWad: BigInt!
+  muWad: BigInt!
+  kappaWad: BigInt!
+  initialReserveWad: BigInt!
+  yWad: BigInt!
+  yIntWad: BigInt!
+  currentPriceWad: BigInt!
+  aquaAllocationRaw: BigInt!
+  active: Boolean!
+  lastUpdateBlock: BigInt!
+  lastUpdateTimestamp: BigInt!
+  lastUpdateTransaction: Bytes!
+}
+
+type Fill @entity(immutable: true) {
+  id: ID!
+  route: Route
+  routeId: Bytes!
+  fillIndex: Int!
+  position: Position!
+  market: Market!
+  maker: Maker!
+  side: CurveSideKind!
+  branch: CurveBranchKind!
+  kind: QuoteKind!
+  payer: Bytes!
+  recipient: Bytes!
+  tokenIn: Token!
+  tokenOut: Token!
+  amountInRaw: BigInt!
+  amountOutRaw: BigInt!
+  nativeRateBeforeWad: BigInt!
+  nativeRateAfterWad: BigInt!
+  nativeEffectiveRateWad: BigInt!
+  displayedPriceBeforeWad: BigInt!
+  displayedPriceAfterWad: BigInt!
+  displayedEffectivePriceWad: BigInt!
+  versionBefore: BigInt!
+  versionAfter: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+  logIndex: BigInt!
+}
+
+type Route @entity(immutable: false) {
+  id: ID!
+  routeId: Bytes!
+  market: Market!
+  payer: Bytes!
+  recipient: Bytes!
+  refundRecipient: Bytes!
+  side: CurveSideKind!
+  kind: QuoteKind!
+  tokenIn: Token!
+  tokenOut: Token!
+  amountInRaw: BigInt!
+  amountOutRaw: BigInt!
+  limitRaw: BigInt!
+  fillCount: Int!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  transactionHash: Bytes!
+  fills: [Fill!]! @derivedFrom(field: "route")
+}
+
+type MarketSnapshot @entity(immutable: false) {
+  id: ID!
+  market: Market!
+  day: Int!
+  fillCount: BigInt!
+  routeCount: BigInt!
+  volumeBaseRaw: BigInt!
+  volumeQuoteRaw: BigInt!
+  lastUpdateBlock: BigInt!
+}

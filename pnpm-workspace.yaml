@@ -2,5 +2,6 @@ packages:
   - apps/*
   - packages/*
   - services/*
+  - subgraph
 
 preferWorkspacePackages: true

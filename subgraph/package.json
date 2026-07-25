@@ -1,0 +1,23 @@
+{
+  "name": "@liquid-ob/subgraph",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "abi:sync": "node scripts/sync-abis.mjs",
+    "abi:check": "node scripts/sync-abis.mjs --check",
+    "codegen": "graph codegen subgraph.yaml",
+    "build": "graph build subgraph.yaml",
+    "configure": "node scripts/configure-manifest.mjs",
+    "check": "pnpm abi:check && pnpm codegen && pnpm build",
+    "lint": "graph build subgraph.yaml",
+    "test": "node scripts/validate-schema.mjs && graph test -v 0.6.0"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-ts": "0.38.2"
+  },
+  "devDependencies": {
+    "@graphprotocol/graph-cli": "0.98.1",
+    "assemblyscript": "0.19.23",
+    "matchstick-as": "0.6.0"
+  }
+}

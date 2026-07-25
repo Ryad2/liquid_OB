@@ -1,0 +1,69 @@
+query ActiveSides(
+  $market: ID!
+  $side: CurveSideKind!
+  $first: Int!
+  $skip: Int!
+) {
+  _meta {
+    block {
+      number
+      hash
+      timestamp
+    }
+    hasIndexingErrors
+  }
+  curveSides(
+    where: { market: $market, side: $side, active: true, yWad_gt: "0" }
+    first: $first
+    skip: $skip
+    orderBy: currentPriceWad
+    orderDirection: desc
+  ) {
+    id
+    side
+    branch
+    startPriceWad
+    endPriceWad
+    alphaWad
+    alphaNativeWad
+    betaNativeWad
+    pLowWad
+    pHighWad
+    muWad
+    kappaWad
+    initialReserveWad
+    yWad
+    yIntWad
+    currentPriceWad
+    aquaAllocationRaw
+    active
+    lastUpdateBlock
+    position {
+      id
+      positionKey
+      strategyHash
+      strategy
+      runtimeVersion
+      active
+      sufficientlyAllocated
+      maker {
+        address
+      }
+      market {
+        marketId
+        baseToken {
+          address
+          symbol
+          name
+          decimals
+        }
+        quoteToken {
+          address
+          symbol
+          name
+          decimals
+        }
+      }
+    }
+  }
+}

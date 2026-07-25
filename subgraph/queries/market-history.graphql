@@ -1,0 +1,33 @@
+query MarketHistory($market: ID!, $first: Int!) {
+  _meta {
+    block { number hash timestamp }
+    hasIndexingErrors
+  }
+  market(id: $market) {
+    marketId
+    positionCount
+    activePositionCount
+    fillCount
+    routeCount
+    volumeBaseRaw
+    volumeQuoteRaw
+    lastUpdateBlock
+  }
+  routes(
+    where: { market: $market }
+    first: $first
+    orderBy: blockNumber
+    orderDirection: desc
+  ) {
+    routeId
+    side
+    kind
+    amountInRaw
+    amountOutRaw
+    limitRaw
+    fillCount
+    blockNumber
+    timestamp
+    transactionHash
+  }
+}

@@ -1,0 +1,2518 @@
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "aqua",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "curveKernel",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "AQUA",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IAqua"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "CURVE_KERNEL",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ILiquidOBCurveKernel"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ORDER_TYPEHASH",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "asView",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract ISwapVM"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "buildOrder",
+    "inputs": [
+      {
+        "name": "maker",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "config",
+        "type": "tuple",
+        "internalType": "struct PositionConfig",
+        "components": [
+          {
+            "name": "baseToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quoteToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "salt",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "sell",
+            "type": "tuple",
+            "internalType": "struct CurveConfig",
+            "components": [
+              {
+                "name": "startPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "endPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "alpha",
+                "type": "int128",
+                "internalType": "AlphaWad"
+              },
+              {
+                "name": "initialReserve",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "mu",
+                "type": "uint128",
+                "internalType": "UnitlessWad"
+              },
+              {
+                "name": "kappa",
+                "type": "uint128",
+                "internalType": "RateWad"
+              }
+            ]
+          },
+          {
+            "name": "buy",
+            "type": "tuple",
+            "internalType": "struct CurveConfig",
+            "components": [
+              {
+                "name": "startPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "endPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "alpha",
+                "type": "int128",
+                "internalType": "AlphaWad"
+              },
+              {
+                "name": "initialReserve",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "mu",
+                "type": "uint128",
+                "internalType": "UnitlessWad"
+              },
+              {
+                "name": "kappa",
+                "type": "uint128",
+                "internalType": "RateWad"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "order",
+        "type": "tuple",
+        "internalType": "struct ISwapVM.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "MakerTraits"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "decodePosition",
+    "inputs": [
+      {
+        "name": "order",
+        "type": "tuple",
+        "internalType": "struct ISwapVM.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "MakerTraits"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct PositionConfig",
+        "components": [
+          {
+            "name": "baseToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quoteToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "salt",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "sell",
+            "type": "tuple",
+            "internalType": "struct CurveConfig",
+            "components": [
+              {
+                "name": "startPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "endPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "alpha",
+                "type": "int128",
+                "internalType": "AlphaWad"
+              },
+              {
+                "name": "initialReserve",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "mu",
+                "type": "uint128",
+                "internalType": "UnitlessWad"
+              },
+              {
+                "name": "kappa",
+                "type": "uint128",
+                "internalType": "RateWad"
+              }
+            ]
+          },
+          {
+            "name": "buy",
+            "type": "tuple",
+            "internalType": "struct CurveConfig",
+            "components": [
+              {
+                "name": "startPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "endPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "alpha",
+                "type": "int128",
+                "internalType": "AlphaWad"
+              },
+              {
+                "name": "initialReserve",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "mu",
+                "type": "uint128",
+                "internalType": "UnitlessWad"
+              },
+              {
+                "name": "kappa",
+                "type": "uint128",
+                "internalType": "RateWad"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deriveCurve",
+    "inputs": [
+      {
+        "name": "config",
+        "type": "tuple",
+        "internalType": "struct CurveConfig",
+        "components": [
+          {
+            "name": "startPrice",
+            "type": "uint128",
+            "internalType": "PriceWad"
+          },
+          {
+            "name": "endPrice",
+            "type": "uint128",
+            "internalType": "PriceWad"
+          },
+          {
+            "name": "alpha",
+            "type": "int128",
+            "internalType": "AlphaWad"
+          },
+          {
+            "name": "initialReserve",
+            "type": "uint128",
+            "internalType": "AmountWad"
+          },
+          {
+            "name": "mu",
+            "type": "uint128",
+            "internalType": "UnitlessWad"
+          },
+          {
+            "name": "kappa",
+            "type": "uint128",
+            "internalType": "RateWad"
+          }
+        ]
+      },
+      {
+        "name": "side",
+        "type": "uint8",
+        "internalType": "enum CurveSide"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct CurveConfig",
+        "components": [
+          {
+            "name": "startPrice",
+            "type": "uint128",
+            "internalType": "PriceWad"
+          },
+          {
+            "name": "endPrice",
+            "type": "uint128",
+            "internalType": "PriceWad"
+          },
+          {
+            "name": "alpha",
+            "type": "int128",
+            "internalType": "AlphaWad"
+          },
+          {
+            "name": "initialReserve",
+            "type": "uint128",
+            "internalType": "AmountWad"
+          },
+          {
+            "name": "mu",
+            "type": "uint128",
+            "internalType": "UnitlessWad"
+          },
+          {
+            "name": "kappa",
+            "type": "uint128",
+            "internalType": "RateWad"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "eip712Domain",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "fields",
+        "type": "bytes1",
+        "internalType": "bytes1"
+      },
+      {
+        "name": "name",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "version",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "chainId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "verifyingContract",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "salt",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "extensions",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "encodePosition",
+    "inputs": [
+      {
+        "name": "config",
+        "type": "tuple",
+        "internalType": "struct PositionConfig",
+        "components": [
+          {
+            "name": "baseToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "quoteToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "salt",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "sell",
+            "type": "tuple",
+            "internalType": "struct CurveConfig",
+            "components": [
+              {
+                "name": "startPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "endPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "alpha",
+                "type": "int128",
+                "internalType": "AlphaWad"
+              },
+              {
+                "name": "initialReserve",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "mu",
+                "type": "uint128",
+                "internalType": "UnitlessWad"
+              },
+              {
+                "name": "kappa",
+                "type": "uint128",
+                "internalType": "RateWad"
+              }
+            ]
+          },
+          {
+            "name": "buy",
+            "type": "tuple",
+            "internalType": "struct CurveConfig",
+            "components": [
+              {
+                "name": "startPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "endPrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "alpha",
+                "type": "int128",
+                "internalType": "AlphaWad"
+              },
+              {
+                "name": "initialReserve",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "mu",
+                "type": "uint128",
+                "internalType": "UnitlessWad"
+              },
+              {
+                "name": "kappa",
+                "type": "uint128",
+                "internalType": "RateWad"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "hash",
+    "inputs": [
+      {
+        "name": "order",
+        "type": "tuple",
+        "internalType": "struct ISwapVM.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "MakerTraits"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "liquidCurveOpcode",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewExactInput",
+    "inputs": [
+      {
+        "name": "order",
+        "type": "tuple",
+        "internalType": "struct ISwapVM.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "MakerTraits"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "side",
+        "type": "uint8",
+        "internalType": "enum CurveSide"
+      },
+      {
+        "name": "expectedVersion",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "quote",
+        "type": "tuple",
+        "internalType": "struct PositionQuote",
+        "components": [
+          {
+            "name": "marketId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "positionKey",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "strategyHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "curve",
+            "type": "tuple",
+            "internalType": "struct CurveQuote",
+            "components": [
+              {
+                "name": "kind",
+                "type": "uint8",
+                "internalType": "enum QuoteKind"
+              },
+              {
+                "name": "side",
+                "type": "uint8",
+                "internalType": "enum CurveSide"
+              },
+              {
+                "name": "amountIn",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "amountOut",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "amountInWad",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "amountOutWad",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "nativeRateBefore",
+                "type": "uint128",
+                "internalType": "RateWad"
+              },
+              {
+                "name": "nativeRateAfter",
+                "type": "uint128",
+                "internalType": "RateWad"
+              },
+              {
+                "name": "nativeEffectiveRate",
+                "type": "uint128",
+                "internalType": "RateWad"
+              },
+              {
+                "name": "displayedPriceBefore",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "displayedPriceAfter",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "displayedEffectivePrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "activeBefore",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "activeAfter",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "beforeState",
+            "type": "tuple",
+            "internalType": "struct PositionRuntime",
+            "components": [
+              {
+                "name": "sell",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "buy",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "version",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "initialized",
+                "type": "bool",
+                "internalType": "bool"
+              }
+            ]
+          },
+          {
+            "name": "afterState",
+            "type": "tuple",
+            "internalType": "struct PositionRuntime",
+            "components": [
+              {
+                "name": "sell",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "buy",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "version",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "initialized",
+                "type": "bool",
+                "internalType": "bool"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "previewExactOutput",
+    "inputs": [
+      {
+        "name": "order",
+        "type": "tuple",
+        "internalType": "struct ISwapVM.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "MakerTraits"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "side",
+        "type": "uint8",
+        "internalType": "enum CurveSide"
+      },
+      {
+        "name": "expectedVersion",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "quote",
+        "type": "tuple",
+        "internalType": "struct PositionQuote",
+        "components": [
+          {
+            "name": "marketId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "positionKey",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "strategyHash",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "curve",
+            "type": "tuple",
+            "internalType": "struct CurveQuote",
+            "components": [
+              {
+                "name": "kind",
+                "type": "uint8",
+                "internalType": "enum QuoteKind"
+              },
+              {
+                "name": "side",
+                "type": "uint8",
+                "internalType": "enum CurveSide"
+              },
+              {
+                "name": "amountIn",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "amountOut",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "amountInWad",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "amountOutWad",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "nativeRateBefore",
+                "type": "uint128",
+                "internalType": "RateWad"
+              },
+              {
+                "name": "nativeRateAfter",
+                "type": "uint128",
+                "internalType": "RateWad"
+              },
+              {
+                "name": "nativeEffectiveRate",
+                "type": "uint128",
+                "internalType": "RateWad"
+              },
+              {
+                "name": "displayedPriceBefore",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "displayedPriceAfter",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "displayedEffectivePrice",
+                "type": "uint128",
+                "internalType": "PriceWad"
+              },
+              {
+                "name": "activeBefore",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "activeAfter",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "beforeState",
+            "type": "tuple",
+            "internalType": "struct PositionRuntime",
+            "components": [
+              {
+                "name": "sell",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "buy",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "version",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "initialized",
+                "type": "bool",
+                "internalType": "bool"
+              }
+            ]
+          },
+          {
+            "name": "afterState",
+            "type": "tuple",
+            "internalType": "struct PositionRuntime",
+            "components": [
+              {
+                "name": "sell",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "buy",
+                "type": "tuple",
+                "internalType": "struct CurveState",
+                "components": [
+                  {
+                    "name": "y",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  },
+                  {
+                    "name": "yInt",
+                    "type": "uint128",
+                    "internalType": "AmountWad"
+                  }
+                ]
+              },
+              {
+                "name": "version",
+                "type": "uint64",
+                "internalType": "uint64"
+              },
+              {
+                "name": "initialized",
+                "type": "bool",
+                "internalType": "bool"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "quote",
+    "inputs": [
+      {
+        "name": "order",
+        "type": "tuple",
+        "internalType": "struct ISwapVM.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "MakerTraits"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "takerTraitsAndData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "orderHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "rescueFunds",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "contract IERC20"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "resolvedRuntime",
+    "inputs": [
+      {
+        "name": "order",
+        "type": "tuple",
+        "internalType": "struct ISwapVM.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "MakerTraits"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "runtime",
+        "type": "tuple",
+        "internalType": "struct PositionRuntime",
+        "components": [
+          {
+            "name": "sell",
+            "type": "tuple",
+            "internalType": "struct CurveState",
+            "components": [
+              {
+                "name": "y",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "yInt",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              }
+            ]
+          },
+          {
+            "name": "buy",
+            "type": "tuple",
+            "internalType": "struct CurveState",
+            "components": [
+              {
+                "name": "y",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "yInt",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              }
+            ]
+          },
+          {
+            "name": "version",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "initialized",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "simulate",
+    "inputs": [
+      {
+        "name": "delegatee",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "storedRuntime",
+    "inputs": [
+      {
+        "name": "maker",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "runtime",
+        "type": "tuple",
+        "internalType": "struct PositionRuntime",
+        "components": [
+          {
+            "name": "sell",
+            "type": "tuple",
+            "internalType": "struct CurveState",
+            "components": [
+              {
+                "name": "y",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "yInt",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              }
+            ]
+          },
+          {
+            "name": "buy",
+            "type": "tuple",
+            "internalType": "struct CurveState",
+            "components": [
+              {
+                "name": "y",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              },
+              {
+                "name": "yInt",
+                "type": "uint128",
+                "internalType": "AmountWad"
+              }
+            ]
+          },
+          {
+            "name": "version",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "initialized",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "swap",
+    "inputs": [
+      {
+        "name": "order",
+        "type": "tuple",
+        "internalType": "struct ISwapVM.Order",
+        "components": [
+          {
+            "name": "maker",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "traits",
+            "type": "uint256",
+            "internalType": "MakerTraits"
+          },
+          {
+            "name": "data",
+            "type": "bytes",
+            "internalType": "bytes"
+          }
+        ]
+      },
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "takerTraitsAndData",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "orderHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "CurveFilled",
+    "inputs": [
+      {
+        "name": "routeId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "positionKey",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maker",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "marketId",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "fillIndex",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      },
+      {
+        "name": "side",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum CurveSide"
+      },
+      {
+        "name": "branch",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum CurveBranch"
+      },
+      {
+        "name": "kind",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum QuoteKind"
+      },
+      {
+        "name": "payer",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "nativeRateBeforeWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "nativeRateAfterWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "nativeEffectiveRateWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "displayedPriceBeforeWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "displayedPriceAfterWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "displayedEffectivePriceWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "sellYBeforeWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "sellYIntBeforeWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "buyYBeforeWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "buyYIntBeforeWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "versionBefore",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "sellYAfterWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "sellYIntAfterWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "buyYAfterWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "buyYIntAfterWad",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "versionAfter",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "EIP712DomainChanged",
+    "inputs": [],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PositionRuntimeInitialized",
+    "inputs": [
+      {
+        "name": "positionKey",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "marketId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maker",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "strategyHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "sellY",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "sellYInt",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "buyY",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "buyYInt",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "version",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RouteExecuted",
+    "inputs": [
+      {
+        "name": "routeId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "marketId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "payer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "refundRecipient",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "side",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum CurveSide"
+      },
+      {
+        "name": "kind",
+        "type": "uint8",
+        "indexed": false,
+        "internalType": "enum QuoteKind"
+      },
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "limit",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "fillCount",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Swapped",
+    "inputs": [
+      {
+        "name": "orderHash",
+        "type": "bytes32",
+        "indexed": false,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "maker",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "taker",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "AquaBalanceInsufficientAfterTakerPush",
+    "inputs": [
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "preBalance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountNetPulled",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "BadSignature",
+    "inputs": [
+      {
+        "name": "maker",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "orderHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "signature",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ConcentrateRecomputeDetected",
+    "inputs": [
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ControlsMissingDeadlineArg",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ControlsMissingMinAmountArg",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ControlsMissingMinShareArg",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ControlsMissingTokenArg",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "DeadlineReached",
+    "inputs": [
+      {
+        "name": "taker",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "DecayShouldBeCalledBeforeSwapAmountsComputation",
+    "inputs": [
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ETHTransferFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ETHTransferFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "EthDepositRejected",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ExtructionChoppedExceededLength",
+    "inputs": [
+      {
+        "name": "chopped",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "requested",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ExtructionMissingTargetArg",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FeeBpsOutOfRange",
+    "inputs": [
+      {
+        "name": "feeBps",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "FeeDynamicProtocolInvalidRecipient",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FeeProtocolProviderFailedCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FeeShouldBeAppliedBeforeSwapAmountsComputation",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ForceApproveFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientBalance",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidShortString",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "JumpMissingNextPCArg",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "LiquidOBInvalidDirection",
+    "inputs": [
+      {
+        "name": "side",
+        "type": "uint8",
+        "internalType": "enum CurveSide"
+      },
+      {
+        "name": "tokenIn",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenOut",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "LiquidOBInvalidExpectedVersionLength",
+    "inputs": [
+      {
+        "name": "actualLength",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "LiquidOBInvalidInstructionArguments",
+    "inputs": [
+      {
+        "name": "actualLength",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "LiquidOBMissingCode",
+    "inputs": [
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "LiquidOBZeroAddress",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MakerTraitsCustomReceiverIsIncompatibleWithAqua",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MakerTraitsTokenInAndTokenOutMustBeDifferent",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MakerTraitsUnwrapIsIncompatibleWithAqua",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MakerTraitsZeroAmountInNotAllowed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "PeggedSwapBothBalancesZero",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "PeggedSwapRecomputeDetected",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "RunLoopExcessiveCall",
+    "inputs": [
+      {
+        "name": "pc",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "programLength",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "SafeTransferFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafeTransferFromFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "Simulated",
+    "inputs": [
+      {
+        "name": "delegatee",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      },
+      {
+        "name": "success",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "result",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "StringTooLong",
+    "inputs": [
+      {
+        "name": "str",
+        "type": "string",
+        "internalType": "string"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTokenBalanceIsLessThanRequired",
+    "inputs": [
+      {
+        "name": "taker",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTokenBalanceIsZero",
+    "inputs": [
+      {
+        "name": "taker",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTokenBalanceSupplyShareIsLessThanRequired",
+    "inputs": [
+      {
+        "name": "taker",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "totalSupply",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minShareE18",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTraitsAmountOutMustBeGreaterThanZero",
+    "inputs": [
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTraitsDeadlineExpired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TakerTraitsExceedingMaxInputAmount",
+    "inputs": [
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountInMax",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTraitsInsufficientMinOutputAmount",
+    "inputs": [
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountOutMin",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTraitsNonExactThresholdAmountIn",
+    "inputs": [
+      {
+        "name": "amountIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountThreshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTraitsNonExactThresholdAmountOut",
+    "inputs": [
+      {
+        "name": "amountOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountThreshold",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTraitsTakerAmountInMismatch",
+    "inputs": [
+      {
+        "name": "takerAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "computedAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "TakerTraitsTakerAmountOutMismatch",
+    "inputs": [
+      {
+        "name": "takerAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "computedAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "UnexpectedLock",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "XYCSwapRecomputeDetected",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "XYCSwapRequiresBothBalancesNonZero",
+    "inputs": [
+      {
+        "name": "balanceIn",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "balanceOut",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  }
+]
