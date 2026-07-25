@@ -276,6 +276,8 @@ contract LiquidOBBatchExecutor is ILiquidOBBatchExecutor, ReentrancyGuard {
     }
 
     function _routeId(bytes32 salt, QuoteKind kind) private view returns (bytes32) {
+        // Preserve the documented ABI-encoded identifier domain.
+        // forge-lint: disable-next-line(asm-keccak256)
         return keccak256(abi.encode(ROUTE_TYPEHASH, block.chainid, address(this), msg.sender, salt, kind));
     }
 

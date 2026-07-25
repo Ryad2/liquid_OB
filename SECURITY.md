@@ -1,26 +1,27 @@
 # Security Policy
 
 Liquid OB is experimental hackathon software. It has not been audited and must
-not be used with assets of value.
+not be used with assets of value. The current security evidence and residual
+risks are recorded in [`docs/SECURITY_GATE.md`](docs/SECURITY_GATE.md).
 
-Do not disclose a suspected vulnerability in a public issue. Contact the
-repository owner privately with reproduction steps and affected commit hashes.
+Report a suspected vulnerability privately to the repository owner with
+reproduction steps, affected commit hashes and impact. Do not disclose it in a
+public issue before a coordinated fix is available.
 
-Never place a private key or sponsor API key in the browser application. Keys
-that authenticate server-side APIs must remain in a server-side environment or
-secret manager.
+Never place a deployer private key or sponsor API key in source control or the
+browser application. Deployment keys belong in the local process environment;
+server API keys belong in a server-side secret manager.
 
-The frontend currently runs against deterministic mock data. Mock transaction
-plans are deliberately marked `sendable: false`; wallet code must enforce this
-field and must never submit mock addresses or calldata. Future live mode must
-fail closed when its deployment manifest, network, services, quote freshness,
-or final simulation cannot be validated. It must never silently fall back to
-mock data.
+The live frontend must fail closed if its chain, deployment manifest, quote
+freshness or final transaction simulation cannot be validated. It must never
+silently substitute mock addresses, mock calldata or mock quotes.
 
-The Phase 4A arithmetic and Phase 4B bounded-transcendental libraries have
-deterministic boundary, independent-oracle, and fuzz tests. The selected
-transcendental error envelopes are engineering assumptions for one pinned
-Solady revision, not a formal coefficient proof or external audit. No
-configuration, quote, or settlement path may accept value-bearing assets until
-the curve compiler, quote kernel, interval direction, differential invariants,
-and specialist numerical review are complete.
+Supported demo assets are conventional ERC-20 tokens with at most 18 decimals.
+Rebasing, callback-enabled and non-standard transfer tokens are outside the
+supported boundary. Fee-on-transfer route input is rejected by the batch
+executor's exact balance reconciliation.
+
+Arithmetic, transcendentals, curve execution, recycling, Aqua settlement,
+lifecycle reads and atomic multi-maker routes have deterministic and fuzz test
+coverage. Those tests are not a formal proof, a gas-optimality claim or an
+external security review.

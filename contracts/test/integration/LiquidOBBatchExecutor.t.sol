@@ -175,7 +175,11 @@ contract LiquidOBBatchExecutorTest is Test {
         position.baseToken = address(base);
         position.quoteToken = address(quoteToken);
         position.salt = keccak256(bytes(saltLabel));
+        // Test reserves are fixed far below uint128.max.
+        // forge-lint: disable-next-line(unsafe-typecast)
         position.sell = router.deriveCurve(_curve(sellStart, sellEnd, sellAlpha, uint128(baseReserve)), CurveSide.Sell);
+        // Test reserves are fixed far below uint128.max.
+        // forge-lint: disable-next-line(unsafe-typecast)
         position.buy = router.deriveCurve(_curve(90e18, 50e18, 0, uint128(quoteReserve)), CurveSide.Buy);
         makerOrder = router.buildOrder(maker, position);
 

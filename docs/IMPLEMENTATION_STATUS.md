@@ -8,11 +8,12 @@ completion claims come only from this file and passing tests.
 
 Liquid OB now has a reproducible settlement dependency proof, frozen protocol
 language, independent high-precision oracle, executable Solidity curve kernel,
-TypeScript maker SDK, and a real single-position Aqua/SwapVM settlement path.
-Exact-input and exact-output fills update a versioned two-sided runtime and
-immediately recycle incoming inventory into the opposite curve. It does **not**
-yet have atomic multi-maker routing, Lens reconciliation, a live solver,
-Subgraph, public deployment, or final live product UI.
+TypeScript maker SDK, lifecycle Lens, and atomic multi-maker Aqua/SwapVM
+settlement. Exact-input and exact-output fills update a versioned two-sided
+runtime and immediately recycle incoming inventory into the opposite curve.
+The demo-scoped security gate now covers adversarial route validation and
+atomic rollback. It does **not** yet have a live solver, Subgraph, public
+deployment, or final live product UI.
 
 The current repository is safe for parallel UI construction. It is not safe
 for real funds, production claims, or a live protocol demo.
@@ -34,6 +35,7 @@ for real funds, production claims, or a live protocol demo.
 | Aqua curve settlement | Custom `LiquidCurveInstruction`, `LiquidOBSwapVMRouter`, product `LiquidOBQuoter`, and two-direction integration test | One shipped maker position quotes without mutation, transfers real tokens, recycles inventory, and advances runtime atomically |
 | Position lifecycle and Lens | `LiquidOBLens` reconciles canonical policy, resolved runtime, Aqua lifecycle/allocation, wallet balance and allowance | UI and solver diagnostics can distinguish active, under-backed, surplus-funded and docked positions without influencing settlement |
 | Atomic multi-maker settlement | `LiquidOBBatchExecutor` validates bounded solver fills and executes exact-input or exact-output routes through SwapVM with direct recipient settlement | Two-maker routes enforce aggregate limits, refund unused input, leave no executor dust, and roll back every fill if any later fill fails |
+| Demo security gate | Adversarial settlement tests, explicit trust/token assumptions, frozen ABI surface and committed gas baseline | Forged, stale, duplicate, expired, docked, under-backed and aggregate-limit failures are rejected or atomically rolled back |
 | Frontend contract | `@liquid-ob/frontend-api` types, amount helpers, client interface and stable errors | UI can be built without importing unfinished ABIs or backend transports |
 | Frontend mock | Three makers, market/position/activity reads, maker preview, exact-in/out routes and transaction plans | Every major screen can be developed with deterministic data |
 | Web integration harness | One composition root consuming only `LiquidOBFrontendClient` | Mock-to-live replacement is isolated from components |
@@ -42,13 +44,12 @@ for real funds, production claims, or a live protocol demo.
 
 | Dependency order | Missing deliverable | Blocks |
 | ---: | --- | --- |
-| 1 | Security/fuzz/invariant/fork hardening and ABI freeze | Public deployment |
-| 2 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
-| 3 | Generated contract clients and transaction SDK | Wallet transaction plans |
-| 4 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
-| 5 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
-| 6 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
-| 7 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
+| 1 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
+| 2 | Generated contract clients and transaction SDK | Wallet transaction plans |
+| 3 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
+| 4 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
+| 5 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
+| 6 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
 
 ## Current User-Visible Capabilities
 
@@ -102,8 +103,8 @@ requires rewriting product components, the frontend boundary has been broken.
    root license before finalist submission.
 2. The selected official Aqua/SwapVM Base generation and Aqua SDK embedded
    address differ; deployment configuration must inject the audited address.
-3. Single-position curve settlement is proven locally but has not yet run on a
-   public network or through the final batch executor.
+3. Single- and multi-position curve settlement are proven locally but have not
+   yet run on a public network.
 4. No public deployment, manifest, Subgraph or hosted/browser solver exists.
 5. No external security audit exists. Current software must use valueless demo
    assets only even after a public test deployment.
