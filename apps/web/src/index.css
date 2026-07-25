@@ -1,20 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600&display=swap');
+
 :root {
-  color: #1e211d;
-  background: #f1efe6;
-  font-family: 'Avenir Next', 'Trebuchet MS', sans-serif;
+  color: #edf0ff;
+  background: #070914;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
 }
 
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background:
-    linear-gradient(rgba(30, 33, 29, 0.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 33, 29, 0.055) 1px, transparent 1px),
-    #f1efe6;
-  background-size: 44px 44px;
-}
+* { box-sizing: border-box; }
+html { min-width: 320px; min-height: 100%; background: #070914; }
+body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden; }
+button, input, select { color: inherit; font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+::selection { color: #070914; background: #a99dff; }

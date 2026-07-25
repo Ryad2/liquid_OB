@@ -1,17 +1,61 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 
-describe('frontend gateway integration harness', () => {
-  it('renders deterministic market, route, and position data through the client', async () => {
+describe('ArcBook product frontend', () => {
+  it('renders the functional order book through the stable client', async () => {
+    window.history.replaceState({}, '', '#/trade')
     render(<App />)
 
     expect(
-      screen.getByRole('heading', { level: 1, name: /liquid ob/i }),
+      await screen.findByRole('button', { name: /arcbook home/i }),
     ).toBeInTheDocument()
-    expect(await screen.findByText('WETH / USDC')).toBeInTheDocument()
-    expect(screen.getByText(/1,000 USDC mock route/i)).toBeInTheDocument()
-    expect(screen.getByText(/3 mock positions/i)).toBeInTheDocument()
-    expect(screen.getByText(/sendable: false/i)).toBeInTheDocument()
+    expect(screen.getByText('WETH-USDC')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /curve book/i })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /pay usdc/i })).toBeInTheDocument()
+    expect(screen.getByText(/writes safely disabled/i)).toBeInTheDocument()
+  })
+
+  it('opens on the interactive ArcBook landing page', async () => {
+    window.history.replaceState({}, '', window.location.pathname)
+    render(<App />)
+
+    expect(
+      await screen.findByRole('heading', { name: /shape the book/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('slider', { name: /landing curve alpha/i })).toHaveValue('4.2')
+
+    fireEvent.click(screen.getByRole('button', { name: /open terminal/i }))
+    expect(await screen.findByRole('heading', { name: /curve book/i })).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/trade')
+  })
+
+  it('exposes a continuous full-range alpha control in the curve composer', async () => {
+    window.history.replaceState({}, '', '#/studio')
+    render(<App />)
+
+    const slider = await screen.findByRole('slider', { name: /sell curve alpha/i })
+    expect(slider).toHaveAttribute('min', '-20')
+    expect(slider).toHaveAttribute('max', '20')
+    expect(slider).toHaveAttribute('step', '0.01')
+
+    fireEvent.input(slider, { target: { value: '13.37' } })
+    expect(slider).toHaveValue('13.37')
+  })
+
+  it('keeps wallet-owned portfolio data hidden until connection', async () => {
+    window.history.replaceState({}, '', '#/portfolio')
+    render(<App />)
+
+    expect(
+      await screen.findByRole('heading', { name: /your liquidity, tied to your address/i }),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Liquidity atlas')).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }))
+
+    expect(await screen.findByText('Liquidity atlas')).toBeInTheDocument()
+    expect(screen.getByText('1 total')).toBeInTheDocument()
+    expect(screen.queryByText('3 total')).not.toBeInTheDocument()
   })
 })

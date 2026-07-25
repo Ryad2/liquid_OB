@@ -64,7 +64,7 @@ describe('mock frontend gateway', () => {
     const gateway = client()
     const draft = validDraft()
     draft.sell.endPrice = draft.sell.startPrice
-    draft.sell.alpha = '42'
+    draft.sell.alpha = '20'
     const preview = await gateway.previewPosition(draft)
 
     expect(preview.canPublish).toBe(true)
@@ -74,6 +74,50 @@ describe('mock frontend gateway', () => {
     expect(preview.issues).toContainEqual(expect.objectContaining({
       code: 'FLAT_ALPHA_CANONICALIZED',
       severity: 'warning',
+    }))
+  })
+
+  it('keeps extreme ranges finite across the full supported alpha interval', async () => {
+    const gateway = client()
+    const draft = validDraft()
+    draft.sell = {
+      ...draft.sell,
+      startPrice: '0.0001',
+      endPrice: '1000000000000000000000000000000',
+      alpha: '20',
+    }
+    draft.buy = {
+      ...draft.buy,
+      startPrice: '1000000000000000000000000000000',
+      endPrice: '0.0001',
+      alpha: '-20',
+    }
+
+    const preview = await gateway.previewPosition(draft)
+    const samples = [
+      ...(preview.sell?.marginalSamples ?? []),
+      ...(preview.buy?.marginalSamples ?? []),
+    ]
+
+    expect(preview.canPublish).toBe(true)
+    expect(samples).toHaveLength(42)
+    expect(samples.every((sample) => (
+      Number.isFinite(Number(sample.displayedMarginalPrice.formatted))
+      && Number(sample.displayedMarginalPrice.formatted) > 0
+    ))).toBe(true)
+  })
+
+  it('rejects alpha values outside the composer interval', async () => {
+    const gateway = client()
+    const draft = validDraft()
+    draft.sell.alpha = '20.01'
+
+    const preview = await gateway.previewPosition(draft)
+
+    expect(preview.canPublish).toBe(false)
+    expect(preview.issues).toContainEqual(expect.objectContaining({
+      code: 'ALPHA_OUT_OF_RANGE',
+      severity: 'error',
     }))
   })
 

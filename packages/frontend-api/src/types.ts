@@ -1,4 +1,4 @@
-/** Framework-neutral product types consumed by every Liquid OB frontend. */
+/** Framework-neutral product types consumed by every ArcBook frontend. */
 
 export type Address = `0x${string}`
 export type Hex = `0x${string}`
@@ -113,7 +113,7 @@ export interface FeatureAvailability {
 }
 
 export interface FrontendBootstrap {
-  protocolName: 'Liquid OB'
+  protocolName: 'ArcBook'
   protocolVersion: string
   mode: FrontendMode
   network: {

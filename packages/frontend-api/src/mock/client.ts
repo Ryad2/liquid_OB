@@ -725,9 +725,9 @@ export class MockLiquidOBClient implements LiquidOBFrontendClient {
     } else if (Math.abs(alpha) > 20) {
       issues.push({
         path: `${side}.alpha`,
-        severity: 'warning',
-        code: 'MOCK_ALPHA_PRECISION',
-        message: 'Large alpha is valid in principle but this mock preview uses Number math.',
+        severity: 'error',
+        code: 'ALPHA_OUT_OF_RANGE',
+        message: 'Alpha must stay between -20 and +20.',
       })
     }
     let validReserveEncoding = true

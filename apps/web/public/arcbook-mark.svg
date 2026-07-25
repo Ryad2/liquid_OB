@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">ArcBook</title>
+  <defs>
+    <linearGradient id="surface" x1="8" y1="5" x2="54" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#15213c"/>
+      <stop offset="1" stop-color="#090b18"/>
+    </linearGradient>
+    <linearGradient id="buy" x1="11" y1="51" x2="31" y2="13" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#62d9ff"/>
+      <stop offset="1" stop-color="#a9f0ff"/>
+    </linearGradient>
+    <linearGradient id="sell" x1="34" y1="13" x2="54" y2="51" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#a99dff"/>
+      <stop offset="1" stop-color="#ff9a72"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2.4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="20" fill="url(#surface)" stroke="#9eafe1" stroke-opacity=".28"/>
+  <path d="M12 50C13 28 20 15 31 12" fill="none" stroke="url(#buy)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M35 12C46 15 53 28 54 50" fill="none" stroke="url(#sell)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M35 10L29 54" stroke="#edf0ff" stroke-opacity=".58" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="32" cy="32" r="3.3" fill="#edf0ff" filter="url(#glow)"/>
+</svg>

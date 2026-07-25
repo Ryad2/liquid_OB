@@ -8,8 +8,14 @@ import type {
   DisplayPrice,
 } from '../types.js'
 
-function cleanDecimal(value: number, fractionDigits = 8): DecimalString {
+function cleanDecimal(value: number, fractionDigits = 18): DecimalString {
   if (!Number.isFinite(value)) return '0'
+  if (Math.abs(value) >= 1e21) {
+    return value.toLocaleString('en-US', {
+      maximumFractionDigits: 0,
+      useGrouping: false,
+    }) as DecimalString
+  }
   return value.toFixed(fractionDigits).replace(/\.?0+$/, '')
 }
 
@@ -49,15 +55,20 @@ export function holderPrice(
   progress: number,
 ): number {
   if (startPrice === endPrice) return startPrice
-  if (alpha === 0) {
+  if (progress <= 0) return startPrice
+  if (progress >= 1) return endPrice
+  if (Math.abs(alpha) < 1e-7) {
     return Math.exp(
       ((1 - progress) * Math.log(startPrice))
       + (progress * Math.log(endPrice)),
     )
   }
-  const weighted = ((1 - progress) * (startPrice ** alpha))
-    + (progress * (endPrice ** alpha))
-  return weighted ** (1 / alpha)
+  const startPower = alpha * Math.log(startPrice)
+  const endPower = alpha * Math.log(endPrice)
+  const maxPower = Math.max(startPower, endPower)
+  const weightedPower = ((1 - progress) * Math.exp(startPower - maxPower))
+    + (progress * Math.exp(endPower - maxPower))
+  return Math.exp((maxPower + Math.log(weightedPower)) / alpha)
 }
 
 export function marginalSamples(options: {

@@ -347,12 +347,12 @@ export const ACTIVITY: ActivityItem[] = [
 ]
 
 export const BOOTSTRAP: FrontendBootstrap = {
-  protocolName: 'Liquid OB',
+  protocolName: 'ArcBook',
   protocolVersion: 'frontend-contract-v1',
   mode: 'mock',
   network: {
     chainId: MOCK_CHAIN_ID,
-    name: 'Liquid OB deterministic mock',
+    name: 'ArcBook deterministic mock',
     explorerUrl: null,
     nativeCurrencySymbol: 'ETH',
   },

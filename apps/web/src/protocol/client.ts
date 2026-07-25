@@ -8,7 +8,7 @@ import { createMockLiquidOBClient } from '@liquid-ob/frontend-api/mock'
 export function createProtocolClient(): LiquidOBFrontendClient {
   const mode = import.meta.env.VITE_PROTOCOL_MODE ?? 'mock'
   if (mode === 'mock') {
-    return createMockLiquidOBClient()
+    return createMockLiquidOBClient({ latencyMs: 0 })
   }
 
   throw new Error(
