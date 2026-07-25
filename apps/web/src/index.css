@@ -12,9 +12,37 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 320px; min-height: 100%; background: #070914; }
-body { margin: 0; min-width: 320px; min-height: 100vh; overflow-x: hidden; }
+html {
+  min-width: 320px;
+  min-height: 100%;
+  overflow-x: clip;
+  background: #070914;
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+}
 button, input, select { color: inherit; font: inherit; }
-button { cursor: pointer; }
+button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: not-allowed; }
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #62d9ff;
+  outline-offset: 2px;
+}
 ::selection { color: #070914; background: #a99dff; }
+
+* {
+  scrollbar-color: rgba(169, 157, 255, .34) rgba(255, 255, 255, .025);
+  scrollbar-width: thin;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
