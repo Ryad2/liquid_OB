@@ -149,3 +149,17 @@ presented as architecture.
 - Reconsider when: the complete Aqua MVP is working and an independent v4
   backend can be benchmarked for gas, solvency, security, and integration cost.
 - Analysis: [`UNISWAP_V4_HOOK_EVALUATION.md`](UNISWAP_V4_HOOK_EVALUATION.md).
+
+## ADR-012: Develop through dependency-ordered vertical gates
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: prove pinned Aqua/SwapVM compilation and real transfers before
+  protocol types; prove an independent mathematical oracle before Solidity
+  math; prove one exact-input/output position before recycling or batching;
+  freeze contracts and deploy before indexing; deploy the native Subgraph
+  before connecting the live solver and product UI.
+- Reason: every later component depends on interfaces or state emitted by an
+  earlier component. Building screens, networking, or sponsor tooling first
+  would hide integration failures behind mocks and force expensive rewrites.
+- Plan: [`IMPLEMENTATION_ORDER.md`](IMPLEMENTATION_ORDER.md).

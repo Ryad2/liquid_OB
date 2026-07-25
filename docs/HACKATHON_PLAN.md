@@ -314,6 +314,8 @@ the core proof.
 Use `T0` as the start of protocol implementation and work backward from the
 actual Hacker Dashboard deadline. Do not rely on dates copied from older event
 pages. Preserve the final three to four hours as an untouched submission buffer.
+The dependency gates in [`IMPLEMENTATION_ORDER.md`](IMPLEMENTATION_ORDER.md)
+are authoritative; time pressure never permits reordering a dependent phase.
 
 | Window | Deliverable | Exit test |
 | --- | --- | --- |
@@ -322,10 +324,11 @@ pages. Preserve the final three to four hours as an untouched submission buffer.
 | T+4h to T+8h | SwapVM instruction and router | Official invariant harness plus one quoted fill green |
 | T+8h to T+11h | Aqua lifecycle and settlement | Two-sided publish, recycle, fill, cancel, and real transfer E2E green |
 | T+11h to T+14h | Atomic multi-order executor | Three-maker route settles or fully reverts |
-| T+14h to T+17h | TypeScript compiler and solver | Differential vectors match Solidity exactly |
-| T+17h to T+20h | Maker and taker UI | Primary demo path works without console intervention |
-| T+20h to T+22h | The Graph index and query tool | Fresh fill appears and changes the next route |
-| T+22h to T+24h | Testnet deploy and seeded market | Two complete rehearsals from funded demo wallets |
+| T+14h to T+17h | TypeScript parity and pure solver core | Differential vectors match Solidity and solver beats small brute-force cases |
+| T+17h to T+19h | Security gate, public deploy, and seeded market | Frozen contracts execute twice from terminal against public addresses |
+| T+19h to T+21h | Native Liquid OB Subgraph | Fresh fill changes both indexed sides and the next solver input |
+| T+21h to T+24h | Live solver API and maker/taker UI | Primary demo path works without console intervention or mock protocol state |
+| Parallel only after core | Reusable Graph MCP | Live native and standardized sources return structured comparison |
 | Final buffer, 30m | Uniswap feedback and form evidence | `FEEDBACK.md`, form, and identifying note complete |
 | Final 3 to 4h | Submission package | CI, links, video, forms, README, and pitch verified |
 
@@ -348,24 +351,25 @@ documentation, rehearsal, and submission work are allowed.
 
 ## 10. Commit sequence
 
-Each commit must build and test independently. The intended sequence is:
+Each commit must build and test independently. The exact 28-commit target is in
+[`IMPLEMENTATION_ORDER.md`](IMPLEMENTATION_ORDER.md). Its high-level order is:
 
-1. `docs: freeze hackathon execution plan`
-2. `build: add official Aqua and SwapVM dependencies`
-3. `feat: define bounded curve and two-sided position types`
-4. `feat: implement closed-form curve quote math`
-5. `test: cover curve branches, invariants, and rounding`
-6. `feat: implement automatic opposite-curve rescaling`
-7. `feat: add Liquid Curve SwapVM instruction and router`
-8. `test: integrate Aqua recycling and token transfers`
-9. `feat: add atomic multi-position execution`
-10. `feat: add TypeScript position compiler and solver`
-11. `feat: build maker position workflow`
-12. `feat: build taker routing and execution workflow`
-13. `feat: index live position liquidity with The Graph`
-14. `chore: deploy and seed demo environment`
-15. `docs: complete Uniswap feedback and submission evidence`
-16. `docs: finalize submission and demo`
+1. Pin and smoke-test official Aqua/SwapVM dependencies.
+2. Freeze units, types, errors, events, and strategy format.
+3. Add independent high-precision vectors.
+4. Implement and harden Solidity math and two-sided transitions.
+5. Prove TypeScript math and encoding parity.
+6. Execute one exact-input/output position through SwapVM and Aqua.
+7. Integrate recycling, lifecycle, Quoter, and Lens.
+8. Add and harden atomic exact-input/output batching.
+9. Freeze security, ABI, events, and deployment configuration.
+10. Deploy publicly, seed positions, and generate clients.
+11. Implement and prove the pure solver core.
+12. Index native Liquid OB micro-pools with The Graph.
+13. Connect Graph discovery, bounded RPC refresh, and final simulation.
+14. Build live maker, taker, manager, and explorer workflows.
+15. Expose reusable Graph liquidity tools.
+16. Run deployed E2E, rehearse, and complete submission evidence.
 
 ## 11. Four-minute demo
 

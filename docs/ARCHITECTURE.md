@@ -861,6 +861,11 @@ docs/                       math, architecture, security, demo, and submission
 
 ## 17. Implementation Order And Gates
 
+The detailed file-by-file sequence, tests, stop conditions, deployment order,
+and intended commits are normative in
+[`IMPLEMENTATION_ORDER.md`](IMPLEMENTATION_ORDER.md). The following list is the
+architecture-level summary.
+
 1. **Pin and prove dependencies.** Resolve licenses, exact commits, target
    network, official Aqua fork, custom SwapVM compilation, and one real token
    transfer before building UI.

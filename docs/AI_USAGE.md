@@ -138,5 +138,21 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: `docs/UNISWAP_V4_HOOK_EVALUATION.md`, ADR-011, and
   `prompts/0009-uniswap-v4-hook-evaluation.md`.
 
+## 25 July 2026: dependency-ordered implementation plan
+
+- Tool: OpenAI Codex
+- Work: converted the complete architecture into a file-by-file development
+  sequence with vertical slices, dependency gates, test requirements, public
+  deployment timing, native Subgraph ordering, solver integration, UI flows,
+  security freeze, stop conditions, and an intended commit history.
+- Decision: prove official Aqua/SwapVM transfers before protocol logic; validate
+  math independently before settlement; freeze and deploy events before The
+  Graph; make the native Subgraph precede the live solver API and product UI.
+- Imported implementation during this step: none.
+- Human review required: license selection, upstream pins, compiler matrix,
+  public network, actual deadline, and time allocation before Phase 0 begins.
+- Output: `docs/IMPLEMENTATION_ORDER.md`, ADR-012, and
+  `prompts/0010-protocol-implementation-order.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

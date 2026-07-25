@@ -18,6 +18,10 @@ The current execution plan is documented in
 The complete end-to-end implementation architecture and protocol-integration
 map is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+The dependency-ordered development sequence, exit gates, tests, and intended
+commit history are documented in
+[`docs/IMPLEMENTATION_ORDER.md`](docs/IMPLEMENTATION_ORDER.md).
+
 The decision to keep Uniswap v4 custom accounting as a post-MVP alternative,
 rather than the hackathon settlement core, is documented in
 [`docs/UNISWAP_V4_HOOK_EVALUATION.md`](docs/UNISWAP_V4_HOOK_EVALUATION.md).
