@@ -4,21 +4,21 @@
 
 Build the smallest complete proof that a functional order book is useful:
 
-> Liquid OB is an order book where each maker order is a bounded executable
-> curve. A solver routes one taker order across competing curves, and the
-> resulting fills settle from self-custodied 1inch Aqua balances.
+> Liquid OB is an order book where each maker order is an exact bounded
+> Richardson curve. A solver routes one taker order across competing curves,
+> and the resulting fills settle from self-custodied 1inch Aqua balances.
 
 The project wins by making this claim visible in one transaction, not by
-shipping the largest protocol. The live demo must show three independently
-configured maker curves, a better split than any single curve, actual token
-transfers, and indexed post-trade state.
+shipping the largest protocol. The live demo must show three Richardson curves
+with different bounds and shape parameters, a better split than any single
+curve, actual token transfers, and indexed post-trade state.
 
 ## 2. Definition of success
 
 The core is demo-ready only when all of the following are true:
 
-1. A maker can define, validate, fund, publish, replace, and cancel a bounded
-   curve order.
+1. A maker can define, validate, fund, publish, replace, and cancel a Richardson
+   curve order from `pLow`, `pHigh`, `pMgnl`, reserve, and `alpha`.
 2. A taker can request exact-input and exact-output quotes from a single curve.
 3. A solver can compare live curves and split one order across at least three
    maker positions.
@@ -39,10 +39,13 @@ testing, and production operations are explicitly outside the submission claim.
 - Independent one-direction maker orders. A two-sided maker publishes one bid
   curve and one ask curve; the protocol does not force them to meet or share a
   shape parameter.
-- A safe curve language made of at most four piecewise-linear marginal-rate
-  segments.
-- Flat segments as the exact limit-order special case.
-- Exact-input and exact-output quoting with maker-favorable rounding.
+- The exact Richardson single-curve family with all five canonical `alpha`
+  branches: `alpha > 1`, `alpha = 1`, `0 < alpha < 1`, `alpha = 0`, and
+  `alpha < 0`.
+- The compact runtime state `(y, yInt, aHat, bHat, alpha)` and closed-form
+  exact-input and exact-output quote functions.
+- Exact price bounds and marginal-price reconstruction with maker-favorable
+  rounding at token-transfer boundaries.
 - Aqua-backed maker inventory and a custom SwapVM instruction/router if the
   official contracts and license permit the intended extension.
 - Offchain discovery and route optimization followed by exact onchain
@@ -52,8 +55,11 @@ testing, and production operations are explicitly outside the submission claim.
 
 ### Explicitly out of scope
 
-- LP shares, fungible pools, pair factories, coupled buy/sell reserves, and
-  forced bonding-curve symmetry.
+- LP shares, fungible pools, pair factories, and forced bonding-curve symmetry.
+- Section 7.1 active/spectator pair coupling in the first order-book demo. It
+  is a composition layer between two Richardson curves, not a replacement for
+  the single-curve kernel, and can be added without changing order math.
+- Piecewise-linear approximations of the Richardson curve.
 - Arbitrary maker-provided bytecode or unrestricted mathematical expressions.
 - Oracles as a settlement dependency. Makers quote prices; arbitrage and the
   solver align competing liquidity with external markets.
@@ -63,54 +69,80 @@ testing, and production operations are explicitly outside the submission claim.
 
 ## 4. Order semantics and math
 
-For every order, the maker sells `tokenOut` and receives `tokenIn`. Let `q` be
-the cumulative raw `tokenOut` already consumed. Define `r(q)` as raw
-`tokenIn` required for one raw unit of `tokenOut`, scaled by `1e18`.
-
-Each segment commits:
-
-- `capacityOut`: maximum raw output available in that segment.
-- `rateStartWad`: marginal input-per-output rate at the segment start.
-- `rateEndWad`: marginal input-per-output rate at the segment end.
-
-For local consumption `x` in a segment of capacity `C`:
+Each order uses the paper's native frame. The maker supplies reserve token `y`
+and receives input token `x`. The curve stores only:
 
 ```text
-r(x) = r0 + (r1 - r0) * x / C
-
-cost(x) = r0 * x + (r1 - r0) * x^2 / (2 * C)
+(y, yInt, aHat, bHat, alpha)
 ```
 
-All divisions include the `1e18` rate scale and use full-precision arithmetic.
-The compiler converts human token decimals into raw rates offchain so the
-execution path never calls token metadata.
+`x`, `pLow`, `pHigh`, and `pMgnl` are derived views, not persistent state. Let:
 
-The order is valid only if capacities are nonzero, rates are nonzero, segment
-boundaries are continuous, and marginal rates never decrease. Therefore later
-liquidity cannot become cheaper for the taker. An ask displays `r(q)` directly;
-a bid displays its inverse in the UI while preserving one mechanical contract
-orientation.
+```text
+r = y / yInt
+s = bHat / aHat
+```
 
-Exact-output integrates the traversed segments. Exact-input solves the same
-quadratic per segment with a fixed-point square root, then verifies the result
-against the forward cost. Rounding must always protect the maker: input owed is
-rounded up and output delivered is rounded down.
+The exact Richardson marginal-price function is:
 
-The immutable curve program commits the original output capacity. Current
-consumption is derived from that capacity and the corresponding Aqua virtual
-balance, avoiding a second mutable fill counter. Execution rejects balances
-outside the committed domain. Maker inventory changes are treated like order
-replacement and are protected for takers by deadline and aggregate slippage.
+```text
+           s * exp(aHat * r)                              if alpha = 0
+p(y) =     bHat * (1 / aHat + r - 1)                     if alpha = 1
+           s * (1 - aHat * r)^(1 / alpha)                if alpha < 0
+           s * (1 - aHat * (1 - r))^(1 / alpha)          if alpha > 0, alpha != 1
+```
+
+The maker-facing configuration is `(y, pLow, pHigh, pMgnl, alpha)`, normalized
+to WAD units. The codec derives:
+
+```text
+aHat = ln(pHigh / pLow)                                  if alpha = 0
+aHat = 1 - (pLow / pHigh)^abs(alpha)                     otherwise
+
+bHat = aHat * pHigh                                      if alpha > 0
+bHat = aHat * pLow                                       if alpha <= 0
+```
+
+For an interior initial state, `yInt` is recovered from the chosen marginal
+price:
+
+```text
+yInt = y * ln(pHigh / pLow) / ln(pMgnl / pLow)           if alpha = 0
+
+yInt = y * (pHigh^alpha - pLow^alpha)
+           / (pMgnl^alpha - pLow^alpha)                  otherwise
+```
+
+The implementation dispatches the five `alpha` branches exactly because
+`alpha = 0` and `alpha = 1` are singular closed forms, not neighborhoods to be
+approximated. It uses fixed-point `pow`, `exp`, and `ln` primitives with explicit
+domain checks and no segment approximation or iterative swap-time root solver.
+
+`pMgnl` selects the initial point on one curve. It is not a global market price
+and does not force a maker's bid and ask curves to meet. Reverse-facing prices,
+bounds, coordinates, and `alpha` are normalized with the paper's reflection
+transform before curves are compared.
+
+The immutable Aqua program commits `yInt`, `aHat`, `bHat`, `alpha`, token
+orientation, and maker. The live Aqua reserve balance supplies `y`; execution
+requires `0 <= y <= yInt`. A fill moves `y` through the exact Richardson quote
+function. Maker reconfiguration uses cancel-and-republish, while taker deadlines
+and aggregate slippage protect against state changes between discovery and
+execution.
 
 ## 5. Architecture
 
 ### Settlement layer
 
-- `LiquidCurveMath`: pure validation, integration, inversion, and segment
-  traversal.
-- `LiquidCurveInstruction`: custom SwapVM instruction that decodes the bounded
-  program, reads the relevant Aqua balance, computes a fill, and applies the
-  required maker/taker balance deltas.
+- `CurveCodec`: compiles and validates Richardson's external and compact state,
+  then reconstructs bounds and marginal prices.
+- `CurveMath`: implements the five closed-form exact-input and exact-output
+  branches over `(y, yInt, aHat, bHat, alpha)`.
+- `FixedPoint` and `FixedPointTranscendentals`: provide full-precision WAD
+  arithmetic, powers, logarithms, and exponentials with checked domains.
+- `LiquidCurveInstruction`: custom SwapVM instruction that decodes the compact
+  Richardson state, reads the relevant Aqua balance, computes a fill, and
+  applies the required maker/taker balance deltas.
 - `LiquidCurveRouter`: validates tokens, amounts, deadline, and minimum output
   or maximum input before invoking SwapVM in Aqua mode.
 - `BatchExecutor`: executes multiple selected maker orders atomically and
@@ -124,22 +156,32 @@ cancel-and-republish lifecycle.
 
 ### SDK and solver
 
-- Compile user-facing prices, capacities, direction, and token decimals into a
-  canonical program hash and raw segment encoding.
+- Compile `(reserve, pLow, pHigh, pMgnl, alpha)`, direction, and token decimals
+  into a canonical compact Richardson program and strategy hash.
 - Reproduce contract quotes exactly in TypeScript, including rounding.
-- Discover candidate orders, validate their current onchain state, rank current
-  marginal rates, and allocate volume until the requested amount is filled.
+- Discover candidate orders, validate their current onchain state, and optimize
+  allocations using each curve's exact branch-specific quote function.
 - Re-quote the final route onchain immediately before building calldata.
-- Return a transparent route: maker, amount, segment, marginal range, and cost
-  for every fill.
+- Return a transparent route: maker, input, output, `alpha` branch, `pBefore`,
+  `pAfter`, and effective price for every fill.
 
-The first solver is deterministic greedy routing over monotone marginal curves.
-It is sufficient because the next cheapest marginal unit is optimal under the
-frozen MVP assumptions. More general optimization is future work.
+For exact output `Y`, the solver minimizes the sum of the exact Richardson input
+functions subject to reserve domains:
+
+```text
+minimize    sum(deltaX_i(deltaY_i))
+subject to  sum(deltaY_i) = Y
+            0 <= deltaY_i <= y_i
+```
+
+The solver must not assume that a naive greedy algorithm is globally optimal
+for every `alpha` branch. It uses branch-aware optimization offchain and submits
+only a candidate allocation; contracts independently verify every quote,
+balance, domain transition, deadline, and aggregate slippage condition.
 
 ### Data layer
 
-The Liquid OB Subgraph indexes `Market`, `CurveOrder`, `Segment`, `Fill`, and
+The Liquid OB Subgraph indexes `Market`, `CurveOrder`, `CurveState`, `Fill`, and
 `Maker` entities from directory and settlement events. A reusable query tool
 exposes at least:
 
@@ -158,9 +200,10 @@ all parameters, previews inventory requirements, and publishes or replaces the
 position. The taker screen shows all candidate curves, the solver split, blended
 price, worst marginal price, pre/post curve states, and one execution action.
 
-The interface must prioritize the visual proof: a flat order and two shaped
-orders competing for the same trade. Raw protocol configuration belongs behind
-an advanced disclosure, not in the primary demo path.
+The interface must prioritize the visual proof: three exact Richardson curves
+with visibly different `alpha`, price bounds, and available reserves competing
+for the same trade. Raw encoded parameters belong behind an advanced disclosure,
+not in the primary demo path.
 
 ## 6. Correctness gates
 
@@ -168,30 +211,32 @@ No milestone is complete until its tests pass. Required properties are:
 
 1. Exact quote and execution return the same amounts and post-trade state.
 2. Exact-input and exact-output are near-inverses within documented rounding.
-3. Marginal price is monotone and remains inside every segment's bounds.
+3. Recovered `pLow`, `pHigh`, and `pMgnl` match configuration across all five
+   exact `alpha` branches within documented fixed-point tolerances.
 4. Splitting a fill along one curve is path-consistent with one combined fill.
 5. Every rounding decision is maker-favorable.
-6. Fills cannot exceed live Aqua balance or committed curve capacity.
-7. Zero amounts, malformed encodings, discontinuities, overflow domains, stale
-   deadlines, and invalid token directions revert.
+6. Every transition preserves `0 <= yAfter <= yInt`, valid bounds, and the
+   branch-specific price monotonicity required by the native orientation.
+7. Zero amounts, malformed encodings, invalid `alpha`, transcendental overflow
+   domains, stale deadlines, and invalid token directions revert.
 8. Batch execution conserves both tokens and is all-or-nothing.
 9. Reentrancy and callback behavior cannot bypass accounting or slippage.
 10. Official Aqua integration tests show real token transfers, not mocked
     success values.
 
-Use Forge unit and fuzz tests, SwapVM `CoreInvariants`, and one small independent
-reference model for differential vectors if the core demo is already green.
+Use Forge unit and fuzz tests, SwapVM `CoreInvariants`, and differential vectors
+against an independent high-precision reference model for every `alpha` branch.
 
 ## 7. Sponsor strategy
 
 ### Primary: 1inch Aqua and SwapVM
 
-This is the architectural center, not an adapter. Liquid OB turns each curve
-into a sophisticated Aqua position, keeps maker assets self-custodied, and uses
-SwapVM for programmable settlement. The demo must include official contracts,
-real token transfers, tests or UI, and a credible commit history. A custom
-SwapVM instruction is the preferred implementation because the prize states
-that SwapVM projects score higher.
+This is the architectural center, not an adapter. Liquid OB turns each exact
+Richardson curve into a sophisticated Aqua position, keeps maker assets
+self-custodied, and uses SwapVM for programmable settlement. The demo must
+include official contracts, real token transfers, tests or UI, and a credible
+commit history. A custom SwapVM instruction is the preferred implementation
+because the prize states that SwapVM projects score higher.
 
 Before implementation, pin the exact official commits and review Aqua's license
 and SwapVM's custom `LicenseRef-Degensoft-SwapVM-1.1` terms. Do not copy or
@@ -259,7 +304,7 @@ pages. Preserve the final three to four hours as an untouched submission buffer.
 | Window | Deliverable | Exit test |
 | --- | --- | --- |
 | T0 to T+1h | Freeze wire format, threat model, dependency commits, and licenses | Written spec and no unresolved license blocker |
-| T+1h to T+4h | Pure piecewise-linear math | Unit, boundary, fuzz, and rounding tests green |
+| T+1h to T+4h | Richardson codec and five closed-form math branches | Unit, boundary, differential, fuzz, and rounding tests green |
 | T+4h to T+8h | SwapVM instruction and router | Official invariant harness plus one quoted fill green |
 | T+8h to T+11h | Aqua lifecycle and settlement | Publish, fund, fill, cancel, and real transfer E2E green |
 | T+11h to T+14h | Atomic multi-order executor | Three-maker route settles or fully reverts |
@@ -293,9 +338,9 @@ Each commit must build and test independently. The intended sequence is:
 
 1. `docs: freeze hackathon execution plan`
 2. `build: add official Aqua and SwapVM dependencies`
-3. `feat: define bounded curve types and validation`
-4. `feat: implement piecewise linear curve math`
-5. `test: fuzz curve invariants and rounding`
+3. `feat: define Richardson curve types and codec`
+4. `feat: implement Richardson closed-form quote math`
+5. `test: cover Richardson branches, invariants, and rounding`
 6. `feat: add Liquid Curve SwapVM instruction and router`
 7. `test: integrate Aqua settlement and token transfers`
 8. `feat: add atomic multi-order execution`
@@ -312,12 +357,12 @@ Each commit must build and test independently. The intended sequence is:
 | Time | What the audience sees |
 | --- | --- |
 | 0:00 to 0:20 | One sentence: traditional orders are constants; Liquid OB orders are bounded executable functions. |
-| 0:20 to 0:50 | A flat limit order beside two shaped maker curves for the same market. |
+| 0:20 to 0:50 | Three bounded Richardson orders with different `alpha` and price ranges for the same market. |
 | 0:50 to 1:30 | Three makers publish funded positions through Aqua and SwapVM. |
 | 1:30 to 2:30 | A taker enters size; the solver visibly splits the route and executes one transaction. |
 | 2:30 to 3:10 | Wallet/Aqua balances change and The Graph surfaces the indexed fills and new liquidity state. |
 | 3:10 to 3:40 | Show the sponsor-specific architecture and one focused test or transaction trace. |
-| 3:40 to 4:00 | Close on the generalization: a classic order is the zero-slope special case. |
+| 3:40 to 4:00 | Close on the shift from one price point to an entire bounded execution policy. |
 
 Pre-fund every wallet, pre-open every tab, keep transaction links ready, and
 record a fallback demo using the same deployed contracts. Never wait for a live

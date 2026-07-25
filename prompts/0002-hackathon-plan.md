@@ -13,7 +13,9 @@ demo over shallow sponsor integrations.
 ## Constraints
 
 - Treat Liquid OB as a new functional order book, not as a pool AMM.
-- Makers publish bounded executable curves rather than only flat orders.
+- Makers publish the exact bounded Richardson curves used by the protocol
+  research, including all five canonical `alpha` branches. Do not substitute
+  piecewise-linear approximations or arbitrary user code.
 - Make 1inch Aqua and SwapVM the primary settlement target.
 - Leave the Uniswap API integration until an explicit eligibility answer is
   received; keep it easy to add without coupling it to the core.
@@ -31,3 +33,10 @@ demo over shallow sponsor integrations.
 - Four-minute demo script and final submission checklist.
 
 The resulting execution plan is stored in `docs/HACKATHON_PLAN.md`.
+
+## Human correction
+
+The initial generated plan incorrectly proposed piecewise-linear marginal
+curves. The project owner rejected that substitution. The corrected plan keeps
+the exact Richardson single-curve kernel and changes only publication,
+discovery, multi-maker routing, and settlement around it.

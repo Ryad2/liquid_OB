@@ -22,3 +22,14 @@ presented as architecture.
   packages, and offchain services in separate top-level workspaces.
 - Reason: prevent secrets and nondeterministic API logic from leaking into the
   browser or the settlement layer. No protocol architecture is implied yet.
+
+## ADR-003: Preserve the exact Richardson curve kernel
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: every maker order uses the compact Richardson state
+  `(y, yInt, aHat, bHat, alpha)` and its five exact closed-form `alpha`
+  branches. Piecewise-linear approximations are not part of the protocol.
+- Reason: the bounding-curve family is the project's core financial primitive.
+  Liquid OB innovates in publishing and aggregating these curves rather than
+  replacing their mathematics.
