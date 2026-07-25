@@ -1,0 +1,26 @@
+{
+  "name": "@liquid-ob/contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "generate": "node scripts/generate-abis.mjs",
+    "generate:check": "node scripts/generate-abis.mjs --check",
+    "lint": "oxlint src scripts",
+    "manifest": "node scripts/create-manifest.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "viem": "^2.55.8"
+  },
+  "devDependencies": {
+    "oxlint": "^1.71.0",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.10"
+  }
+}

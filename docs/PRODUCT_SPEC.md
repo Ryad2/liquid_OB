@@ -354,6 +354,7 @@ protection before external token movement.
 | `CurveMath` | Exact-input/output traversal and flat-order branch |
 | `PositionMath` | Active mutation, opposite credit, rescale, and rearm |
 | `PositionRuntime` | Router-owned logical reserves, scales, and state versions |
+| `LiquidOBCurveKernel` | Stateless codec, curve quote, and two-sided transition below EIP-170 |
 | `LiquidCurveInstruction` | Custom SwapVM curve quote and state-transition opcode |
 | `LiquidOBSwapVMRouter` | Aqua app, SwapVM validation, and single-position settlement |
 | `LiquidOBQuoter` | Static single-position product-level preview |

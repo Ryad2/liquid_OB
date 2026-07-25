@@ -5,40 +5,22 @@ pragma solidity 0.8.30;
 /// @custom:copyright © 2025 Degensoft Ltd
 /// @custom:notice Liquid OB custom instruction added on 25 July 2026.
 
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {ISwapVM} from "@1inch/swap-vm/src/interfaces/ISwapVM.sol";
 import {MakerTraitsLib, MakerTraits} from "@1inch/swap-vm/src/libs/MakerTraits.sol";
 import {Context, ContextLib} from "@1inch/swap-vm/src/libs/VM.sol";
 
 import {ILiquidOBEvents} from "../interfaces/ILiquidOBEvents.sol";
-import {
-    AmountWad,
-    CurveBranch,
-    CurveConfig,
-    CurveQuote,
-    CurveSide,
-    CurveState,
-    CurveTypesLib,
-    NativeCurve,
-    PriceWad,
-    QuoteKind,
-    RateWad,
-    Rounding
-} from "../types/CurveTypes.sol";
+import {ILiquidOBCurveKernel} from "../interfaces/ILiquidOBCurveKernel.sol";
+import {AmountWad, CurveBranch, CurveSide, PriceWad, QuoteKind, RateWad} from "../types/CurveTypes.sol";
 import {PositionConfig, PositionQuote, PositionRuntime} from "../types/PositionTypes.sol";
 import {
-    LiquidOBInsufficientAquaBalance,
     LiquidOBInvalidDirection,
     LiquidOBInvalidExpectedVersionLength,
     LiquidOBInvalidInstructionArguments,
-    LiquidOBPositionExhausted,
-    LiquidOBStalePositionVersion
+    LiquidOBMissingCode,
+    LiquidOBZeroAddress
 } from "../types/ProtocolErrors.sol";
-import {CurveCompiler} from "../libraries/CurveCompiler.sol";
-import {CurveMath} from "../libraries/CurveMath.sol";
-import {FullPrecisionMath} from "../libraries/FullPrecisionMath.sol";
 import {PositionCodec} from "../libraries/PositionCodec.sol";
-import {PositionMath} from "../libraries/PositionMath.sol";
 
 /// @notice SwapVM instruction that quotes and atomically materializes one Liquid OB fill.
 abstract contract LiquidCurveInstruction is ILiquidOBEvents {
@@ -47,6 +29,7 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
 
     uint256 internal constant POSITION_PAYLOAD_LENGTH = 269;
 
+    ILiquidOBCurveKernel public immutable CURVE_KERNEL;
     mapping(bytes32 positionKey => PositionRuntime runtime) internal _positionRuntimes;
 
     struct ExecutionMetadata {
@@ -55,6 +38,12 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
         uint16 fillIndex;
         address payer;
         address recipient;
+    }
+
+    constructor(address curveKernel) {
+        if (curveKernel == address(0)) revert LiquidOBZeroAddress();
+        if (curveKernel.code.length == 0) revert LiquidOBMissingCode(curveKernel);
+        CURVE_KERNEL = ILiquidOBCurveKernel(curveKernel);
     }
 
     function _liquidCurve(Context memory ctx, bytes calldata args) internal {
@@ -97,60 +86,20 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
         uint256 outputBalanceRaw
     ) internal view returns (PositionQuote memory positionQuote, CurveBranch branch) {
         bytes32 key = PositionCodec.positionKey(maker, strategyHash);
-        PositionRuntime memory beforeState = PositionMath.resolve(config, _positionRuntimes[key]);
-        if (expectedVersion != beforeState.version) {
-            revert LiquidOBStalePositionVersion(expectedVersion, beforeState.version);
-        }
-
-        CurveConfig memory activeConfig = side == CurveSide.Sell ? config.sell : config.buy;
-        CurveState memory activeState = side == CurveSide.Sell ? beforeState.sell : beforeState.buy;
-        if (AmountWad.unwrap(activeState.y) == 0) revert LiquidOBPositionExhausted(strategyHash, side);
-
-        NativeCurve memory nativeCurve = CurveCompiler.compile(activeConfig, side);
-        branch = nativeCurve.branch;
-        address tokenIn = CurveTypesLib.tokenIn(side, config.baseToken, config.quoteToken);
-        address tokenOut = CurveTypesLib.tokenOut(side, config.baseToken, config.quoteToken);
-        uint8 inputDecimals = IERC20Metadata(tokenIn).decimals();
-        uint8 outputDecimals = IERC20Metadata(tokenOut).decimals();
-        CurveQuote memory curveQuote;
-
-        if (kind == QuoteKind.ExactInput) {
-            AmountWad amountInWad = FullPrecisionMath.rawToWad(tokenIn, rawAmount, inputDecimals);
-            CurveQuote memory preliminary = CurveMath.quoteExactInput(nativeCurve, activeState, side, amountInWad);
-            uint256 amountOut =
-                FullPrecisionMath.wadToRaw(tokenOut, preliminary.amountOutWad, outputDecimals, Rounding.Down);
-            AmountWad amountOutWad = FullPrecisionMath.rawToWad(tokenOut, amountOut, outputDecimals);
-            CurveQuote memory transferable = AmountWad.unwrap(amountOutWad)
-                == AmountWad.unwrap(preliminary.amountOutWad)
-                ? preliminary
-                : CurveMath.quoteExactOutput(nativeCurve, activeState, side, amountOutWad);
-            curveQuote = CurveMath.withTransferAmounts(
-                transferable, kind, side, rawAmount, amountOut, amountInWad, amountOutWad
-            );
-        } else {
-            AmountWad amountOutWad = FullPrecisionMath.rawToWad(tokenOut, rawAmount, outputDecimals);
-            CurveQuote memory preliminary = CurveMath.quoteExactOutput(nativeCurve, activeState, side, amountOutWad);
-            uint256 amountIn = FullPrecisionMath.wadToRaw(tokenIn, preliminary.amountInWad, inputDecimals, Rounding.Up);
-            AmountWad amountInWad = FullPrecisionMath.rawToWad(tokenIn, amountIn, inputDecimals);
-            curveQuote =
-                CurveMath.withTransferAmounts(preliminary, kind, side, amountIn, rawAmount, amountInWad, amountOutWad);
-        }
-
-        if (curveQuote.amountOut > outputBalanceRaw) {
-            revert LiquidOBInsufficientAquaBalance(curveQuote.amountOut, outputBalanceRaw);
-        }
-
-        positionQuote = PositionQuote({
-            marketId: PositionCodec.marketId(config.baseToken, config.quoteToken),
-            positionKey: key,
-            strategyHash: strategyHash,
-            curve: curveQuote,
-            beforeState: beforeState,
-            afterState: PositionMath.transition(beforeState, side, curveQuote)
-        });
+        return CURVE_KERNEL.quotePosition(
+            config,
+            _positionRuntimes[key],
+            maker,
+            strategyHash,
+            side,
+            expectedVersion,
+            kind,
+            rawAmount,
+            outputBalanceRaw
+        );
     }
 
-    function _decodeOrderConfig(ISwapVM.Order calldata order) internal pure returns (PositionConfig memory) {
+    function _decodeOrderConfig(ISwapVM.Order calldata order) internal view returns (PositionConfig memory) {
         bytes calldata program = order.traits.program(order.data);
         return _decodePayloadBefore(program);
     }
@@ -159,11 +108,11 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
         return _positionRuntimes[positionKey];
     }
 
-    function _decodeContextConfig(Context memory ctx) private pure returns (PositionConfig memory) {
+    function _decodeContextConfig(Context memory ctx) private view returns (PositionConfig memory) {
         return _decodePayloadBefore(ctx.program());
     }
 
-    function _decodePayloadBefore(bytes calldata program) private pure returns (PositionConfig memory config) {
+    function _decodePayloadBefore(bytes calldata program) private view returns (PositionConfig memory config) {
         uint256 programOffset;
         assembly ("memory-safe") {
             programOffset := program.offset
@@ -177,7 +126,7 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
             payload.offset := sub(programOffset, POSITION_PAYLOAD_LENGTH)
             payload.length := POSITION_PAYLOAD_LENGTH
         }
-        config = PositionCodec.decode(payload);
+        config = CURVE_KERNEL.decodePosition(payload);
     }
 
     function _resolveSide(PositionConfig memory config, address tokenIn, address tokenOut)

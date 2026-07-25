@@ -95,6 +95,7 @@ export interface ServiceState {
 export interface DeploymentAddresses {
   aqua: Address | null
   swapVmRouter: Address | null
+  curveKernel: Address | null
   liquidOBRouter: Address | null
   quoter: Address | null
   lens: Address | null

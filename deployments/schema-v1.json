@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://liquid-ob.dev/schemas/deployment-v1.json",
+  "title": "Liquid OB deployment manifest v1",
+  "type": "object",
+  "required": ["schemaVersion", "protocol", "protocolVersion", "network", "release", "config", "contracts", "demoTokens"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "protocol": { "const": "Liquid OB" },
+    "protocolVersion": { "const": "1" },
+    "network": {
+      "type": "object",
+      "required": ["chainId", "name", "nativeCurrencySymbol", "publicRpcUrl", "explorerUrl"]
+    },
+    "release": {
+      "type": "object",
+      "required": ["public", "deploymentBlock", "deploymentTransaction", "deployedAt", "repository", "sourceCommit"]
+    },
+    "config": {
+      "type": "object",
+      "required": ["maxFills", "positionEncodingVersion"]
+    },
+    "contracts": {
+      "type": "object",
+      "required": ["aqua", "curveKernel", "router", "quoter", "lens", "batchExecutor"]
+    },
+    "demoTokens": { "type": "array" }
+  },
+  "additionalProperties": false
+}

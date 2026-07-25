@@ -60,8 +60,9 @@ The protocol must not use the words payload, program, and strategy
 interchangeably:
 
 1. **Liquid OB payload**: the 269-byte policy encoded by `PositionCodec`.
-2. **SwapVM program**: the custom Liquid OB opcode plus the payload and any
-   required VM terminator or control instructions.
+2. **SwapVM program**: version 1 uses the dedicated opcode `0` with a zero-byte
+   argument; the 269-byte policy immediately precedes that program in order
+   data and is committed by the program-offset trait.
 3. **Aqua strategy bytes**: `abi.encode(ISwapVM.Order)` containing maker,
    traits, hooks, and the complete SwapVM program.
 

@@ -284,6 +284,20 @@ static quotes use the same transition functions without writes.
 
 Protocol dependency: none directly.
 
+### 5.8a `LiquidOBCurveKernel.sol`
+
+Owns the stateless codec, compilation, exact-input/exact-output quote and
+two-sided transition computation. The Router holds its address as an immutable
+and passes the current stored runtime into every call. The Kernel has no owner,
+storage, token approval or transfer capability.
+
+This boundary is required by EIP-170: keeping official SwapVM execution, all
+curve math and event/state logic in one runtime would exceed the 24,576-byte
+public deployment limit. The deployed Kernel and Router are independently
+below that limit and their immutable link is checked by deployment tooling.
+
+Protocol dependency: none.
+
 ### 5.9 `LiquidCurveInstruction.sol`
 
 Implements the custom SwapVM opcode. It:
@@ -292,8 +306,8 @@ Implements the custom SwapVM opcode. It:
 2. identifies direction from input and output tokens;
 3. loads the immutable or current runtime state;
 4. validates the quoted `version`;
-5. computes exact input or exact output with `CurveMath`;
-6. computes both post-trade sides with `PositionMath`;
+5. requests exact input/output and both post-trade sides from the immutable
+   `LiquidOBCurveKernel`;
 7. places the computed amounts into SwapVM registers;
 8. commits runtime state only on the execution path;
 9. emits a canonical `CurveFilled` event.
@@ -307,8 +321,10 @@ Protocol dependency: official **1inch SwapVM** instruction interface.
 ### 5.10 `LiquidOBSwapVMRouter.sol`
 
 Is the Aqua app address and the primary single-position execution surface. It
-inherits the pinned official SwapVM/Aqua integration and registers the custom
-curve opcode in a fixed, reviewed instruction table.
+inherits the pinned official SwapVM/Aqua integration and registers only the
+custom curve opcode in a fixed one-instruction table. Unreachable generic
+opcodes are omitted from this specialized deployment to satisfy EIP-170; the
+official SwapVM interpreter, validation and Aqua settlement remain unchanged.
 
 It provides:
 

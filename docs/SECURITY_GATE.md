@@ -55,7 +55,8 @@ malicious metadata and non-standard approval semantics are not supported.
 
 The Phase 9 ABI freeze covers these public contracts and constructor shapes:
 
-- `LiquidOBSwapVMRouter(address aqua, address owner)`;
+- `LiquidOBCurveKernel()`;
+- `LiquidOBSwapVMRouter(address aqua, address curveKernel, address owner)`;
 - `LiquidOBQuoter(address router)`;
 - `LiquidOBLens(address router)`;
 - `LiquidOBBatchExecutor(address router, uint16 maxFills)`.
@@ -70,6 +71,8 @@ change before the demo deployment. Additive view helpers remain possible.
 - Transcendental error bounds are engineering-tested against an independent
   high-precision oracle, not formally verified.
 - Payload recovery relies on the pinned SwapVM program-offset representation.
+- Router execution relies on one immutable stateless CurveKernel; deployment
+  validates that link and public manifests pin both runtime bytecode hashes.
 - The official dependencies are pinned, but the final public addresses and
   chain behavior still require a deployment smoke test.
 - The batch algorithm is intentionally bounded and does not prove solver

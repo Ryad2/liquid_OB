@@ -30,6 +30,7 @@ import {
     QuoteParams
 } from "../../src/types/PositionTypes.sol";
 import {LiquidOBSwapVMRouter} from "../../src/core/LiquidOBSwapVMRouter.sol";
+import {LiquidOBCurveKernel} from "../../src/core/LiquidOBCurveKernel.sol";
 import {LiquidOBQuoter} from "../../src/periphery/LiquidOBQuoter.sol";
 
 contract LiquidOBSwapVMTest is Test {
@@ -48,7 +49,7 @@ contract LiquidOBSwapVMTest is Test {
         maker = makeAddr("maker");
         taker = makeAddr("taker");
         aqua = IAqua(address(new Aqua()));
-        router = new LiquidOBSwapVMRouter(address(aqua), address(this));
+        router = new LiquidOBSwapVMRouter(address(aqua), address(new LiquidOBCurveKernel()), address(this));
         quoter = new LiquidOBQuoter(address(router));
         base = new TokenMock("Base", "BASE");
         quoteToken = new TokenMock("Quote", "QUOTE");

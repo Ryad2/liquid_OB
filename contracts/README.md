@@ -20,7 +20,12 @@ logic and not a production deployment target. The Phase 2 codec validates
 structural canonicality only; curve commitment correctness begins with the
 independent reference oracle and mathematical kernel.
 
-Phase 4A adds checked full-precision signed and unsigned arithmetic, explicit
-mathematical floor/ceiling, WAD and raw-token conversions, and uint128 reserve
-scaling in `FullPrecisionMath.sol`. Transcendental and curve evaluation remain
-unimplemented.
+The onchain hackathon MVP now contains the executable curve kernel, two-sided
+recycling, custom SwapVM instruction/router, product Quoter, lifecycle Lens and
+bounded atomic batch executor. `script/DeployLiquidOB.s.sol` deploys and checks
+their immutable topology. The remaining scripts seed three demo positions,
+replay a version-aware multi-maker route, and dock an immutable demo epoch.
+
+See [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md) for the public-chain
+runbook. These contracts are tested hackathon software, not audited production
+software; use only valueless demo assets.

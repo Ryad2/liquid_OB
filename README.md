@@ -6,13 +6,12 @@ executable pricing curves instead of only flat price-and-size orders.
 ## Status
 
 This repository was initialized from an empty GitHub repository on 25 July
-2026 during ETHGlobal Lisbon. The reproducible Aqua/SwapVM integration boundary,
-real-transfer smoke tests, and canonical Phase 2 ABI/wire format are complete;
-the independent high-precision mathematical oracle and committed Phase 3
-vectors are also complete. A typed frontend gateway and deterministic mock now
-allow product UI work in parallel. Phase 4A full-precision arithmetic and Phase
-4B bounded transcendental math are implemented; curve compilation, the
-Solidity quote kernel, and the production protocol are not implemented yet.
+2026 during ETHGlobal Lisbon. The onchain hackathon MVP now includes canonical
+curve encoding and math, two-sided recycled runtime, official Aqua/SwapVM
+settlement, lifecycle Lens, product Quoter, bounded atomic multi-maker routes,
+adversarial security tests, deployment/seed/replay scripts, generated ABIs and
+a typed position SDK. A deterministic frontend mock supports parallel UI work.
+The public deployment, solver, Subgraph and final live adapter remain pending.
 
 Protocol work will be introduced through small, reviewable commits. External
 tools and dependencies are recorded as they are introduced.
@@ -70,6 +69,8 @@ The working Uniswap developer feedback document is available in
 - `contracts/`: Foundry workspace for EVM contracts and tests.
 - `apps/web/`: React and TypeScript demo application.
 - `packages/`: Shared TypeScript packages such as the future SDK.
+- `packages/contracts/`: generated ABIs and validated deployment manifests.
+- `packages/position-sdk/`: publish, quote, Lens, execute and dock helpers.
 - `packages/frontend-api/`: stable UI contract, amount helpers, and mock client.
 - `services/`: Offchain services such as the future solver or API proxy.
 - `tools/reference/`: development-only high-precision mathematical oracle.
@@ -112,6 +113,9 @@ The optional official Base fork proof requires `BASE_MAINNET_RPC_URL`; without
 it, that suite is reported as skipped. See
 [`docs/DEPENDENCY_AUDIT.md`](docs/DEPENDENCY_AUDIT.md) for the exact command and
 verified deployment matrix.
+
+The reproducible public deployment and seeded-demo flow is documented in
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Security
 

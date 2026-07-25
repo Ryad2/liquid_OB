@@ -61,6 +61,9 @@ jobs:
       - name: Build contracts
         run: forge build --root contracts --sizes
 
+      - name: Check generated ABIs
+        run: node packages/contracts/scripts/generate-abis.mjs --check
+
       - name: Run contract tests
         # Force recompilation so a preceding build cannot leave test discovery
         # dependent on Foundry's artifact cache.

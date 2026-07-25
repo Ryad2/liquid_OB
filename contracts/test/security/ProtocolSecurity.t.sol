@@ -33,6 +33,7 @@ import {
 } from "../../src/types/ProtocolErrors.sol";
 import {PositionCodec} from "../../src/libraries/PositionCodec.sol";
 import {LiquidOBSwapVMRouter} from "../../src/core/LiquidOBSwapVMRouter.sol";
+import {LiquidOBCurveKernel} from "../../src/core/LiquidOBCurveKernel.sol";
 import {LiquidOBBatchExecutor} from "../../src/periphery/LiquidOBBatchExecutor.sol";
 
 contract ProtocolSecurityTest is Test {
@@ -52,7 +53,7 @@ contract ProtocolSecurityTest is Test {
         payer = makeAddr("payer");
         recipient = makeAddr("recipient");
         aqua = IAqua(address(new Aqua()));
-        router = new LiquidOBSwapVMRouter(address(aqua), address(this));
+        router = new LiquidOBSwapVMRouter(address(aqua), address(new LiquidOBCurveKernel()), address(this));
         executor = new LiquidOBBatchExecutor(address(router), 4);
         base = new TokenMock("Base", "BASE");
         quoteToken = new TokenMock("Quote", "QUOTE");

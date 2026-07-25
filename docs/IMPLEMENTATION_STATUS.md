@@ -11,9 +11,10 @@ language, independent high-precision oracle, executable Solidity curve kernel,
 TypeScript maker SDK, lifecycle Lens, and atomic multi-maker Aqua/SwapVM
 settlement. Exact-input and exact-output fills update a versioned two-sided
 runtime and immediately recycle incoming inventory into the opposite curve.
-The demo-scoped security gate now covers adversarial route validation and
-atomic rollback. It does **not** yet have a live solver, Subgraph, public
-deployment, or final live product UI.
+The demo-scoped security gate covers adversarial route validation and atomic
+rollback. Deployment, seed/replay/dock tooling, manifests, generated ABIs and a
+typed position SDK are implemented and locally testable. It does **not** yet
+have a public deployment, live solver, Subgraph, or final live product UI.
 
 The current repository is safe for parallel UI construction. It is not safe
 for real funds, production claims, or a live protocol demo.
@@ -36,6 +37,7 @@ for real funds, production claims, or a live protocol demo.
 | Position lifecycle and Lens | `LiquidOBLens` reconciles canonical policy, resolved runtime, Aqua lifecycle/allocation, wallet balance and allowance | UI and solver diagnostics can distinguish active, under-backed, surplus-funded and docked positions without influencing settlement |
 | Atomic multi-maker settlement | `LiquidOBBatchExecutor` validates bounded solver fills and executes exact-input or exact-output routes through SwapVM with direct recipient settlement | Two-maker routes enforce aggregate limits, refund unused input, leave no executor dust, and roll back every fill if any later fill fails |
 | Demo security gate | Adversarial settlement tests, explicit trust/token assumptions, frozen ABI surface and committed gas baseline | Forged, stale, duplicate, expired, docked, under-backed and aggregate-limit failures are rejected or atomically rolled back |
+| Deployment and client tooling | Foundry deploy/seed/replay/dock scripts, manifest bytecode validation, generated ABI package and typed position SDK | A fresh topology can publish, read, quote and settle; the same source can be promoted to a public manifest without hand-written calldata |
 | Frontend contract | `@liquid-ob/frontend-api` types, amount helpers, client interface and stable errors | UI can be built without importing unfinished ABIs or backend transports |
 | Frontend mock | Three makers, market/position/activity reads, maker preview, exact-in/out routes and transaction plans | Every major screen can be developed with deterministic data |
 | Web integration harness | One composition root consuming only `LiquidOBFrontendClient` | Mock-to-live replacement is isolated from components |
@@ -44,12 +46,11 @@ for real funds, production claims, or a live protocol demo.
 
 | Dependency order | Missing deliverable | Blocks |
 | ---: | --- | --- |
-| 1 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
-| 2 | Generated contract clients and transaction SDK | Wallet transaction plans |
-| 3 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
-| 4 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
-| 5 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
-| 6 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
+| 1 | Public deployment, explorer verification and committed live manifest | Any live frontend mode |
+| 2 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
+| 3 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
+| 4 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
+| 5 | Graph MCP, monitoring, public seeded demo, videos and submission evidence | Sponsor/finalist completion |
 
 ## Current User-Visible Capabilities
 
@@ -87,8 +88,7 @@ transaction plans are deliberately `sendable: false`.
 
 ### Still Provisional Behind The Adapter
 
-- Final contract addresses, deployment block and public chain profile.
-- Generated ABIs and exact transaction calldata.
+- Final public contract addresses, deployment block and chain profile.
 - Accepted EVM transcendental domains and final gas limits.
 - Solver HTTP versus browser deployment choice.
 - Subgraph endpoint, pagination implementation and final entity query fields.
@@ -105,7 +105,7 @@ requires rewriting product components, the frontend boundary has been broken.
    address differ; deployment configuration must inject the audited address.
 3. Single- and multi-position curve settlement are proven locally but have not
    yet run on a public network.
-4. No public deployment, manifest, Subgraph or hosted/browser solver exists.
+4. No public deployment/manifest, Subgraph or hosted/browser solver exists.
 5. No external security audit exists. Current software must use valueless demo
    assets only even after a public test deployment.
 6. A successful local or mock demo does not satisfy ETHGlobal's live finalist

@@ -12,9 +12,7 @@ import {Context} from "@1inch/swap-vm/src/libs/VM.sol";
 
 import {CurveConfig, CurveSide, CurveTypesLib, QuoteKind} from "../types/CurveTypes.sol";
 import {PositionConfig, PositionQuote, PositionRuntime} from "../types/PositionTypes.sol";
-import {CurveCompiler} from "../libraries/CurveCompiler.sol";
 import {PositionCodec} from "../libraries/PositionCodec.sol";
-import {PositionMath} from "../libraries/PositionMath.sol";
 import {LiquidCurveInstruction} from "./LiquidCurveInstruction.sol";
 
 /// @notice Official Aqua/SwapVM router extended by one bounded maker-curve opcode.
@@ -22,30 +20,33 @@ contract LiquidOBSwapVMRouter is AquaSwapVMRouter, LiquidCurveInstruction {
     uint256 private constant USE_AQUA_TRAIT = 1 << 254;
     uint256 private constant PROGRAM_OFFSET_SHIFT = 208;
 
-    constructor(address aqua, address owner) AquaSwapVMRouter(aqua, address(0), owner, "Liquid OB SwapVM", "1") {}
+    constructor(address aqua, address curveKernel, address owner)
+        AquaSwapVMRouter(aqua, address(0), owner, "Liquid OB SwapVM", "1")
+        LiquidCurveInstruction(curveKernel)
+    {}
 
     function liquidCurveOpcode() public pure returns (uint8) {
-        return uint8(super._opcodes().length);
+        return 0;
     }
 
-    function deriveCurve(CurveConfig calldata config, CurveSide side) external pure returns (CurveConfig memory) {
-        return CurveCompiler.derive(config, side);
+    function deriveCurve(CurveConfig calldata config, CurveSide side) external view returns (CurveConfig memory) {
+        return CURVE_KERNEL.deriveCurve(config, side);
     }
 
-    function encodePosition(PositionConfig calldata config) external pure returns (bytes memory) {
-        return PositionCodec.encode(config);
+    function encodePosition(PositionConfig calldata config) external view returns (bytes memory) {
+        return CURVE_KERNEL.encodePosition(config);
     }
 
-    function decodePosition(ISwapVM.Order calldata order) external pure returns (PositionConfig memory) {
+    function decodePosition(ISwapVM.Order calldata order) external view returns (PositionConfig memory) {
         return _decodeOrderConfig(order);
     }
 
     function buildOrder(address maker, PositionConfig calldata config)
         external
-        pure
+        view
         returns (ISwapVM.Order memory order)
     {
-        bytes memory payload = PositionCodec.encode(config);
+        bytes memory payload = CURVE_KERNEL.encodePosition(config);
         bytes memory program = abi.encodePacked(liquidCurveOpcode(), uint8(0));
         order = ISwapVM.Order({
             maker: maker,
@@ -77,7 +78,7 @@ contract LiquidOBSwapVMRouter is AquaSwapVMRouter, LiquidCurveInstruction {
     function resolvedRuntime(ISwapVM.Order calldata order) external view returns (PositionRuntime memory runtime) {
         bytes32 strategyHash = hash(order);
         PositionConfig memory config = _decodeOrderConfig(order);
-        return PositionMath.resolve(config, _runtime(PositionCodec.positionKey(order.maker, strategyHash)));
+        return CURVE_KERNEL.resolveRuntime(config, _runtime(PositionCodec.positionKey(order.maker, strategyHash)));
     }
 
     function _preview(
@@ -102,11 +103,10 @@ contract LiquidOBSwapVMRouter is AquaSwapVMRouter, LiquidCurveInstruction {
         override
         returns (function(Context memory, bytes calldata) internal[] memory result)
     {
-        function(Context memory, bytes calldata) internal[] memory upstream = super._opcodes();
-        result = new function(Context memory, bytes calldata) internal[](upstream.length + 1);
-        for (uint256 i; i < upstream.length; ++i) {
-            result[i] = upstream[i];
-        }
-        result[upstream.length] = LiquidCurveInstruction._liquidCurve;
+        // Liquid OB strategies use one purpose-built instruction. Omitting
+        // unreachable generic opcodes keeps the official SwapVM execution and
+        // Aqua settlement machinery deployable under EIP-170.
+        result = new function(Context memory, bytes calldata) internal[](1);
+        result[0] = LiquidCurveInstruction._liquidCurve;
     }
 }

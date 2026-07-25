@@ -25,6 +25,7 @@ import {PositionConfig, PositionQuote, PositionRuntime} from "../../src/types/Po
 import {ExactInputRoute, ExactOutputRoute, FillRequest, RouteResult} from "../../src/types/RouteTypes.sol";
 import {LiquidOBStalePositionVersion} from "../../src/types/ProtocolErrors.sol";
 import {LiquidOBSwapVMRouter} from "../../src/core/LiquidOBSwapVMRouter.sol";
+import {LiquidOBCurveKernel} from "../../src/core/LiquidOBCurveKernel.sol";
 import {LiquidOBBatchExecutor} from "../../src/periphery/LiquidOBBatchExecutor.sol";
 
 contract LiquidOBBatchExecutorTest is Test {
@@ -50,7 +51,7 @@ contract LiquidOBBatchExecutorTest is Test {
         recipient = makeAddr("recipient");
         refundRecipient = makeAddr("refund-recipient");
         aqua = IAqua(address(new Aqua()));
-        router = new LiquidOBSwapVMRouter(address(aqua), address(this));
+        router = new LiquidOBSwapVMRouter(address(aqua), address(new LiquidOBCurveKernel()), address(this));
         executor = new LiquidOBBatchExecutor(address(router), 4);
         base = new TokenMock("Base", "BASE");
         quoteToken = new TokenMock("Quote", "QUOTE");

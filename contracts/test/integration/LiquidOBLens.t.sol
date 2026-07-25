@@ -24,6 +24,7 @@ import {
 } from "../../src/types/CurveTypes.sol";
 import {PositionConfig, PositionLifecycle, PositionLocator, PositionSnapshot} from "../../src/types/PositionTypes.sol";
 import {LiquidOBSwapVMRouter} from "../../src/core/LiquidOBSwapVMRouter.sol";
+import {LiquidOBCurveKernel} from "../../src/core/LiquidOBCurveKernel.sol";
 import {LiquidOBLens} from "../../src/periphery/LiquidOBLens.sol";
 
 contract LiquidOBLensTest is Test {
@@ -42,7 +43,7 @@ contract LiquidOBLensTest is Test {
         maker = makeAddr("maker");
         taker = makeAddr("taker");
         aqua = IAqua(address(new Aqua()));
-        router = new LiquidOBSwapVMRouter(address(aqua), address(this));
+        router = new LiquidOBSwapVMRouter(address(aqua), address(new LiquidOBCurveKernel()), address(this));
         lens = new LiquidOBLens(address(router));
         base = new TokenMock("Base", "BASE");
         quoteToken = new TokenMock("Quote", "QUOTE");

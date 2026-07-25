@@ -15,9 +15,12 @@
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
     "contracts:build": "forge build --root contracts",
+    "contracts:generate": "forge build --root contracts && node packages/contracts/scripts/generate-abis.mjs",
+    "contracts:generate:check": "node packages/contracts/scripts/generate-abis.mjs --check",
     "contracts:fmt": "forge fmt --root contracts --check",
     "contracts:lint": "forge lint --root contracts",
     "contracts:test": "forge test --root contracts --force",
+    "deployment:manifest": "pnpm --filter @liquid-ob/contracts manifest",
     "reference:generate": "python3 -m tools.reference.generate_vectors",
     "reference:check": "python3 -m tools.reference.generate_vectors --check",
     "reference:test": "python3 -m unittest tools.reference.test_reference_math -v"

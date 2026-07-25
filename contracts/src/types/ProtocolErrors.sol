@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 import {CurveSide} from "./CurveTypes.sol";
 
 error LiquidOBZeroAddress();
+error LiquidOBMissingCode(address target);
 error LiquidOBIdenticalTokens(address token);
 error LiquidOBUnsupportedTokenDecimals(address token, uint8 decimals);
 error LiquidOBInvalidEncodingLength(uint256 actual, uint256 expected);
