@@ -49,18 +49,26 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
 
     mapping(bytes32 positionKey => PositionRuntime runtime) internal _positionRuntimes;
 
+    struct ExecutionMetadata {
+        uint64 expectedVersion;
+        bytes32 routeId;
+        uint16 fillIndex;
+        address payer;
+        address recipient;
+    }
+
     function _liquidCurve(Context memory ctx, bytes calldata args) internal {
         if (args.length != 0) revert LiquidOBInvalidInstructionArguments(args.length);
 
         PositionConfig memory config = _decodeContextConfig(ctx);
         CurveSide side = _resolveSide(config, ctx.query.tokenIn, ctx.query.tokenOut);
-        uint64 expectedVersion = _consumeExpectedVersion(ctx);
+        ExecutionMetadata memory metadata = _consumeExecutionMetadata(ctx);
         (PositionQuote memory positionQuote, CurveBranch branch) = _quotePosition(
             config,
             ctx.query.maker,
             ctx.query.orderHash,
             side,
-            expectedVersion,
+            metadata.expectedVersion,
             ctx.query.isExactIn ? QuoteKind.ExactInput : QuoteKind.ExactOutput,
             ctx.query.isExactIn ? ctx.swap.amountIn : ctx.swap.amountOut,
             ctx.swap.balanceOut
@@ -75,7 +83,7 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
             _emitRuntimeInitialized(positionQuote, config, ctx.query.maker);
         }
         _positionRuntimes[positionQuote.positionKey] = positionQuote.afterState;
-        _emitCurveFilled(ctx, positionQuote, branch);
+        _emitCurveFilled(ctx, positionQuote, branch, metadata);
     }
 
     function _quotePosition(
@@ -182,11 +190,25 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
         revert LiquidOBInvalidDirection(CurveSide.Sell, tokenIn, tokenOut);
     }
 
-    function _consumeExpectedVersion(Context memory ctx) private pure returns (uint64 expectedVersion) {
+    function _consumeExecutionMetadata(Context memory ctx) private pure returns (ExecutionMetadata memory metadata) {
         bytes calldata encoded = ctx.tryChopTakerArgs(8);
         if (encoded.length != 8) revert LiquidOBInvalidExpectedVersionLength(encoded.length);
         assembly ("memory-safe") {
-            expectedVersion := shr(192, calldataload(encoded.offset))
+            mstore(metadata, shr(192, calldataload(encoded.offset)))
+        }
+
+        bytes calldata routeData = ctx.tryChopTakerArgs(74);
+        if (routeData.length == 0) {
+            metadata.payer = ctx.query.taker;
+            metadata.recipient = ctx.query.taker;
+            return metadata;
+        }
+        if (routeData.length != 74) revert LiquidOBInvalidInstructionArguments(routeData.length);
+        assembly ("memory-safe") {
+            mstore(add(metadata, 0x20), calldataload(routeData.offset))
+            mstore(add(metadata, 0x40), shr(240, calldataload(add(routeData.offset, 32))))
+            mstore(add(metadata, 0x60), shr(96, calldataload(add(routeData.offset, 34))))
+            mstore(add(metadata, 0x80), shr(96, calldataload(add(routeData.offset, 54))))
         }
     }
 
@@ -204,20 +226,27 @@ abstract contract LiquidCurveInstruction is ILiquidOBEvents {
         );
     }
 
-    function _emitCurveFilled(Context memory ctx, PositionQuote memory quote, CurveBranch branch) private {
-        bytes32 routeId = keccak256(abi.encode(ctx.query.orderHash, ctx.query.taker, quote.beforeState.version));
+    function _emitCurveFilled(
+        Context memory ctx,
+        PositionQuote memory quote,
+        CurveBranch branch,
+        ExecutionMetadata memory metadata
+    ) private {
+        bytes32 routeId = metadata.routeId == bytes32(0)
+            ? keccak256(abi.encode(ctx.query.orderHash, ctx.query.taker, quote.beforeState.version))
+            : metadata.routeId;
         emit CurveFilled(
             routeId,
             quote.positionKey,
             ctx.query.maker,
             quote.marketId,
             quote.strategyHash,
-            0,
+            metadata.fillIndex,
             quote.curve.side,
             branch,
             quote.curve.kind,
-            ctx.query.taker,
-            ctx.query.taker,
+            metadata.payer,
+            metadata.recipient,
             ctx.query.tokenIn,
             ctx.query.tokenOut,
             quote.curve.amountIn,

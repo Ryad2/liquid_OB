@@ -33,6 +33,7 @@ for real funds, production claims, or a live protocol demo.
 | TypeScript curve SDK | `@liquid-ob/curve-math` compiler, preview, transition, canonical payload and SwapVM strategy encoder with Solidity payload-vector parity | Frontends can build a position and preview it before obtaining an authoritative onchain quote |
 | Aqua curve settlement | Custom `LiquidCurveInstruction`, `LiquidOBSwapVMRouter`, product `LiquidOBQuoter`, and two-direction integration test | One shipped maker position quotes without mutation, transfers real tokens, recycles inventory, and advances runtime atomically |
 | Position lifecycle and Lens | `LiquidOBLens` reconciles canonical policy, resolved runtime, Aqua lifecycle/allocation, wallet balance and allowance | UI and solver diagnostics can distinguish active, under-backed, surplus-funded and docked positions without influencing settlement |
+| Atomic multi-maker settlement | `LiquidOBBatchExecutor` validates bounded solver fills and executes exact-input or exact-output routes through SwapVM with direct recipient settlement | Two-maker routes enforce aggregate limits, refund unused input, leave no executor dust, and roll back every fill if any later fill fails |
 | Frontend contract | `@liquid-ob/frontend-api` types, amount helpers, client interface and stable errors | UI can be built without importing unfinished ABIs or backend transports |
 | Frontend mock | Three makers, market/position/activity reads, maker preview, exact-in/out routes and transaction plans | Every major screen can be developed with deterministic data |
 | Web integration harness | One composition root consuming only `LiquidOBFrontendClient` | Mock-to-live replacement is isolated from components |
@@ -41,14 +42,13 @@ for real funds, production claims, or a live protocol demo.
 
 | Dependency order | Missing deliverable | Blocks |
 | ---: | --- | --- |
-| 1 | Atomic exact-input and exact-output batch executor | Multi-maker settlement |
-| 2 | Security/fuzz/invariant/fork hardening and ABI freeze | Public deployment |
-| 3 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
-| 4 | Generated contract clients and transaction SDK | Wallet transaction plans |
-| 5 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
-| 6 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
-| 7 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
-| 8 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
+| 1 | Security/fuzz/invariant/fork hardening and ABI freeze | Public deployment |
+| 2 | Deployment scripts, public contracts, verified addresses and manifests | Any live frontend mode |
+| 3 | Generated contract clients and transaction SDK | Wallet transaction plans |
+| 4 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
+| 5 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
+| 6 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
+| 7 | Graph MCP, monitoring, seeded demo, videos and submission evidence | Sponsor/finalist completion |
 
 ## Current User-Visible Capabilities
 

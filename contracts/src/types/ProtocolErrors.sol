@@ -45,3 +45,5 @@ error LiquidOBInvalidInstructionArguments(uint256 actualLength);
 error LiquidOBInvalidExpectedVersionLength(uint256 actualLength);
 error LiquidOBInsufficientAquaBalance(uint256 requested, uint256 available);
 error LiquidOBMakerMismatch(address supplied, address encoded);
+error LiquidOBRouteAmountMismatch(uint256 expected, uint256 actual);
+error LiquidOBMarketMismatch(address expectedBase, address expectedQuote, address actualBase, address actualQuote);
