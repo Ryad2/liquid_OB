@@ -3,14 +3,16 @@
 Only accepted decisions belong here. Open questions are deliberately not
 presented as architecture.
 
-## ADR-001: Start from an empty clean-room repository
+## ADR-001: Require independently justified architecture
 
 - Date: 25 July 2026
 - Status: accepted
-- Decision: no code, tests, UI assets, or project-specific architecture will
-  be copied from the previous LiquidSwap repository.
-- Reason: preserve a verifiable Classic-track build history and force every
-  new implementation choice to be justified independently.
+- Decision: every protocol component must be justified against Liquid OB's
+  current product, correctness, and sponsor requirements. Any imported
+  dependency or component must pass a license, provenance, and security review
+  before use.
+- Reason: keep the implementation coherent and auditable instead of inheriting
+  architecture that does not serve the functional-order-book design.
 
 ## ADR-002: Separate deterministic contracts from offchain discovery
 

@@ -4,7 +4,9 @@ function App() {
   return (
     <main>
       <header className="hero">
-        <p className="eyebrow">ETHGlobal Lisbon 2026 / clean-room build</p>
+        <p className="eyebrow">
+          ETHGlobal Lisbon 2026 / programmable liquidity
+        </p>
         <h1>
           Liquid <span>OB</span>
         </h1>

@@ -9,9 +9,11 @@ This repository was initialized from an empty GitHub repository on 25 July
 2026 during ETHGlobal Lisbon. It currently contains project scaffolding only.
 No protocol implementation has been written yet.
 
-No source code, tests, UI assets, or project-specific implementation were
-copied from the earlier LiquidSwap repository. Public tools and dependencies
-will be recorded as they are introduced.
+Protocol work will be introduced through small, reviewable commits. External
+tools and dependencies are recorded as they are introduced.
+
+The current execution plan is documented in
+[`docs/HACKATHON_PLAN.md`](docs/HACKATHON_PLAN.md).
 
 ## Workspace
 

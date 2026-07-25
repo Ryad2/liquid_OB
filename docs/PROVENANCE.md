@@ -1,17 +1,15 @@
 # Provenance
 
-## Clean-room baseline
+## Project baseline
 
 - Repository: `Ryad2/liquid_OB`
 - Initialized: 25 July 2026 during ETHGlobal Lisbon
 - Initial remote state: empty, with no commits or branches
-- Previous project-specific code imported: none
-- Previous tests, designs, generated artifacts, or UI assets imported: none
+- Initial repository state: build, CI, documentation, and UI scaffolding
 
-The product concept may be informed by public research and conversations, but
-all project-specific architecture and implementation in this repository must
-be created during the hackathon. Any public starter, dependency, specification,
-or copied excerpt must be added to the dependency register below before use.
+Any external starter, dependency, specification, or imported component must be
+reviewed before use and added to the dependency register below with its source,
+version, license, and purpose.
 
 ## Dependency register
 
