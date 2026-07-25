@@ -66,6 +66,24 @@ struct CurveState {
     AmountWad yInt;
 }
 
+/// @notice Maker policy compiled into the native outgoing-per-incoming frame.
+/// @param branch Exact numerical branch used by the curve kernel.
+/// @param alphaNative Native Holder parameter in signed WAD.
+/// @param betaNative Derived conjugate parameter `alphaNative - 1`, signed WAD.
+/// @param pLow Terminal native output/input marginal rate, WAD.
+/// @param pHigh Fresh native output/input marginal rate, WAD.
+/// @param mu Dimensionless reduced range parameter, WAD.
+/// @param kappa Native reduced scale parameter, WAD.
+struct NativeCurve {
+    CurveBranch branch;
+    int256 alphaNative;
+    int256 betaNative;
+    RateWad pLow;
+    RateWad pHigh;
+    UnitlessWad mu;
+    RateWad kappa;
+}
+
 /// @notice Complete pure quote for one active curve.
 /// @param kind Exact-input or exact-output request semantics.
 /// @param side Maker side consumed by the taker.

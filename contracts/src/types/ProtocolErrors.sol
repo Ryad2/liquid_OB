@@ -39,3 +39,5 @@ error LiquidOBInvalidLogarithmInput(uint256 inputWad);
 error LiquidOBInvalidLog1pInput(int256 inputWad);
 error LiquidOBExponentialOutOfDomain(int256 inputWad);
 error LiquidOBPowerOutOfDomain(uint256 baseWad, int256 exponentWad);
+error LiquidOBCurveOutOfDomain();
+error LiquidOBNonMonotonicRate(uint256 beforeWad, uint256 afterWad);
