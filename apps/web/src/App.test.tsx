@@ -30,7 +30,7 @@ describe('ArcBook product frontend', () => {
     expect(window.location.hash).toBe('#/trade')
   })
 
-  it('exposes a continuous full-range alpha control in the curve composer', async () => {
+  it('keeps quick alpha controls while allowing larger numeric values', async () => {
     window.history.replaceState({}, '', '#/studio')
     render(<App />)
 
@@ -39,8 +39,10 @@ describe('ArcBook product frontend', () => {
     expect(slider).toHaveAttribute('max', '20')
     expect(slider).toHaveAttribute('step', '0.01')
 
-    fireEvent.input(slider, { target: { value: '13.37' } })
-    expect(slider).toHaveValue('13.37')
+    const numericInput = screen.getByRole('spinbutton', { name: /sell alpha value/i })
+    expect(numericInput).not.toHaveAttribute('max')
+    fireEvent.change(numericInput, { target: { value: '100' } })
+    expect(numericInput).toHaveValue(100)
   })
 
   it('keeps wallet-owned portfolio data hidden until connection', async () => {

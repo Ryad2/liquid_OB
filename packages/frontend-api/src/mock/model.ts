@@ -63,12 +63,14 @@ export function holderPrice(
       + (progress * Math.log(endPrice)),
     )
   }
-  const startPower = alpha * Math.log(startPrice)
-  const endPower = alpha * Math.log(endPrice)
-  const maxPower = Math.max(startPower, endPower)
-  const weightedPower = ((1 - progress) * Math.exp(startPower - maxPower))
-    + (progress * Math.exp(endPower - maxPower))
-  return Math.exp((maxPower + Math.log(weightedPower)) / alpha)
+  const relativePower = alpha * Math.log(endPrice / startPrice)
+  const firstTerm = Math.log1p(-progress)
+  const secondTerm = Math.log(progress) + relativePower
+  const maximum = Math.max(firstTerm, secondTerm)
+  const logWeightedPower = maximum + Math.log(
+    Math.exp(firstTerm - maximum) + Math.exp(secondTerm - maximum),
+  )
+  return Math.exp(Math.log(startPrice) + (logWeightedPower / alpha))
 }
 
 export function marginalSamples(options: {

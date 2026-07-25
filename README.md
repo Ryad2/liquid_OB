@@ -9,9 +9,11 @@ This repository was initialized from an empty GitHub repository on 25 July
 2026 during ETHGlobal Lisbon. The onchain hackathon MVP now includes canonical
 curve encoding and math, two-sided recycled runtime, official Aqua/SwapVM
 settlement, lifecycle Lens, product Quoter, bounded atomic multi-maker routes,
-adversarial security tests, deployment/seed/replay scripts, generated ABIs and
-a typed position SDK. A deterministic frontend mock supports parallel UI work.
-The public deployment, solver, Subgraph and final live adapter remain pending.
+adversarial security tests, deployment/seed/replay scripts, generated ABIs, a
+typed position SDK, deterministic multi-maker solver, native Subgraph and
+stateless solver API. The ArcBook product frontend is integrated against the
+stable deterministic mock. Public deployment of the contracts, Subgraph and
+API, followed by the final live frontend adapter, remains pending.
 
 Protocol work will be introduced through small, reviewable commits. External
 tools and dependencies are recorded as they are introduced.
@@ -72,7 +74,9 @@ The working Uniswap developer feedback document is available in
 - `packages/contracts/`: generated ABIs and validated deployment manifests.
 - `packages/position-sdk/`: publish, quote, Lens, execute and dock helpers.
 - `packages/frontend-api/`: stable UI contract, amount helpers, and mock client.
-- `services/`: Offchain services such as the future solver or API proxy.
+- `packages/solver-core/`: deterministic exact-input/output multi-maker solver.
+- `subgraph/`: native protocol indexing, mappings, queries and Matchstick tests.
+- `services/solver-api/`: Graph-to-Lens-to-Quoter route orchestration service.
 - `tools/reference/`: development-only high-precision mathematical oracle.
 - `test/vectors/`: committed language-neutral protocol vectors.
 - `docs/`: design decisions, provenance, security notes, and integration logs.

@@ -1120,12 +1120,11 @@ function CurveEditor({
             <span className="sr-only">Alpha value</span>
             <input
               type="number"
-              min="-20"
-              max="20"
               step="0.01"
               value={value.alpha}
               onChange={(event) => onChange('alpha', event.target.value)}
               inputMode="decimal"
+              aria-label={`${side} alpha value`}
             />
           </label>
         </div>
@@ -1135,14 +1134,14 @@ function CurveEditor({
           min="-20"
           max="20"
           step="0.01"
-          value={Number(value.alpha) || 0}
+          value={Math.max(-20, Math.min(20, Number(value.alpha) || 0))}
           onInput={(event) => onChange(
             'alpha',
             (event.target as HTMLInputElement).value,
           )}
           aria-label={`${side} curve alpha`}
         />
-        <div className="alpha-scale"><span>-20</span><span>0</span><span>+20</span></div>
+        <div className="alpha-scale"><span>-20 quick range</span><span>0</span><span>+20 quick range</span></div>
         <div className="alpha-presets">
           {[-20, -10, 0, 10, 20].map((preset) => (
             <button key={preset} className={Number(value.alpha) === preset ? 'active' : ''} onClick={() => onChange('alpha', String(preset))} type="button">

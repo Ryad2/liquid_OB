@@ -262,15 +262,21 @@ calldata, contract addresses, transaction hashes or public-chain behavior.
 Visual marginal samples use floating point and are explicitly labelled mock.
 No screenshot or demo may present them as live data.
 
-## 9. Live Adapter Implementation Plan
+## 9. Remaining Live Adapter Implementation Plan
+
+The native Subgraph in `subgraph/`, deterministic solver in
+`packages/solver-core/`, and HTTP orchestration service in
+`services/solver-api/` now implement the backend side of this boundary. The
+remaining work is the browser adapter and public deployment wiring below.
 
 Implement `LiquidOBFrontendClient` in this dependency order:
 
 1. Parse and validate the deployment manifest; implement `getBootstrap`.
 2. Add exact `curve-math`; replace maker preview and emit canonical payload.
-3. Add Subgraph reads for markets, positions and activity with `_meta` blocks.
+3. Consume the committed Subgraph queries for markets, positions and activity
+   with `_meta` blocks.
 4. Add Lens/RPC refresh for position detail and backing.
-5. Add solver quote transport and validate every response at runtime.
+5. Add the solver API transport and validate every response at runtime.
 6. Re-run final route through `eth_call`; expose only successful simulation.
 7. Add generated clients for publish, execute, dock and replace plans.
 8. Set `sendable: true` only for plans built from the validated current

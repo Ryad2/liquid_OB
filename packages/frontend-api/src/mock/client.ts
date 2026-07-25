@@ -68,6 +68,8 @@ import { displayedPrice, inferBranch, marginalSamples } from './model.js'
 
 const WAD = 10n ** 18n
 const MAX_SLIPPAGE_BPS = 5_000
+const INT128_MAX = (1n << 127n) - 1n
+const MAX_POWER_MAGNITUDE = 40
 
 export interface MockLiquidOBClientOptions {
   latencyMs?: number
@@ -709,25 +711,25 @@ export class MockLiquidOBClient implements LiquidOBFrontendClient {
         })
       }
     }
-    let validAlphaEncoding = true
+    let encodedAlpha: bigint | null = null
     try {
-      parseSignedWad(curve.alpha)
+      encodedAlpha = BigInt(parseSignedWad(curve.alpha))
     } catch {
-      validAlphaEncoding = false
+      encodedAlpha = null
     }
-    if (!validAlphaEncoding || !Number.isFinite(alpha)) {
+    if (encodedAlpha === null || !Number.isFinite(alpha)) {
       issues.push({
         path: `${side}.alpha`,
         severity: 'error',
         code: 'INVALID_ALPHA',
         message: 'Alpha must be a signed decimal.',
       })
-    } else if (Math.abs(alpha) > 20) {
+    } else if (encodedAlpha < -INT128_MAX || encodedAlpha > INT128_MAX) {
       issues.push({
         path: `${side}.alpha`,
         severity: 'error',
         code: 'ALPHA_OUT_OF_RANGE',
-        message: 'Alpha must stay between -20 and +20.',
+        message: 'Alpha exceeds the signed int128 protocol encoding.',
       })
     }
     let validReserveEncoding = true
@@ -762,6 +764,19 @@ export class MockLiquidOBClient implements LiquidOBFrontendClient {
           severity: 'warning',
           code: 'FLAT_ALPHA_CANONICALIZED',
           message: 'Alpha has no economic effect on a flat order and will become zero.',
+        })
+      } else if (
+        encodedAlpha !== null
+        && Number.isFinite(alpha)
+        && start > 0
+        && end > 0
+        && Math.abs(alpha * Math.log(end / start)) > MAX_POWER_MAGNITUDE
+      ) {
+        issues.push({
+          path: `${side}.alpha`,
+          severity: 'error',
+          code: 'ALPHA_PRICE_DOMAIN',
+          message: 'This alpha and price range exceed the onchain exponential domain; narrow the range or reduce |alpha|.',
         })
       }
     }

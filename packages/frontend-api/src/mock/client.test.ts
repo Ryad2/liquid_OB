@@ -77,20 +77,20 @@ describe('mock frontend gateway', () => {
     }))
   })
 
-  it('keeps extreme ranges finite across the full supported alpha interval', async () => {
+  it('keeps extreme valid ranges finite without an arbitrary alpha cap', async () => {
     const gateway = client()
     const draft = validDraft()
     draft.sell = {
       ...draft.sell,
       startPrice: '0.0001',
       endPrice: '1000000000000000000000000000000',
-      alpha: '20',
+      alpha: '0.25',
     }
     draft.buy = {
       ...draft.buy,
       startPrice: '1000000000000000000000000000000',
       endPrice: '0.0001',
-      alpha: '-20',
+      alpha: '-0.25',
     }
 
     const preview = await gateway.previewPosition(draft)
@@ -107,16 +107,29 @@ describe('mock frontend gateway', () => {
     ))).toBe(true)
   })
 
-  it('rejects alpha values outside the composer interval', async () => {
+  it('accepts alpha above the quick slider range when endpoints are close', async () => {
     const gateway = client()
     const draft = validDraft()
-    draft.sell.alpha = '20.01'
+    draft.sell.endPrice = '2001'
+    draft.sell.alpha = '1000'
+
+    const preview = await gateway.previewPosition(draft)
+
+    expect(preview.canPublish).toBe(true)
+  })
+
+  it('rejects alpha and endpoints outside the onchain power domain', async () => {
+    const gateway = client()
+    const draft = validDraft()
+    draft.sell.startPrice = '1'
+    draft.sell.endPrice = '1000'
+    draft.sell.alpha = '20'
 
     const preview = await gateway.previewPosition(draft)
 
     expect(preview.canPublish).toBe(false)
     expect(preview.issues).toContainEqual(expect.objectContaining({
-      code: 'ALPHA_OUT_OF_RANGE',
+      code: 'ALPHA_PRICE_DOMAIN',
       severity: 'error',
     }))
   })

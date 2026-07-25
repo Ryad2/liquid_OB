@@ -1,6 +1,6 @@
 # Liquid OB Implementation Status
 
-Status date: 25 July 2026. This is the authoritative capability inventory for
+Status date: 26 July 2026. This is the authoritative capability inventory for
 engineering and demo claims. Architecture documents describe the target;
 completion claims come only from this file and passing tests.
 
@@ -12,12 +12,14 @@ TypeScript maker SDK, lifecycle Lens, and atomic multi-maker Aqua/SwapVM
 settlement. Exact-input and exact-output fills update a versioned two-sided
 runtime and immediately recycle incoming inventory into the opposite curve.
 The demo-scoped security gate covers adversarial route validation and atomic
-rollback. Deployment, seed/replay/dock tooling, manifests, generated ABIs and a
-typed position SDK are implemented and locally testable. It does **not** yet
-have a public deployment, live solver, Subgraph, or final live product UI.
+rollback. Deployment tooling, generated ABIs, a deterministic multi-maker
+solver, native Subgraph, stateless solver API and ArcBook product UI are
+implemented and locally tested. It does **not** yet have public contract,
+Subgraph or API deployments, nor a live wallet/frontend adapter.
 
-The current repository is safe for parallel UI construction. It is not safe
-for real funds, production claims, or a live protocol demo.
+The current repository is ready for public test deployment integration. It is
+not safe for real funds or production claims, and mock UI state must not be
+presented as live protocol state.
 
 ## What Is Implemented
 
@@ -38,19 +40,22 @@ for real funds, production claims, or a live protocol demo.
 | Atomic multi-maker settlement | `LiquidOBBatchExecutor` validates bounded solver fills and executes exact-input or exact-output routes through SwapVM with direct recipient settlement | Two-maker routes enforce aggregate limits, refund unused input, leave no executor dust, and roll back every fill if any later fill fails |
 | Demo security gate | Adversarial settlement tests, explicit trust/token assumptions, frozen ABI surface and committed gas baseline | Forged, stale, duplicate, expired, docked, under-backed and aggregate-limit failures are rejected or atomically rolled back |
 | Deployment and client tooling | Foundry deploy/seed/replay/dock scripts, manifest bytecode validation, generated ABI package and typed position SDK | A fresh topology can publish, read, quote and settle; the same source can be promoted to a public manifest without hand-written calldata |
+| Deterministic solver | Pure `@liquid-ob/solver-core` exact-input/output optimizer with capacity clipping, stable tie-breaks, fill bounds and reserve shortlist | A complete indexed market snapshot can be converted into a reproducible best-execution certificate without RPC or hidden state |
+| Native Subgraph | Protocol entities and Aqua/Router/BatchExecutor mappings, canonical strategy decoder, pagination queries and Matchstick lifecycle tests | Published positions, allocations, recycled sides, fills, routes and snapshots can be discovered at a declared indexed block |
+| Solver API | Fastify Graph-to-solver-to-Lens-to-Quoter pipeline with freshness gates, calldata encoding and final `eth_call`/gas simulation | An untrusted stateless service can return unsigned, version-bound BatchExecutor routes while settlement remains authoritative onchain |
 | Frontend contract | `@liquid-ob/frontend-api` types, amount helpers, client interface and stable errors | UI can be built without importing unfinished ABIs or backend transports |
 | Frontend mock | Three makers, market/position/activity reads, maker preview, exact-in/out routes and transaction plans | Every major screen can be developed with deterministic data |
-| Web integration harness | One composition root consuming only `LiquidOBFrontendClient` | Mock-to-live replacement is isolated from components |
+| ArcBook product UI | Responsive landing, functional order book, route ticket, portfolio and curve composer consuming one `LiquidOBFrontendClient` | Product UX is integrated without coupling React components to unfinished transports |
 
 ## What Is Not Implemented Yet
 
 | Dependency order | Missing deliverable | Blocks |
 | ---: | --- | --- |
-| 1 | Public deployment, explorer verification and committed live manifest | Any live frontend mode |
-| 2 | Deterministic solver core and solver API/browser adapter | Best-execution quotes |
-| 3 | Liquid OB Subgraph and reconciliation tests | Market discovery, explorer and scalable solver input |
-| 4 | Live frontend adapter and final maker/taker/manager/explorer UX | End-to-end public product |
-| 5 | Graph MCP, monitoring, public seeded demo, videos and submission evidence | Sponsor/finalist completion |
+| 1 | Public contract deployment, explorer verification and committed live manifest | Any live frontend mode |
+| 2 | Public Subgraph deployment and hosted solver API configuration | Public best-execution and discovery endpoints |
+| 3 | Live `LiquidOBFrontendClient`, wallet transport and receipt state machine | End-to-end public product actions |
+| 4 | Public seeded market, browser E2E and zero-localhost acceptance run | Reliable judging demo |
+| 5 | Graph MCP/monitoring, videos and submission evidence | Sponsor/finalist completion |
 
 ## Current User-Visible Capabilities
 
@@ -91,7 +96,7 @@ transaction plans are deliberately `sendable: false`.
 - Final public contract addresses, deployment block and chain profile.
 - Accepted EVM transcendental domains and final gas limits.
 - Solver HTTP versus browser deployment choice.
-- Subgraph endpoint, pagination implementation and final entity query fields.
+- Public Subgraph/API endpoints and deployment-specific pagination limits.
 - Wallet library and UI component framework choices.
 
 Changing a provisional item must only require a live-adapter change. If it
@@ -105,7 +110,8 @@ requires rewriting product components, the frontend boundary has been broken.
    address differ; deployment configuration must inject the audited address.
 3. Single- and multi-position curve settlement are proven locally but have not
    yet run on a public network.
-4. No public deployment/manifest, Subgraph or hosted/browser solver exists.
+4. The Subgraph and solver API exist in source but have no public endpoints;
+   the ArcBook UI therefore still fails closed to its labelled mock mode.
 5. No external security audit exists. Current software must use valueless demo
    assets only even after a public test deployment.
 6. A successful local or mock demo does not satisfy ETHGlobal's live finalist
