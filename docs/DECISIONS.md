@@ -27,11 +27,12 @@ presented as architecture.
 
 - Date: 25 July 2026
 - Status: accepted
-- Decision: every directional side uses one compact, signed-`alpha`
-  parameterized curve family. Every representable and numerically safe
-  `alpha` is accepted. Continuous analytical limits and the equal-endpoint
-  flat order are exact internal paths, not distinct maker-facing curve modes.
-  Piecewise-linear approximations are not part of the protocol.
+- Decision: every directional side compiles to the reduced native state
+  `(y, yInt, alphaNative, mu, kappa)`, with
+  `betaNative = alphaNative - 1`. Every representable and numerically safe
+  `alpha` is accepted. Native `alpha = 0`, native `alpha = 1`, and the
+  equal-endpoint flat order are exact internal paths, not maker-facing curve
+  modes. Piecewise-linear approximations are not part of the protocol.
 - Reason: the bounding-curve family is the project's core financial primitive.
   Liquid OB's product advantage comes from publishing and aggregating these
   expressive execution policies rather than reducing orders to price points.
@@ -43,8 +44,9 @@ presented as architecture.
 - Decision: one maker position contains an independently configured sell curve
   and buy curve. Every active-side input is credited to the opposite side. A
   nonempty opposite curve is rescaled proportionally in reserve and domain so
-  its normalized progress and current marginal price do not move; an empty side
-  rearms at its committed starting price.
+  its normalized progress and current marginal price do not move and its
+  derived coordinate scales homothetically; an empty side rearms at its
+  committed starting price.
 - Reason: received inventory becomes immediately executable without forcing bid
   and ask curves to meet, while preserving explicit maker control over spread
   and shape.
@@ -60,3 +62,16 @@ presented as architecture.
 - Reason: iterating over an unbounded global order set inside one EVM
   transaction is not gas-bounded. Offchain optimization provides global search
   without weakening settlement correctness.
+
+## ADR-006: Separate displayed price from native exchange rate
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: the interface always exposes quote per base, while the kernel always
+  evaluates outgoing token per incoming token. Buy curves compile directly.
+  Sell curves compile by reciprocal endpoint conversion and displayed
+  `alpha -> -alpha`. All quotes, events, SDK methods, and tests must label which
+  convention they use.
+- Reason: silently mixing input-per-output and output-per-input reverses quote
+  equations and breaks directional curve equivalence. One explicit boundary
+  conversion lets both sides share the same native swap kernel.

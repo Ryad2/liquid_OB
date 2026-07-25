@@ -18,6 +18,9 @@ The current execution plan is documented in
 The complete product and protocol specification is documented in
 [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md).
 
+The normative fixed-point and exchange-rate model is documented in
+[`docs/MATH_SPEC.md`](docs/MATH_SPEC.md).
+
 The working Uniswap developer feedback document is available in
 [`FEEDBACK.md`](FEEDBACK.md) and will be finalized before submission.
 

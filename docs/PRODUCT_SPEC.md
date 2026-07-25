@@ -25,8 +25,8 @@ Curve(startPrice, endPrice, alpha, reserve)
 
 `startPrice` is the marginal price before any inventory on the current scale is
 consumed. `endPrice` is the terminal marginal price. `reserve` is the currently
-available output asset. `alpha` controls how liquidity density is distributed
-between the endpoints.
+available outgoing asset. Prices are displayed in quote per base. `alpha`
+controls how liquidity density is distributed between the endpoints.
 
 Let `t` be normalized execution progress, from `0` at the starting point to `1`
 at the terminal point. The marginal price is:
@@ -44,29 +44,34 @@ The protocol applies numerical domain bounds for safe `pow`, `exp`, and `ln`,
 but does not maintain a semantic whitelist of shape values.
 
 `alpha = 0` is evaluated directly as the continuous geometric limit. It is not
-approximated with a small nonzero value. Closed-form traversal also uses exact
-analytical paths where an algebraic denominator vanishes, including the
-logarithmic integral at `alpha = -1`; these are implementation details, not
-additional curve types.
+approximated with a small nonzero value. The direction-normalized evaluator also
+has an exact continuous path at native `alpha = 1`. These are arithmetic paths,
+not additional maker-facing curve types.
 
-Every endpoint price must be strictly positive. After direction normalization,
-the terminal input-per-output rate must be greater than or equal to the starting
-rate. This guarantees that execution becomes no cheaper as a side is consumed.
-`alpha` changes where liquidity is concentrated inside that range; it does not
-change the endpoint guarantees.
+Every endpoint price must be strictly positive. A buy side requires
+`startPrice > endPrice`; a sell side requires `startPrice < endPrice`. Equal
+prices select the flat-order extension. This ensures the maker's displayed
+price becomes no better for the taker as inventory is consumed.
+
+The complete formulas, domains, exact swap maps, and direction transforms are
+normative in `docs/MATH_SPEC.md`.
 
 ## 3. Canonical Direction and Displayed Prices
 
 Every market has a canonical base token and quote token. The interface always
-displays price as quote units per base unit.
+displays price as quote units per base unit. The native curve rate is instead
+outgoing token per incoming token:
 
-- A sell side releases base and receives quote. Its internal input-per-output
-  rate is already the displayed quote-per-base price.
-- A buy side releases quote and receives base. Its internal input-per-output
-  rate is base per quote, so the compiler reciprocates both displayed prices
-  and negates the displayed `alpha`.
+```text
+P_native = -deltaY / deltaX
+```
 
-The sign change is exact, not a convention chosen for convenience:
+- A buy side releases quote and receives base, so its displayed rate is already
+  native. It keeps the endpoints and `alpha` unchanged.
+- A sell side releases base and receives quote, so its native rate is reciprocal.
+  The compiler reciprocates both endpoints and negates displayed `alpha`.
+
+The sell-side sign change follows exactly from Holder reciprocity:
 
 ```text
 1 / P_alpha(t; startPrice, endPrice)
@@ -74,10 +79,13 @@ The sign change is exact, not a convention chosen for convenience:
 ```
 
 Therefore both sides execute through one canonical kernel while the maker and
-UI continue to reason in the familiar quote-per-base price. A normal sell side
-has a nondecreasing displayed price as base is consumed. A normal buy side has
-a nonincreasing displayed price as quote is consumed; after reciprocal
-normalization, its internal rate is also nondecreasing.
+UI continue to reason in quote per base. Every compiled side satisfies
+`0 < PLow < PHigh`; its native output-per-input marginal rate decreases as its
+outgoing reserve is consumed.
+
+The conjugate coordinate uses `betaNative = alphaNative - 1`. This second
+symbol is derived, never maker-selected. The relation is required for the
+reserve and conjugate coordinate functions to be exact mutual inverses.
 
 ## 4. Flat Order Limit
 
@@ -92,58 +100,35 @@ volume = reserve
 The execution engine bypasses powers and logarithms:
 
 ```text
-inputRequired = outputRequested * price
-outputGiven   = inputProvided / price
+inputRequired = outputRequested / nativeRate
+outputGiven   = inputProvided * nativeRate
 ```
 
-Here `price` is the canonical input-per-output rate. Token decimals and buy/sell
-direction are normalized before these operations. Required input rounds up;
-delivered output rounds down. The flat encoding canonicalizes shape fields,
-including economically irrelevant `alpha`, so economically identical flat
-orders have one program hash.
+`nativeRate` is outgoing token per incoming token after direction compilation.
+Token decimals are normalized before these operations. Required input rounds
+up; delivered output rounds down. The flat encoding canonicalizes economically
+irrelevant shape fields so identical flat orders have one program hash.
 
-For a non-flat side whose price is denominated as input per unit of output, a
-fill moving progress from `t0` to `t1` releases:
-
-```text
-output = yInt * (t1 - t0)
-```
-
-and requires the area under the marginal-price path:
-
-```text
-input = yInt * integral(P_alpha(t), t0, t1)
-```
-
-This integral is evaluated in closed form. Exact-output chooses `t1` from the
-requested output and evaluates the integral; exact-input analytically inverts
-the same primitive to recover `t1`. `alpha = 0`, `alpha = -1`, and the flat
-case use their exact limits. No swap-time numerical root search is required.
+This equal-endpoint behavior is an explicit continuous extension of the strict
+bounded family. It is not part of the non-flat encoding and never evaluates a
+`0/0` range parameter.
 
 ## 5. Encoded and Runtime State
 
-The maker-facing parameters compile into immutable directional configuration:
+The direction-normalized non-flat side uses the reduced native encoding:
 
 ```text
-(aHat, bHat, alphaInternal, orientation, flatPrice)
+E = (y, yInt, alphaNative, mu, kappa)
 ```
 
-`aHat` and `bHat` encode endpoint range and price scale. `orientation` records
-the token direction. `flatPrice` is nonzero only for a flat order. Static
-configuration is committed by the position hash and cannot change for one
-nonce.
+`alphaNative` is the direction-compiled shape parameter. `mu` is dimensionless
+range and `kappa` is rate scale. `gamma = abs((alphaNative-1)/alphaNative)` is
+derived except at its exact singular paths. Boundary rates are recoverable from
+`(alphaNative, mu, kappa)`.
 
-Each side also has runtime state:
-
-```text
-(y, yInt)
-```
-
-`y` is read from the live output-token balance allocated to the position in
-Aqua. `yInt` is the current domain scale and is stored by the Liquid OB app
-because automatic recycling can change it. Keeping mutable shape progress in a
-dedicated app state store does not introduce a custody vault: tokens remain in
-the maker's Aqua balance.
+`y` is the live outgoing-token balance allocated to the position in Aqua.
+`yInt` is mutable runtime scale in the Liquid OB app. Keeping runtime scale in a
+state store does not introduce a custody vault: tokens remain in Aqua.
 
 For a normal freshly armed side, `y == yInt` and progress is zero. As that side
 executes, `y` decreases while `yInt` stays fixed, so progress increases:
@@ -157,6 +142,18 @@ decimals never enter the curve math; the SDK and settlement boundary normalize
 amounts into WAD units. Funding, withdrawal, recycling, and fills are the only
 authorized balance-changing paths and update Aqua plus runtime state in one
 atomic operation.
+
+The derived incoming-token coordinate `xE(y)` and exact inverse `yE(x)` provide
+closed-form swaps:
+
+```text
+exact output: amountIn  = xE(y - amountOut) - xE(y)
+exact input:  amountOut = y - yE(xE(y) + amountIn)
+```
+
+The five sign-safe internal evaluator regions are native `alpha > 1`,
+`alpha = 1`, `0 < alpha < 1`, `alpha = 0`, and `alpha < 0`. They implement one
+continuous family and are all covered by differential tests.
 
 ## 6. Two-Sided Position State
 
@@ -187,7 +184,8 @@ When the sell curve executes:
 
 1. The taker provides quote input.
 2. The sell curve computes and releases base output.
-3. The sell reserve `ySell` decreases and its marginal price advances.
+3. The sell reserve `ySell` decreases, its displayed ask rises, and its native
+   output-per-input rate falls.
 4. The complete quote input is credited to the maker's buy-curve reserve.
 5. The buy curve is rescaled without moving its current marginal price.
 
@@ -215,7 +213,9 @@ yIntAfter    = yIntBefore * scale
 
 Because `y` and `yInt` scale by the same factor, `y / yInt`, current marginal
 price, endpoints, and `alpha` remain unchanged. The curve gains executable
-volume without jumping in price.
+volume without jumping in price. Its conjugate coordinate scales by the same
+factor, so the complete curve is homothetically enlarged rather than merely
+having its balance patched.
 
 If the opposite curve is empty, proportional scaling is undefined. The protocol
 rearms it deterministically at its committed starting point:
@@ -234,6 +234,10 @@ The MVP charges no protocol fee, so "complete input" is literal. A future fee
 module must define the fee before quoting and recycle only the explicitly
 reported net maker receipt; silently subtracting value from the opposite curve
 is forbidden.
+
+The two-sided recycling rule is a Liquid OB composition layer over two valid
+single curves. It does not claim that the pair has an additional shared
+bonding-curve invariant.
 
 ## 8. Position Lifecycle
 
@@ -265,11 +269,12 @@ subject to  sum(output_i) = Y
 
 For exact input, it maximizes aggregate output under the input budget. Flat
 orders behave like conventional order-book levels. Curved positions contribute
-continuous marginal liquidity. Because every canonical marginal input rate is
-nondecreasing, each per-position cost is convex. For exact output, the solver
-can water-fill against a common marginal clearing rate, clipping each position
-at zero or its live reserve. Flat orders are constant-rate intervals, with
-deterministic tie-breaking and fixed-point correction at the final allocation.
+continuous marginal liquidity. Native `P = output/input` decreases as reserve
+is consumed, so marginal cost `1/P` is nondecreasing and each exact-output cost
+is convex. The solver can water-fill against a common marginal cost, clipping
+each position at zero or its live reserve. Flat orders are constant-cost
+intervals, with deterministic tie-breaking and fixed-point correction at the
+final allocation.
 
 Solver flow:
 
@@ -309,7 +314,7 @@ protection before external token movement.
 
 | Module | Responsibility |
 | --- | --- |
-| `CurveTypes` | Curve state, signed `alpha`, quote results, errors |
+| `CurveTypes` | Native `E` state, signed `alpha`, quote results, errors |
 | `FixedPoint` | Full-precision WAD arithmetic and directional rounding |
 | `FixedPointTranscendentals` | Checked `pow`, `exp`, `ln`, and roots |
 | `CurveCodec` | User parameters to compact state and reconstructed views |
@@ -370,7 +375,7 @@ reusable MCP exposes `discoverPositions`, `compareExecution`, and `buildRoute`.
 The required test matrix covers:
 
 - Positive, negative, zero, and numerically extreme safe `alpha` values.
-- Exact continuous limits and continuity around singular branches.
+- Exact continuous limits and continuity around native `alpha = 0` and `1`.
 - Exact flat orders with equal endpoint prices.
 - Quote/execution equality and exact-input/output near-inversion.
 - Price and domain monotonicity.
@@ -382,6 +387,8 @@ The required test matrix covers:
 - Stale nonces, cancellations, balance changes, slippage, and deadlines.
 - Reentrancy, malicious tokens, malformed programs, and overflow domains.
 - Differential vectors against a high-precision independent model.
+- Correct buy identity and sell reciprocal/sign-flip compilation.
+- Effective-rate equality with the power-difference mean.
 - Real token transfers through official Aqua/SwapVM contracts.
 - Direct or unexpected balance changes cannot desynchronize `y` and `yInt`;
   unsupported mutations revert until processed through an explicit sync rule.

@@ -59,5 +59,19 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Human review required: exact fixed-point domains, empty-side rearming,
   maker-favorable rounding, solver optimality, and Aqua/SwapVM accounting.
 
+## 25 July 2026: mathematical kernel audit
+
+- Tool: OpenAI Codex
+- Work: independently reconstructed the dual-parameter curve, reduced native
+  encoding, exact coordinate maps, singular limits, direction conversion,
+  flat-order limit, and homothetic scaling; checked identities numerically at
+  80-digit precision across representative alpha values from -20 to 20.
+- Corrections: replaced the legacy affine encoding with
+  `(y, yInt, alphaNative, mu, kappa)`, restored
+  `betaNative = alphaNative - 1`, fixed output-per-input quote semantics, and
+  corrected buy/sell compilation.
+- Human review required: fixed-point domain constants, production rounding
+  policy, and the product-specific empty-side rearming rule.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

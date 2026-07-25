@@ -45,12 +45,12 @@ testing, and production operations are explicitly outside the submission claim.
   parameterized sell curve and buy curve with a maker-defined spread.
 - One continuous curve family parameterized by signed `alpha`; there are no
   maker-facing curve modes or whitelisted shape values.
-- The exact `alpha = 0` continuous limit and every other removable singular
-  path required by closed-form quote evaluation.
+- Exact native `alpha = 0` and `alpha = 1` continuous limits required by the
+  reduced closed-form evaluator.
 - An exact flat-order branch when `startPrice == endPrice`, reducing the
   position side to one price and one available volume.
-- Compact immutable shape state `(aHat, bHat, alphaInternal, orientation)` plus
-  non-custodial runtime state `(y, yInt)` and closed-form quotes.
+- Reduced native state `(y, yInt, alphaNative, mu, kappa)`, with immutable
+  shape fields, non-custodial runtime scale, and closed-form quotes.
 - Automatic cross-curve inventory recycling and deterministic homothetic
   rescaling after every fill.
 - Exact price bounds and marginal-price reconstruction with maker-favorable
@@ -75,8 +75,9 @@ testing, and production operations are explicitly outside the submission claim.
 
 ## 4. Order semantics and math
 
-The complete state transitions and module boundaries are specified in
-`docs/PRODUCT_SPEC.md`. Each directional curve is configured from:
+The complete formulas are specified in `docs/MATH_SPEC.md`; product transitions
+and module boundaries are in `docs/PRODUCT_SPEC.md`. Each side is configured
+from displayed quote-per-base values:
 
 ```text
 (startPrice, endPrice, alpha, reserve)
@@ -96,8 +97,14 @@ P_flat(t)  = startPrice                                   if startPrice = endPri
 Every non-flat `alpha` is accepted if its signed fixed-point representation and
 the resulting powers remain inside explicit numerical safety domains. There is
 no semantic allowlist. `alpha = 0` is evaluated by its continuous geometric
-limit, never by division by zero. The flat branch bypasses shape math and uses
-constant-price multiplication or division with directional rounding.
+limit, never by division by zero. A buy side compiles directly to native
+output-per-input rate. A sell side reciprocates both prices and negates `alpha`.
+The reduced evaluator handles native `alpha = 0` and `alpha = 1` exactly. The
+flat branch bypasses shape math with directional rounding.
+
+The conjugate parameter is derived as `betaNative = alphaNative - 1`; it is not
+maker-selected. Swaps evaluate the closed-form coordinate `xE(y)` and inverse
+`yE(x)`, not an approximate segmented curve or swap-time root search.
 
 When one side executes, its reserve decreases and its progress advances toward
 `endPrice`. The entire input asset is credited to the opposite side. If the
@@ -155,11 +162,11 @@ subject to  sum(deltaY_i) = Y
             0 <= deltaY_i <= y_i
 ```
 
-The solver must not assume that a naive greedy algorithm is globally optimal
-across the continuous `alpha` domain. It performs curve-aware optimization
-offchain and submits only a candidate allocation; contracts independently
-verify every quote, balance, domain transition, deadline, and aggregate
-slippage condition.
+Native marginal output rate decreases as reserve is consumed, so exact-output
+marginal cost is nondecreasing. The solver performs convex water-filling across
+candidate positions, handles flat-order ties deterministically, and submits
+only a candidate allocation; contracts independently verify every quote,
+balance, domain transition, deadline, and aggregate slippage condition.
 
 ### Data layer
 
@@ -210,6 +217,12 @@ No milestone is complete until its tests pass. Required properties are:
     received asset is orphaned or double-counted.
 12. Rescaling preserves the opposite curve's marginal price within tolerance,
     including empty-side rearming and flat-order recycling.
+13. `yE(xE(y))` recovers reserve state within directional rounding, and every
+    finite traversal matches its power-difference effective rate.
+14. Buy compilation is identity while sell compilation reciprocates prices and
+    negates displayed `alpha`; both reconstruct the displayed curve.
+15. Homothetic rescaling preserves native price and scales the derived
+    coordinate by the same factor.
 
 Use Forge unit and fuzz tests, SwapVM `CoreInvariants`, and differential vectors
 against an independent high-precision reference model across the supported
