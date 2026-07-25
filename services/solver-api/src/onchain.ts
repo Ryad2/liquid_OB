@@ -30,7 +30,7 @@ const ROUTE_TYPEHASH = keccak256(stringToHex(
   'LiquidOBRoute(uint256 chainId,address executor,address payer,bytes32 salt,uint8 kind)',
 ))
 
-interface LensCurveConfig {
+export interface LensCurveConfig {
   startPrice: bigint
   endPrice: bigint
   alpha: bigint
@@ -39,11 +39,14 @@ interface LensCurveConfig {
   kappa: bigint
 }
 
-interface LensSnapshot {
+export interface LensPositionSnapshot {
   marketId: Hex
   positionKey: Hex
+  positionId: Hex
   strategyHash: Hex
+  policyHash: Hex
   maker: Address
+  encodingVersion: number
   lifecycle: number
   config: {
     sell: LensCurveConfig
@@ -54,8 +57,18 @@ interface LensSnapshot {
     buy: { y: bigint; yInt: bigint }
     version: bigint
   }
-  baseBacking: { sufficientlyBacked: boolean }
-  quoteBacking: { sufficientlyBacked: boolean }
+  baseBacking: LensAssetBacking
+  quoteBacking: LensAssetBacking
+}
+
+export interface LensAssetBacking {
+  token: Address
+  decimals: number
+  aquaAllocation: bigint
+  walletBalance: bigint
+  aquaAllowance: bigint
+  logicalOutgoing: bigint
+  sufficientlyBacked: boolean
 }
 
 interface OnchainPositionQuote {
@@ -98,6 +111,27 @@ export class ViemChainGateway implements ChainGateway {
     }
   }
 
+  async readPosition(position: {
+    maker: Address
+    strategyHash: Hex
+    strategy: Hex
+  }): Promise<LensPositionSnapshot> {
+    try {
+      return await this.#client.readContract({
+        address: this.#manifest.contracts.lens.address,
+        abi: lensAbi,
+        functionName: 'getPosition',
+        args: [position],
+      }) as unknown as LensPositionSnapshot
+    } catch (error) {
+      throw new ApiError(
+        'RPC_UNAVAILABLE',
+        503,
+        `Lens position read failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+      )
+    }
+  }
+
   async refreshCandidates(candidates: readonly SolverCandidate[]): Promise<SolverCandidate[]> {
     if (candidates.length === 0) return []
     try {
@@ -110,7 +144,7 @@ export class ViemChainGateway implements ChainGateway {
           strategyHash: candidate.strategyHash,
           strategy: candidate.strategy,
         }))],
-      }) as readonly LensSnapshot[]
+      }) as unknown as readonly LensPositionSnapshot[]
 
       return candidates.map((candidate, index) => refreshCandidate(candidate, snapshots[index]!))
     } catch (error) {
@@ -292,7 +326,7 @@ export class ViemChainGateway implements ChainGateway {
   }
 }
 
-function refreshCandidate(candidate: SolverCandidate, snapshot: LensSnapshot): SolverCandidate {
+function refreshCandidate(candidate: SolverCandidate, snapshot: LensPositionSnapshot): SolverCandidate {
   if (snapshot.positionKey.toLowerCase() !== candidate.positionKey.toLowerCase()
     || snapshot.strategyHash.toLowerCase() !== candidate.strategyHash.toLowerCase()
     || snapshot.marketId.toLowerCase() !== candidate.marketId.toLowerCase()

@@ -64,4 +64,48 @@ describe('solver HTTP server', () => {
     expect(quote).toHaveBeenCalledWith(expect.objectContaining({ refundRecipient: PAYER }), true, expect.anything())
     await server.close()
   })
+
+  it('validates and forwards typed product filters', async () => {
+    const positions = vi.fn(async () => ({ items: [] }))
+    const server = await buildServer({
+      service: { health: async () => ({}), quote: async () => ({}) },
+      product: {
+        bootstrap: async () => ({}),
+        markets: async () => ({}),
+        market: async () => ({}),
+        positions,
+        position: async () => ({}),
+        activity: async () => ({}),
+      },
+    })
+
+    const response = await server.inject({
+      method: 'GET',
+      url: `/v1/positions?marketId=${MARKET}&maker=${PAYER}&limit=2&side=sell`,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(positions).toHaveBeenCalledWith({ marketId: MARKET, maker: PAYER, limit: 2, side: 'sell' }, expect.anything())
+    await server.close()
+  })
+
+  it('rejects malformed product identifiers before querying the read model', async () => {
+    const server = await buildServer({
+      service: { health: async () => ({}), quote: async () => ({}) },
+      product: {
+        bootstrap: async () => ({}),
+        markets: async () => ({}),
+        market: async () => ({}),
+        positions: async () => ({}),
+        position: async () => ({}),
+        activity: async () => ({}),
+      },
+    })
+
+    const response = await server.inject({ method: 'GET', url: '/v1/positions/0x1234' })
+
+    expect(response.statusCode).toBe(400)
+    expect(response.json().error.code).toBe('INVALID_REQUEST')
+    await server.close()
+  })
 })
