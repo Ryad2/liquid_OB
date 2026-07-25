@@ -1109,10 +1109,10 @@ function CurveEditor({
         <span className="branch-pill">{branch === undefined ? '—' : branchLabel(branch)}</span>
       </header>
       <div className="field-pair">
-        <label><span>Start price</span><div><input value={value.startPrice} onChange={(event) => onChange('startPrice', event.target.value)} inputMode="decimal" /><small>USDC</small></div></label>
-        <label><span>End price</span><div><input value={value.endPrice} onChange={(event) => onChange('endPrice', event.target.value)} inputMode="decimal" /><small>USDC</small></div></label>
+        <label><span>Start price</span><div><input aria-label={`${side} curve start price`} value={value.startPrice} onChange={(event) => onChange('startPrice', event.target.value)} inputMode="decimal" /><small>USDC</small></div></label>
+        <label><span>End price</span><div><input aria-label={`${side} curve end price`} value={value.endPrice} onChange={(event) => onChange('endPrice', event.target.value)} inputMode="decimal" /><small>USDC</small></div></label>
       </div>
-      <label className="reserve-field"><span>Initial outgoing reserve</span><div><input value={value.initialReserve} onChange={(event) => onChange('initialReserve', event.target.value)} inputMode="decimal" /><small>{reserveSymbol ?? (side === 'sell' ? 'WETH' : 'USDC')}</small></div></label>
+      <label className="reserve-field"><span>Initial outgoing reserve</span><div><input aria-label={`${side} curve initial reserve`} value={value.initialReserve} onChange={(event) => onChange('initialReserve', event.target.value)} inputMode="decimal" /><small>{reserveSymbol ?? (side === 'sell' ? 'WETH' : 'USDC')}</small></div></label>
       <div className="alpha-control">
         <div className="alpha-heading">
           <div><span>Curve alpha</span><small>Shapes price distribution; endpoints remain fixed.</small></div>
@@ -1126,6 +1126,7 @@ function CurveEditor({
               value={value.alpha}
               onChange={(event) => onChange('alpha', event.target.value)}
               inputMode="decimal"
+              aria-label={`${side} curve alpha value`}
             />
           </label>
         </div>
