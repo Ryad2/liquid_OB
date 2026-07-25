@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import deploymentFixture from '../../../deployments/31337.json' with { type: 'json' }
+
 import { parseDeploymentManifest } from './manifest.js'
 
 const addresses = {
@@ -52,6 +54,15 @@ function fixture(): unknown {
 }
 
 describe('deployment manifest', () => {
+  it('validates the committed clean-chain deployment fixture', () => {
+    const manifest = parseDeploymentManifest(deploymentFixture)
+
+    expect(manifest.network.chainId).toBe(31_337)
+    expect(manifest.release.public).toBe(false)
+    expect(manifest.release.sourceCommit).toMatch(/^[0-9a-f]{40}$/)
+    expect(manifest.contracts.curveKernel.address).not.toBe(manifest.contracts.router.address)
+  })
+
   it('accepts and normalizes a complete public manifest', () => {
     const manifest = parseDeploymentManifest(fixture())
     expect(manifest.network.chainId).toBe(84_532)

@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "protocol": "Liquid OB",
+  "protocolVersion": "1",
+  "network": {
+    "chainId": 31337,
+    "name": "Anvil",
+    "nativeCurrencySymbol": "ETH",
+    "publicRpcUrl": null,
+    "explorerUrl": null
+  },
+  "release": {
+    "public": false,
+    "deploymentBlock": 2,
+    "deploymentTransaction": "0x9b9ca5a916f42884c5a23e449813d1a88ea97730f07fc17320e4b7356e1a3925",
+    "deployedAt": "2026-07-25T21:48:39.750Z",
+    "repository": "https://github.com/Ryad2/liquid_OB",
+    "sourceCommit": "2e4a89e95e3fadad7052d8cecf5d014e90fb0df9"
+  },
+  "config": {
+    "maxFills": 8,
+    "positionEncodingVersion": 1
+  },
+  "contracts": {
+    "aqua": {
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "deploymentBlock": 1,
+      "transactionHash": "0xf5a97fa0092fda04266f8027aaaf9022b43f96eb1381621270136a7ba3d7d57c",
+      "runtimeCodeHash": "0x01765860cdd4a3398c168fa98037ce91244ad5b0c7931b4f82bc9ac39331a972",
+      "source": "official-aqua-source"
+    },
+    "curveKernel": {
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "deploymentBlock": 3,
+      "transactionHash": "0x9be3f217d13f574594ad40256b762e1d0f7050f9593e73f4e78b2998e71a081d",
+      "runtimeCodeHash": "0x9a5d47376e939a0694855fbc4ebe649e6d92a46d114958a086f22126d428912d",
+      "source": "liquid-ob"
+    },
+    "router": {
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "deploymentBlock": 3,
+      "transactionHash": "0x9b9ca5a916f42884c5a23e449813d1a88ea97730f07fc17320e4b7356e1a3925",
+      "runtimeCodeHash": "0x3ddb18e40517f7926dc2e3e350f917c10b54eb8f5029c15c1913238bd1fa331f",
+      "source": "liquid-ob"
+    },
+    "quoter": {
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "deploymentBlock": 2,
+      "transactionHash": "0xee987da4a3616873038e2533937b35ae544b7f98a19138f1d5eb19852b4a8432",
+      "runtimeCodeHash": "0x151fadc47baddd39152aff90ded6d0a5334e3997d11351e7f40ae7f52becbdda",
+      "source": "liquid-ob"
+    },
+    "lens": {
+      "address": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+      "deploymentBlock": 3,
+      "transactionHash": "0x1d45c04b54c352e47427aaf272cd616b069467800d97b068b9104e0a45d52473",
+      "runtimeCodeHash": "0xd63918c4a7b605f268b456a9c04db2942e66fc1b20ad836fa591256101daf500",
+      "source": "liquid-ob"
+    },
+    "batchExecutor": {
+      "address": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+      "deploymentBlock": 3,
+      "transactionHash": "0x4cf742628398a66508136834165ad45802586613326f6c037281ce3caaf7b39c",
+      "runtimeCodeHash": "0xd68d86b29c7415b25ca46bc1ca5ca0f0027251836f53be50a686387e637560a8",
+      "source": "liquid-ob"
+    }
+  },
+  "demoTokens": [
+    {
+      "address": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+      "deploymentBlock": 3,
+      "transactionHash": "0x374065d2b4b700fe460972fbacf33dcc7e5cfedba18745d3f86e5172caeed508",
+      "runtimeCodeHash": "0x78c894103af26bd55c0af16898f2c86918ea2a47fc5a3c327344a3b4ddb3d3fb",
+      "source": "demo",
+      "role": "base",
+      "symbol": "dETH",
+      "decimals": 18
+    },
+    {
+      "address": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+      "deploymentBlock": 3,
+      "transactionHash": "0x51604e245f9e2f798ef8b5ba64e1822ebd1411ffd6a1d7df394ee0ea73a3edac",
+      "runtimeCodeHash": "0xafdae2ef236a3b4f1fc94f048830189787581ec0fcf18feaf5a3c8c2e9269d41",
+      "source": "demo",
+      "role": "quote",
+      "symbol": "dUSD",
+      "decimals": 18
+    }
+  ]
+}
