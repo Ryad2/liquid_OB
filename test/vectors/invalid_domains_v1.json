@@ -1,0 +1,201 @@
+{
+  "cases": [
+    {
+      "arguments": {
+        "alpha": "0",
+        "end_price": "1",
+        "side": "hold",
+        "start_price": "2"
+      },
+      "expected_error": "INVALID_SIDE",
+      "id": "invalid-side",
+      "operation": "compile_curve"
+    },
+    {
+      "arguments": {
+        "alpha": "0",
+        "end_price": "1",
+        "side": "buy",
+        "start_price": "0"
+      },
+      "expected_error": "NONPOSITIVE_RATE",
+      "id": "nonpositive-start-rate",
+      "operation": "compile_curve"
+    },
+    {
+      "arguments": {
+        "alpha": "0",
+        "end_price": "200",
+        "side": "buy",
+        "start_price": "100"
+      },
+      "expected_error": "WRONG_ENDPOINT_ORDER",
+      "id": "wrong-buy-order",
+      "operation": "compile_curve"
+    },
+    {
+      "arguments": {
+        "alpha": "0",
+        "end_price": "100",
+        "side": "sell",
+        "start_price": "200"
+      },
+      "expected_error": "WRONG_ENDPOINT_ORDER",
+      "id": "wrong-sell-order",
+      "operation": "compile_curve"
+    },
+    {
+      "arguments": {
+        "alpha": "0",
+        "end_price": "100",
+        "progress": "1.000000000000000001",
+        "start_price": "200"
+      },
+      "expected_error": "PROGRESS_OUT_OF_RANGE",
+      "id": "progress-above-one",
+      "operation": "holder_price"
+    },
+    {
+      "arguments": {
+        "curve": "buy-alpha-zero",
+        "y": "-1",
+        "y_int": "100"
+      },
+      "expected_error": "STATE_OUT_OF_RANGE",
+      "id": "negative-live-reserve",
+      "operation": "native_marginal_rate"
+    },
+    {
+      "arguments": {
+        "curve": "buy-alpha-zero",
+        "y": "101",
+        "y_int": "100"
+      },
+      "expected_error": "STATE_OUT_OF_RANGE",
+      "id": "reserve-above-scale",
+      "operation": "x_of_y"
+    },
+    {
+      "arguments": {
+        "curve": "buy-alpha-zero",
+        "y": "0",
+        "y_int": "0"
+      },
+      "expected_error": "NONPOSITIVE_SCALE",
+      "id": "zero-runtime-scale",
+      "operation": "x_of_y"
+    },
+    {
+      "arguments": {
+        "curve": "buy-alpha-zero",
+        "x": "1000000",
+        "y_int": "100"
+      },
+      "expected_error": "X_OUT_OF_RANGE",
+      "id": "inverse-beyond-capacity",
+      "operation": "y_of_x"
+    },
+    {
+      "arguments": {
+        "amount_out": "0",
+        "curve": "buy-alpha-zero",
+        "y": "100",
+        "y_int": "100"
+      },
+      "expected_error": "ZERO_AMOUNT",
+      "id": "zero-exact-output",
+      "operation": "quote_exact_output"
+    },
+    {
+      "arguments": {
+        "amount_out": "101",
+        "curve": "buy-alpha-zero",
+        "y": "100",
+        "y_int": "100"
+      },
+      "expected_error": "INSUFFICIENT_RESERVE",
+      "id": "output-exceeds-reserve",
+      "operation": "quote_exact_output"
+    },
+    {
+      "arguments": {
+        "amount_in": "0",
+        "curve": "buy-alpha-zero",
+        "y": "100",
+        "y_int": "100"
+      },
+      "expected_error": "ZERO_AMOUNT",
+      "id": "zero-exact-input",
+      "operation": "quote_exact_input"
+    },
+    {
+      "arguments": {
+        "amount_in": "1000000",
+        "curve": "buy-alpha-zero",
+        "y": "100",
+        "y_int": "100"
+      },
+      "expected_error": "INPUT_EXCEEDS_CAPACITY",
+      "id": "input-exceeds-capacity",
+      "operation": "quote_exact_input"
+    },
+    {
+      "arguments": {
+        "curve": "buy-alpha-zero",
+        "marginal_native_rate": "100",
+        "y": "50"
+      },
+      "expected_error": "MARGINAL_RATE_OUT_OF_RANGE",
+      "id": "interior-at-low-boundary",
+      "operation": "recover_y_int"
+    },
+    {
+      "arguments": {
+        "received": "0",
+        "y": "10",
+        "y_int": "20"
+      },
+      "expected_error": "ZERO_RECEIVED",
+      "id": "zero-recycled-inventory",
+      "operation": "recycle_inventory"
+    },
+    {
+      "arguments": {
+        "rounding": "floor",
+        "value": "-0.000000000000000001"
+      },
+      "expected_error": "NEGATIVE_UNSIGNED_WAD",
+      "id": "negative-unsigned-wire-value",
+      "operation": "encode_unsigned_wad"
+    },
+    {
+      "arguments": {
+        "rounding": "nearest",
+        "value": "1"
+      },
+      "expected_error": "INVALID_ROUNDING_MODE",
+      "id": "invalid-wire-rounding-mode",
+      "operation": "encode_unsigned_wad"
+    },
+    {
+      "arguments": {
+        "rounding": "ceiling",
+        "value": "340282366920938463464"
+      },
+      "expected_error": "UNSIGNED_WAD_OVERFLOW",
+      "id": "unsigned-wire-overflow",
+      "operation": "encode_unsigned_wad"
+    },
+    {
+      "arguments": {
+        "rounding": "ceiling",
+        "value": "170141183460469231732"
+      },
+      "expected_error": "SIGNED_WAD_OVERFLOW",
+      "id": "signed-alpha-wire-overflow",
+      "operation": "encode_signed_wad"
+    }
+  ],
+  "schema": "liquid-ob-invalid-domain-reference-v1",
+  "source": "docs/MATH_SPEC.md and docs/WIRE_FORMAT.md"
+}

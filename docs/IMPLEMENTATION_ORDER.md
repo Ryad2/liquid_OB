@@ -182,6 +182,11 @@ Give every following layer one canonical language.
 
 ## 6. Phase 3: Build The Independent Mathematical Oracle
 
+Implementation status: completed on 25 July 2026. The dependency-free Decimal
+oracle, deterministic valid and invalid-domain JSON vectors, rounding
+intervals, equation coverage, and regeneration procedure are documented in
+[`REFERENCE_MODEL.md`](REFERENCE_MODEL.md).
+
 ### Objective
 
 Create expected results that do not call Solidity implementation code.
@@ -639,12 +644,15 @@ Each commit below must pass the complete available suite:
 
 ## 23. Immediate Next Action
 
-The next implementation prompt should execute **Phase 0 and Phase 1 only**:
+The next implementation prompt should begin **Phase 4A only**:
 
-1. select and record the repository license;
-2. pin official Aqua/SwapVM versions and licenses;
-3. resolve compiler compatibility;
-4. add CI for the real dependency build;
-5. implement the minimal ship/quote/swap/dock smoke test with real transfers.
+1. implement checked unsigned and signed fixed-point primitives in
+   `FullPrecisionMath.sol`;
+2. encode explicit floor and ceiling operations for every division and scale
+   conversion;
+3. enforce the frozen 128-bit WAD and raw-token boundaries;
+4. test overflow, underflow, sign conversion, and directional rounding against
+   committed vectors.
 
-Only after that test passes should `CurveTypes.sol` be created.
+Do not implement logarithms, exponentials, powers, or curve formulas until the
+arithmetic layer passes independently.

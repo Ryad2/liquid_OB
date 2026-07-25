@@ -18,6 +18,7 @@ version, license, and purpose.
 | Foundry | https://github.com/foundry-rs/foundry | `1.5.1-stable` (`b0a9dd9ceda36f63e2326ce530c10e6916f4b8a2`) | Apache-2.0 or MIT | Solidity build and test tooling |
 | Node.js | https://nodejs.org | 24.18.0 | MIT | JavaScript runtime |
 | pnpm | https://pnpm.io | 10.32.1 | MIT | Workspace package manager |
+| Python | https://www.python.org | 3.10+ | Python Software Foundation License | Development-only high-precision Decimal oracle and vector generator |
 | Vite React template | https://github.com/vitejs/vite/tree/main/packages/create-vite | Vite 8.1.x | MIT | Initial web build configuration |
 | React | https://github.com/facebook/react | 19.2.x | MIT | Web interface runtime |
 | Oxlint | https://github.com/oxc-project/oxc | 1.71.x | MIT | TypeScript and React linting |

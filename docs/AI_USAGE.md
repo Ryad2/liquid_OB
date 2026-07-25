@@ -186,5 +186,19 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: Solidity Phase 2 files, `docs/WIRE_FORMAT.md`, ADR-013, and
   `prompts/0012-canonical-protocol-language.md`.
 
+## 25 July 2026: independent high-precision mathematical oracle
+
+- Tool: OpenAI Codex
+- Work: implemented a Python standard-library `Decimal` evaluator directly
+  from `MATH_SPEC.md`, deterministic valid and invalid-domain vector
+  generation, independent equation identities, WAD rounding intervals, unit
+  tests, and CI drift detection.
+- Independence boundary: the evaluator imports no contract artifact, Solidity
+  implementation, generated ABI, or TypeScript SDK code.
+- Human review required: every equation transcription, scenario coverage,
+  future accepted EVM numerical bounds, and all Solidity differential results.
+- Output: `tools/reference/`, `test/vectors/`, `docs/REFERENCE_MODEL.md`,
+  ADR-014, and `prompts/0013-independent-mathematical-oracle.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

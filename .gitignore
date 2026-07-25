@@ -13,6 +13,10 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# Python development tools
+__pycache__/
+*.py[cod]
+
 # Foundry
 contracts/cache/
 contracts/out/

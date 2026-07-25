@@ -8,7 +8,9 @@ executable pricing curves instead of only flat price-and-size orders.
 This repository was initialized from an empty GitHub repository on 25 July
 2026 during ETHGlobal Lisbon. The reproducible Aqua/SwapVM integration boundary,
 real-transfer smoke tests, and canonical Phase 2 ABI/wire format are complete;
-the Liquid OB curve kernel and production protocol are not implemented yet.
+the independent high-precision mathematical oracle and committed Phase 3
+vectors are also complete. The Solidity curve kernel and production protocol
+are not implemented yet.
 
 Protocol work will be introduced through small, reviewable commits. External
 tools and dependencies are recorded as they are introduced.
@@ -44,6 +46,10 @@ The normative fixed-point and exchange-rate model is documented in
 The independent derivation and validation record is documented in
 [`docs/MATH_AUDIT.md`](docs/MATH_AUDIT.md).
 
+The independent `Decimal` oracle, deterministic vector schema, regeneration
+procedure, and trust boundary are documented in
+[`docs/REFERENCE_MODEL.md`](docs/REFERENCE_MODEL.md).
+
 The working Uniswap developer feedback document is available in
 [`FEEDBACK.md`](FEEDBACK.md) and will be finalized before submission.
 
@@ -53,6 +59,8 @@ The working Uniswap developer feedback document is available in
 - `apps/web/`: React and TypeScript demo application.
 - `packages/`: Shared TypeScript packages such as the future SDK.
 - `services/`: Offchain services such as the future solver or API proxy.
+- `tools/reference/`: development-only high-precision mathematical oracle.
+- `test/vectors/`: committed language-neutral protocol vectors.
 - `docs/`: design decisions, provenance, security notes, and integration logs.
 - `prompts/`: material AI-assisted specifications and implementation plans.
 
@@ -62,6 +70,7 @@ The working Uniswap developer feedback document is available in
 - pnpm 10.32.1
 - Foundry 1.5.1
 - Solidity 0.8.30 (installed automatically by Foundry)
+- Python 3.10 or newer (standard library only)
 
 With `asdf` installed, run:
 
@@ -82,6 +91,8 @@ pnpm contracts:fmt
 pnpm contracts:lint
 pnpm contracts:build
 pnpm contracts:test
+pnpm reference:test
+pnpm reference:check
 ```
 
 The optional official Base fork proof requires `BASE_MAINNET_RPC_URL`; without

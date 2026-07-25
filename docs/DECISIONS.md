@@ -181,3 +181,21 @@ presented as architecture.
   pre/post fill events avoid transaction-input scraping and a redundant
   position registry.
 - Specification: [`WIRE_FORMAT.md`](WIRE_FORMAT.md).
+
+## ADR-014: Make the mathematical oracle implementation-independent
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: derive committed expected values from a Python standard-library
+  `Decimal` model that imports no Solidity artifacts, generated clients, or
+  TypeScript SDK code. Store ideal real values alongside adjacent normalized
+  WAD floor/ceiling integers, and fail CI whenever regeneration changes a
+  committed vector.
+- Reason: differential testing is useful only when the expected and tested
+  implementations cannot share the same bug by construction. Real-number
+  values preserve the mathematical target, while explicit intervals let each
+  later implementation apply the frozen maker-favorable rounding contract.
+- Scope: this oracle validates the equations and wire representability. It
+  does not preselect the EVM transcendental implementation or claim that
+  Decimal's unbounded domain is executable onchain.
+- Specification: [`REFERENCE_MODEL.md`](REFERENCE_MODEL.md).

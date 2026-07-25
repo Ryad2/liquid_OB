@@ -14,6 +14,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  reference:
+    name: High-precision oracle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.10"
+
+      - name: Test independent reference model
+        run: python -m unittest tools.reference.test_reference_math -v
+
+      - name: Verify committed vectors are current
+        run: python -m tools.reference.generate_vectors --check
+
   contracts:
     name: Foundry
     runs-on: ubuntu-latest
