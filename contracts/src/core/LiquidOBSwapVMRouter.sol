@@ -36,6 +36,10 @@ contract LiquidOBSwapVMRouter is AquaSwapVMRouter, LiquidCurveInstruction {
         return PositionCodec.encode(config);
     }
 
+    function decodePosition(ISwapVM.Order calldata order) external pure returns (PositionConfig memory) {
+        return _decodeOrderConfig(order);
+    }
+
     function buildOrder(address maker, PositionConfig calldata config)
         external
         pure
