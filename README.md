@@ -6,9 +6,9 @@ executable pricing curves instead of only flat price-and-size orders.
 ## Status
 
 This repository was initialized from an empty GitHub repository on 25 July
-2026 during ETHGlobal Lisbon. The reproducible Aqua/SwapVM integration boundary
-and real-transfer smoke tests are complete; the Liquid OB curve kernel and
-production protocol are not implemented yet.
+2026 during ETHGlobal Lisbon. The reproducible Aqua/SwapVM integration boundary,
+real-transfer smoke tests, and canonical Phase 2 ABI/wire format are complete;
+the Liquid OB curve kernel and production protocol are not implemented yet.
 
 Protocol work will be introduced through small, reviewable commits. External
 tools and dependencies are recorded as they are introduced.
@@ -22,6 +22,10 @@ map is documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 The dependency-ordered development sequence, exit gates, tests, and intended
 commit history are documented in
 [`docs/IMPLEMENTATION_ORDER.md`](docs/IMPLEMENTATION_ORDER.md).
+
+The normative units, identifiers, route ABI, event contract, byte offsets, and
+version 1 test vector are documented in
+[`docs/WIRE_FORMAT.md`](docs/WIRE_FORMAT.md).
 
 The page-by-page ETHGlobal rules audit, public-demo topology, and mandatory
 zero-localhost submission gate are documented in

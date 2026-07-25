@@ -139,6 +139,12 @@ settlement adapter here than after implementing the entire protocol.
 
 ## 5. Phase 2: Freeze Units, Types, Errors, Events, And Wire Format
 
+Implementation status: completed on 25 July 2026. The canonical ABI, compact
+payload, identifiers, rounding contract, event schema, and deterministic vector
+are recorded in [`WIRE_FORMAT.md`](WIRE_FORMAT.md). This phase proves structural
+canonicality only; mathematical commitment validation begins after the
+independent Phase 3 oracle.
+
 ### Objective
 
 Give every following layer one canonical language.

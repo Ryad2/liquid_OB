@@ -163,3 +163,21 @@ presented as architecture.
   earlier component. Building screens, networking, or sponsor tooling first
   would hide integration failures behind mocks and force expensive rewrites.
 - Plan: [`IMPLEMENTATION_ORDER.md`](IMPLEMENTATION_ORDER.md).
+
+## ADR-013: Freeze one compact versioned policy language
+
+- Date: 25 July 2026
+- Status: accepted
+- Decision: use one 269-byte version 1 Liquid OB payload with explicit WAD
+  units, displayed-price orientation, native commitments, signed 128-bit alpha,
+  fresh initial reserves, and structural canonicalization. Keep its
+  `policyHash` distinct from Aqua's hash of the complete ABI-encoded SwapVM
+  order. Domain-separate market, runtime-position, and portable-position IDs.
+  Aqua events remain lifecycle truth; custom events expose only runtime and
+  route state that Liquid OB can authoritatively emit.
+- Reason: Solidity, TypeScript, SwapVM, The Graph, and the UI need one compact
+  byte contract whose fields cannot change silently. Separating payload,
+  program, and strategy hashes prevents runtime-key mismatches, while complete
+  pre/post fill events avoid transaction-input scraping and a redundant
+  position registry.
+- Specification: [`WIRE_FORMAT.md`](WIRE_FORMAT.md).

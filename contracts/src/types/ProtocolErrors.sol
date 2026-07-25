@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.30;
+
+import {CurveSide} from "./CurveTypes.sol";
+
+error LiquidOBZeroAddress();
+error LiquidOBIdenticalTokens(address token);
+error LiquidOBUnsupportedTokenDecimals(address token, uint8 decimals);
+error LiquidOBInvalidEncodingLength(uint256 actual, uint256 expected);
+error LiquidOBInvalidEncodingMagic(bytes4 actual, bytes4 expected);
+error LiquidOBUnsupportedEncodingVersion(uint8 actual, uint8 supported);
+error LiquidOBZeroPrice(CurveSide side);
+error LiquidOBInvalidEndpointOrder(CurveSide side, uint128 startPriceWad, uint128 endPriceWad);
+error LiquidOBUnsupportedAlpha(int128 alphaWad);
+error LiquidOBNonCanonicalFlatCurve(CurveSide side);
+error LiquidOBInvalidCurveCommitment(CurveSide side);
+error LiquidOBEmptyPosition();
+error LiquidOBInvalidReserveState(CurveSide side, uint128 yWad, uint128 yIntWad);
+error LiquidOBZeroAmount();
+error LiquidOBInvalidDirection(CurveSide side, address tokenIn, address tokenOut);
+error LiquidOBStrategyHashMismatch(bytes32 supplied, bytes32 computed);
+error LiquidOBPositionKeyMismatch(bytes32 supplied, bytes32 computed);
+error LiquidOBStalePositionVersion(uint64 expected, uint64 actual);
+error LiquidOBPositionNotActive(bytes32 strategyHash);
+error LiquidOBPositionExhausted(bytes32 strategyHash, CurveSide side);
+error LiquidOBDeadlineExpired(uint40 deadline, uint256 timestamp);
+error LiquidOBSlippageExceeded(uint256 actual, uint256 limit);
+error LiquidOBTooManyFills(uint256 actual, uint256 maximum);
+error LiquidOBDuplicatePosition(bytes32 positionKey);
+error LiquidOBUnauthorizedCallback(address caller);
+error LiquidOBReentrantExecution();
+error LiquidOBAmountOverflow(uint256 amount);
+error LiquidOBNormalizationLoss(address token, uint256 amount, uint8 decimals);

@@ -28,6 +28,13 @@ the solver, tests, and event data. Conversion to quote-per-base happens only at
 the market boundary. Kernel effective rates exclude protocol fees, solver fees,
 and gas; any all-in user quote must report those separately.
 
+The exact ABI representations are frozen in `docs/WIRE_FORMAT.md`: curve
+amounts, displayed prices, native rates, and dimensionless values use unsigned
+128-bit WAD fields; maker-facing alpha uses signed 128-bit WAD; transfer amounts
+remain raw `uint256` token units. Mathematical formulas below describe real
+values, while implementation applies the directional rounding contract from
+that wire specification.
+
 ## 2. User-Facing Marginal Schedule
 
 One side is configured as:

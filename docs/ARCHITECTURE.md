@@ -116,14 +116,16 @@ an MVP mutation path: the maker docks and republishes a new strategy.
 
 ### 4.1 Market
 
-`marketId = keccak256(baseToken, quoteToken)` where order is semantic, not
-sorted. Every displayed price is quote units per one base unit. Token decimals
-are normalized at the SDK and math boundaries.
+`marketId` is the domain-separated hash of the semantically ordered base and
+quote token addresses; its exact type hash and ABI encoding are frozen in
+[`WIRE_FORMAT.md`](WIRE_FORMAT.md). Every displayed price is quote units per one
+base unit. Token decimals are normalized at the SDK and math boundaries.
 
 ### 4.2 Position
 
-The onchain key is `(maker, strategyHash)`. A globally portable display ID also
-includes `chainId` and the custom router address.
+The onchain runtime key is the domain-separated hash of `(maker,
+strategyHash)`. A globally portable position ID also includes `chainId` and the
+custom router address. Exact formulas are frozen in `WIRE_FORMAT.md`.
 
 The Aqua strategy is an immutable SwapVM program containing:
 
@@ -245,17 +247,22 @@ Protocol dependency: none.
 
 ### 5.7 `PositionCodec.sol`
 
-Canonically encodes and decodes the immutable two-sided policy as a SwapVM
-program. It validates version, token order, salt, lengths, and numerical bounds
-before returning typed data.
+Canonically encodes and decodes the immutable two-sided policy as a compact
+SwapVM instruction payload. It validates version, token order, salt, lengths,
+and structural canonicality before returning typed data. `CurveCompiler` and
+execution separately validate mathematical commitments and numerical domains.
 
-The same bytes are:
+The payload is:
 
-- hashed by Aqua;
+- embedded after the custom opcode in the SwapVM program;
 - shown in the maker preview;
 - decoded by the custom instruction;
 - decoded by the Subgraph;
 - reproduced by the TypeScript SDK.
+
+Aqua hashes the exact ABI-encoded `ISwapVM.Order`, not the inner payload. The
+distinct `policyHash` and `strategyHash` definitions are frozen in
+`WIRE_FORMAT.md`.
 
 Protocol dependency: official SwapVM program format.
 

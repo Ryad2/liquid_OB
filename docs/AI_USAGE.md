@@ -169,5 +169,22 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: `docs/ETHGLOBAL_RULES_COMPLIANCE.md` and
   `prompts/0011-ethglobal-rules-compliance.md`.
 
+## 25 July 2026: canonical protocol language implementation
+
+- Tool: OpenAI Codex
+- Work: implemented Phase 2 user-defined unit types, two-sided position and
+  route structs, canonical errors and events, Quoter/Lens/Executor interfaces,
+  compact policy encoding, domain-separated identifiers, structural
+  validation, and deterministic codec tests.
+- Decisions: WAD is `1e18`; transfer amounts remain token-native `uint256`;
+  payload values use 128-bit WAD fields; alpha uses a symmetric signed 128-bit
+  range; payload, SwapVM program, and Aqua strategy hashes are distinct; Aqua
+  owns lifecycle events while Liquid OB owns reconstructable runtime events.
+- Imported implementation during this step: none.
+- Human review required: root open-source license before publication and every
+  future numerical-domain constant before deployment.
+- Output: Solidity Phase 2 files, `docs/WIRE_FORMAT.md`, ADR-013, and
+  `prompts/0012-canonical-protocol-language.md`.
+
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

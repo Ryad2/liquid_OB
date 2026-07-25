@@ -393,15 +393,18 @@ received inventory appearing immediately on the opposite curve.
 
 ## 14. Events and Indexed Data
 
-Required events include:
+Canonical lifecycle and indexing events are split by authority:
 
-- `PositionPublished`
-- `PositionCancelled`
-- `PositionReplaced`
-- `PositionFilled`
-- `CurveAdvanced`
-- `OppositeCurveRescaled`
-- `FlatOrderFilled`
+- Aqua `Shipped`, `Docked`, `Pushed`, and `Pulled` describe immutable strategy
+  publication, cancellation, and allocation changes.
+- Liquid OB `PositionRuntimeInitialized` materializes logical initial state.
+- Liquid OB `CurveFilled` contains route linkage, amounts, prices, and complete
+  two-sided pre/post runtime state.
+- Liquid OB `RouteExecuted` contains aggregate route amounts and limits.
+
+The Subgraph derives published, cancelled, replaced, advanced, rescaled, and
+flat-fill entities from those canonical events instead of charging gas for
+redundant labels. Exact event fields are frozen in `docs/WIRE_FORMAT.md`.
 
 The standardized schema exposes `Market`, `Maker`, `Position`, `CurveState`,
 `Route`, and `Fill`. The solver and UI consume live indexed candidates, while a
