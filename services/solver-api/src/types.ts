@@ -61,6 +61,9 @@ export interface PreparedFill {
   displayedPriceBeforeWad: bigint
   displayedPriceAfterWad: bigint
   displayedEffectivePriceWad: bigint
+  activeYBeforeWad: bigint
+  activeYAfterWad: bigint
+  activeYIntWad: bigint
 }
 
 export interface PreparedRoute {

@@ -58,6 +58,10 @@ function deployment(address: Address, source: 'official-aqua-source' | 'liquid-o
 
 function quote(amountIn: bigint, amountOut: bigint) {
   const position = candidate(1)
+  const beforeState = {
+    sell: { y: 10n * WAD, yInt: 10n * WAD },
+    buy: { y: 10n * WAD, yInt: 10n * WAD },
+  }
   return {
     marketId: position.marketId,
     positionKey: position.positionKey,
@@ -70,6 +74,11 @@ function quote(amountIn: bigint, amountOut: bigint) {
       displayedPriceBefore: 2n * WAD,
       displayedPriceAfter: 2n * WAD,
       displayedEffectivePrice: 2n * WAD,
+    },
+    beforeState,
+    afterState: {
+      sell: beforeState.sell,
+      buy: { y: beforeState.buy.y - amountOut, yInt: beforeState.buy.yInt },
     },
   }
 }
@@ -101,6 +110,11 @@ describe('ViemChainGateway route preparation', () => {
     expect(prepared.amountInRaw).toBe(WAD)
     expect(prepared.amountOutRaw).toBe(2n * WAD)
     expect(prepared.limitRaw).toBe(1_990_000_000_000_000_000n)
+    expect(prepared.fills[0]).toMatchObject({
+      activeYBeforeWad: 10n * WAD,
+      activeYAfterWad: 8n * WAD,
+      activeYIntWad: 10n * WAD,
+    })
     expect(prepared.simulation).toEqual({ status: 'success', gasEstimate: 345_678n, blockNumber: 12n })
     expect(multicall.mock.calls[0]![0].contracts[0].functionName).toBe('quoteExactInput')
     expect(call).toHaveBeenCalledOnce()

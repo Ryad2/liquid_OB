@@ -84,6 +84,14 @@ interface OnchainPositionQuote {
     displayedPriceAfter: bigint
     displayedEffectivePrice: bigint
   }
+  beforeState: {
+    sell: { y: bigint; yInt: bigint }
+    buy: { y: bigint; yInt: bigint }
+  }
+  afterState: {
+    sell: { y: bigint; yInt: bigint }
+    buy: { y: bigint; yInt: bigint }
+  }
 }
 
 export class ViemChainGateway implements ChainGateway {
@@ -211,6 +219,8 @@ export class ViemChainGateway implements ChainGateway {
     const fills = quotes.map<PreparedFill>((quote, index) => {
       const candidate = certificate.fills[index]!.candidate
       validateQuoteIdentity(quote, candidate, request.marketId)
+      const activeBefore = request.side === 'sell' ? quote.beforeState.sell : quote.beforeState.buy
+      const activeAfter = request.side === 'sell' ? quote.afterState.sell : quote.afterState.buy
       return {
         index,
         positionId: candidate.id,
@@ -226,6 +236,9 @@ export class ViemChainGateway implements ChainGateway {
         displayedPriceBeforeWad: quote.curve.displayedPriceBefore,
         displayedPriceAfterWad: quote.curve.displayedPriceAfter,
         displayedEffectivePriceWad: quote.curve.displayedEffectivePrice,
+        activeYBeforeWad: activeBefore.y,
+        activeYAfterWad: activeAfter.y,
+        activeYIntWad: activeBefore.yInt,
       }
     })
     const amountInRaw = sum(fills.map((fill) => fill.amountInRaw))
