@@ -81,4 +81,17 @@ describe('LiquidOBProductGraphClient', () => {
 
     await expect(client.markets()).rejects.toThrow('different block')
   })
+
+  it('loads position sides without requesting unsupported enum ordering', async () => {
+    const fetch = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { query: string }
+      if (body.query.includes('ProductHealth')) return response('unused', [])
+      expect(body.query).toContain('query Positions')
+      expect(body.query).not.toContain('orderBy: side')
+      return response('positions', [])
+    })
+    const client = new LiquidOBProductGraphClient({ endpoint: 'https://graph.test', fetch })
+
+    await expect(client.positions({})).resolves.toMatchObject({ items: [] })
+  })
 })

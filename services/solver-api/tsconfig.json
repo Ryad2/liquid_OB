@@ -15,5 +15,5 @@
     "exactOptionalPropertyTypes": true,
     "types": ["node"]
   },
-  "include": ["src", "../../api/solver"]
+  "include": ["src", "../../api/solver-handler.ts"]
 }

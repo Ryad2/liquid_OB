@@ -1,4 +1,5 @@
-import { createPublicClient, http } from 'viem'
+import { createPublicClient, http, type PublicClient } from 'viem'
+import { baseSepolia } from 'viem/chains'
 
 import { loadRuntimeConfig } from './config.js'
 import { LiquidOBGraphClient } from './graph-client.js'
@@ -19,7 +20,14 @@ export async function buildRuntimeServer(environment: NodeJS.ProcessEnv = proces
     pageSize: config.pageSize,
   })
   const chain = new ViemChainGateway(
-    createPublicClient({ transport: http(config.rpcUrl, { timeout: 10_000 }) }),
+    createPublicClient({
+      chain: {
+        ...baseSepolia,
+        name: config.manifest.network.name,
+        rpcUrls: { default: { http: [config.rpcUrl] } },
+      },
+      transport: http(config.rpcUrl, { timeout: 10_000 }),
+    }) as unknown as PublicClient,
     config.manifest,
   )
   const service = new RouteService(graph, chain, {

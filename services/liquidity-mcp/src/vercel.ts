@@ -11,6 +11,11 @@ export default async function handler(request: IncomingMessage, response: Server
 
 export function mcpPath(value: string | undefined): string {
   const url = new URL(value ?? '/', 'http://vercel.invalid')
-  const pathname = url.pathname.replace(/^\/api\/mcp/, '') || '/'
-  return `${pathname}${url.search}`
+  const rewrittenPath = url.searchParams.get('__mcp_path')
+  const pathname = rewrittenPath === null
+    ? url.pathname.replace(/^\/api\/mcp/, '') || '/'
+    : `/${rewrittenPath.replace(/^\/+/, '')}`
+  url.searchParams.delete('__mcp_path')
+  const query = url.searchParams.toString()
+  return `${pathname}${query === '' ? '' : `?${query}`}`
 }

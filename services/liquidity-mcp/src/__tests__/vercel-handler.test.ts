@@ -14,6 +14,10 @@ describe('Vercel MCP adapter', () => {
     expect(module.mcpPath('/api/mcp/mcp?session=demo')).toBe('/mcp?session=demo')
   })
 
+  it('restores paths forwarded by the Vercel rewrite', () => {
+    expect(module.mcpPath('/api/mcp-handler?__mcp_path=healthz')).toBe('/healthz')
+  })
+
   it('serves the MCP health route through the serverless handler', async () => {
     const server = createServer((request, response) => {
       void module.default(request, response)

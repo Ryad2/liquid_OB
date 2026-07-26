@@ -12,6 +12,14 @@
     {
       "source": "/api/solver/:__solver_path*",
       "destination": "/api/solver-handler"
+    },
+    {
+      "source": "/api/mcp",
+      "destination": "/api/mcp-handler?__mcp_path="
+    },
+    {
+      "source": "/api/mcp/:__mcp_path*",
+      "destination": "/api/mcp-handler"
     }
   ],
   "functions": {
@@ -19,7 +27,7 @@
       "maxDuration": 60,
       "includeFiles": "{services/solver-api/node_modules/@liquid-ob/**,packages/contracts/**,packages/curve-math/**,packages/frontend-api/**,packages/solver-core/**,deployments/84532.json}"
     },
-    "api/mcp/[route].ts": {
+    "api/mcp-handler.ts": {
       "maxDuration": 60
     }
   },

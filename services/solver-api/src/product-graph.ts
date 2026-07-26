@@ -74,7 +74,7 @@ const POSITIONS_QUERY = `
       market { id marketId }
       baseToken { ${TOKEN} }
       quoteToken { ${TOKEN} }
-      sides(first: 2, orderBy: side, orderDirection: desc) { ${SIDE} }
+      sides(first: 2) { ${SIDE} }
     }
   }
 `
