@@ -4,6 +4,11 @@ Status: executable Phase 10 runbook. Local Anvil proves reproducibility; an
 ETHGlobal live claim requires the same flow against a public chain and a
 committed `deployments/<chainId>.json` manifest.
 
+Base Sepolia is the default profile, not a protocol requirement. Read
+[`CHAIN_SELECTION.md`](CHAIN_SELECTION.md) before using the workflow. Its
+preflight requires both the protected deployment RPC and browser-safe public
+RPC to report the requested chain ID before any transaction is broadcast.
+
 ## 1. Build And Validate
 
 ```bash

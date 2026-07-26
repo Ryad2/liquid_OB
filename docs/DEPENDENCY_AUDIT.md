@@ -122,8 +122,14 @@ Without the RPC variable, the fork suite is explicitly reported as skipped.
 
 ## Public Demo Environment
 
-Base mainnet is the selected official-contract environment and a supported
-indexing target. The hackathon deployment will use the official Aqua address,
-a Liquid OB custom router, and valueless demo tokens only. No asset of value
-may be used before the protocol-specific math, threat model, and audits are
-complete.
+Base mainnet remains the official-contract **reference** environment used by
+the optional fork proof above. Base Sepolia is the default hackathon deployment
+profile: the workflow deploys the pinned, unmodified Aqua source plus the
+Liquid OB SwapVM extension and valueless demo tokens. Base is not hardcoded
+into protocol state; another public EVM network may be selected if it supports
+the required Cancun opcodes and the same dependency/license checks are repeated.
+
+The complete engineering and license rationale is recorded in
+[`CHAIN_SELECTION.md`](CHAIN_SELECTION.md). No asset of value may be used
+before the protocol-specific math, threat model, dependency terms and external
+security review are complete.

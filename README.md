@@ -126,6 +126,10 @@ verified deployment matrix.
 The reproducible public deployment and seeded-demo flow is documented in
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
+The Base Sepolia default, EVM portability boundary and Aqua/SwapVM deployment
+conditions are documented in
+[`docs/CHAIN_SELECTION.md`](docs/CHAIN_SELECTION.md).
+
 `pnpm release:verify` is the final public gate. It rejects localhost/private
 URLs and verifies the hosted app, contracts, manifest, Subgraph, solver API,
 MCP service, seeded positions and indexed route evidence.

@@ -93,6 +93,16 @@ jobs:
           if [ "${{ inputs.deploy_aqua }}" != "true" ]; then test -n "$AQUA_ADDRESS"; fi
           node -e "const u=new URL(process.env.PUBLIC_RPC_URL); if(u.protocol!=='https:') throw Error('public RPC must use HTTPS')"
           node -e "const u=new URL(process.env.EXPLORER_URL); if(u.protocol!=='https:') throw Error('explorer must use HTTPS')"
+          private_chain_id="$(cast chain-id --rpc-url "$RPC_URL")"
+          public_chain_id="$(cast chain-id --rpc-url "$PUBLIC_RPC_URL")"
+          test "$private_chain_id" = "$CHAIN_ID" || {
+            echo "Private RPC chain $private_chain_id does not match requested chain $CHAIN_ID" >&2
+            exit 1
+          }
+          test "$public_chain_id" = "$CHAIN_ID" || {
+            echo "Public RPC chain $public_chain_id does not match requested chain $CHAIN_ID" >&2
+            exit 1
+          }
 
       - name: Install and run release gates
         run: |
