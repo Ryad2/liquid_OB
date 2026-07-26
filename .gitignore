@@ -43,3 +43,4 @@ Thumbs.db
 *.log
 tmp/
 .cache/
+.vercel
