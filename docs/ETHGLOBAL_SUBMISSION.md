@@ -86,3 +86,57 @@ scripts, and a public zero-localhost release verifier.
 https://github.com/Ryad2/liquid_OB
 
 Repository type: Primary monorepo.
+
+## Languages
+
+- Node.js
+- JavaScript
+- TypeScript
+- Solidity
+- Python, if offered by the form
+- HTML and CSS, if offered by the form
+
+## Web frameworks
+
+- React
+- Vite
+- Fastify
+
+Do not select Next.js or Express: ArcBook does not use them.
+
+## Databases
+
+Select `None` or `Not applicable`. ArcBook reads indexed blockchain state from
+The Graph, but it does not operate a conventional application database such as
+PostgreSQL, Supabase, MongoDB, or Firebase.
+
+## Design tools
+
+Select `None` unless a design tool was actually used outside this repository.
+
+## Other technologies
+
+Enter these as separate values where the form supports them:
+
+- 1inch Aqua
+- 1inch SwapVM
+- The Graph
+- GraphQL
+- Foundry
+- viem
+- Base Sepolia
+- Vercel
+- Vitest
+- Model Context Protocol (MCP)
+- pnpm
+- Zod
+
+## AI usage
+
+OpenAI Codex/ChatGPT and Claude Code were used as pair-programming assistants
+across architecture exploration, Solidity and TypeScript implementation,
+frontend integration, test generation, debugging, and documentation. The
+resulting protocol behavior was validated with an independent high-precision
+Python reference model, Foundry unit, integration, security, and fuzz tests,
+Vitest suites, and live Base Sepolia release checks. AI is not part of ArcBook's
+runtime, pricing, routing, or settlement decisions.
