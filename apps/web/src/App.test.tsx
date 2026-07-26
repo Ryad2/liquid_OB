@@ -85,7 +85,7 @@ describe('ArcBook product frontend', () => {
 
   it('keeps wallet-owned portfolio data hidden until connection', async () => {
     window.history.replaceState({}, '', '#/portfolio')
-    render(<App />)
+    const { container } = render(<App />)
 
     expect(
       await screen.findByRole('heading', { name: /your liquidity, tied to your address/i }),
@@ -95,7 +95,10 @@ describe('ArcBook product frontend', () => {
     fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }))
 
     expect(await screen.findByRole('heading', { name: 'Portfolio depth' })).toBeInTheDocument()
-    expect(screen.getByText('1 total')).toBeInTheDocument()
-    expect(screen.queryByText('3 total')).not.toBeInTheDocument()
+    expect(screen.getByText('3 total')).toBeInTheDocument()
+    expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('button', { name: /position layers/i }))
+    expect(container.querySelectorAll('.curve-path')).toHaveLength(6)
   })
 })
