@@ -2,13 +2,26 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 
 import { buildRuntimeServer } from './runtime.js'
 
-const serverPromise = buildRuntimeServer().then(async ({ server }) => {
+let serverPromise: ReturnType<typeof prepareServer> | undefined
+
+async function prepareServer() {
+  const { server } = await buildRuntimeServer()
   await server.ready()
   return server
-})
+}
+
+async function runtimeServer() {
+  try {
+    return await (serverPromise ??= prepareServer())
+  } catch (error) {
+    // A transient dependency failure must not poison every later warm invocation.
+    serverPromise = undefined
+    throw error
+  }
+}
 
 export default async function handler(request: IncomingMessage, response: ServerResponse): Promise<void> {
-  const server = await serverPromise
+  const server = await runtimeServer()
   request.url = solverPath(request.url)
   await new Promise<void>((resolve, reject) => {
     const done = () => {
