@@ -722,12 +722,12 @@ export class MockLiquidOBClient implements LiquidOBFrontendClient {
         code: 'INVALID_ALPHA',
         message: 'Alpha must be a signed decimal.',
       })
-    } else if (Math.abs(alpha) > 20) {
+    } else if (Math.abs(alpha) > 30) {
       issues.push({
         path: `${side}.alpha`,
         severity: 'error',
         code: 'ALPHA_OUT_OF_RANGE',
-        message: 'Alpha must stay between -20 and +20.',
+        message: 'Alpha must stay between -30 and +30.',
       })
     }
     let validReserveEncoding = true

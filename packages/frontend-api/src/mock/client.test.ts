@@ -84,13 +84,13 @@ describe('mock frontend gateway', () => {
       ...draft.sell,
       startPrice: '0.0001',
       endPrice: '1000000000000000000000000000000',
-      alpha: '20',
+      alpha: '30',
     }
     draft.buy = {
       ...draft.buy,
       startPrice: '1000000000000000000000000000000',
       endPrice: '0.0001',
-      alpha: '-20',
+      alpha: '-30',
     }
 
     const preview = await gateway.previewPosition(draft)
@@ -110,7 +110,7 @@ describe('mock frontend gateway', () => {
   it('rejects alpha values outside the composer interval', async () => {
     const gateway = client()
     const draft = validDraft()
-    draft.sell.alpha = '20.01'
+    draft.sell.alpha = '30.01'
 
     const preview = await gateway.previewPosition(draft)
 
