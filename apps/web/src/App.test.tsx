@@ -17,10 +17,18 @@ describe('ArcBook product frontend', () => {
     expect(screen.getByRole('img', { name: /every market position/i })).toBeInTheDocument()
     expect(screen.getByText('P1 · B')).toBeInTheDocument()
     expect(container.querySelectorAll('.curve-path')).toHaveLength(10)
+    const positionStartHeights = [...container.querySelectorAll<SVGPathElement>('.curve-path')]
+      .map((path) => Number(path.getAttribute('d')?.match(/^M [\d.]+ ([\d.]+)/)?.[1]))
+      .filter(Number.isFinite)
+      .map((height) => Math.round(height))
+    expect(new Set(positionStartHeights).size).toBeGreaterThan(3)
 
     fireEvent.click(screen.getByRole('button', { name: /net depth/i }))
     expect(await screen.findByRole('img', { name: /aggregated market/i })).toBeInTheDocument()
     expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
+    const aggregateStartHeights = [...container.querySelectorAll<SVGPathElement>('.curve-path')]
+      .map((path) => Number(path.getAttribute('d')?.match(/^M [\d.]+ ([\d.]+)/)?.[1]))
+    expect(aggregateStartHeights[0]).not.toBe(aggregateStartHeights[1])
 
     fireEvent.click(screen.getByRole('button', { name: /route geometry/i }))
     await waitFor(() => {
@@ -37,6 +45,7 @@ describe('ArcBook product frontend', () => {
     expect(
       await screen.findByRole('heading', { name: /shape the book/i }),
     ).toBeInTheDocument()
+    expect(screen.getAllByRole('img', { name: 'ArcBook' })).toHaveLength(2)
     expect(screen.getByText('ARCBOOK FIELD')).toBeInTheDocument()
     expect(screen.queryByText('WETH–USDC')).not.toBeInTheDocument()
     expect(screen.getByRole('slider', { name: /landing curve alpha/i })).toHaveValue('4.2')

@@ -45,11 +45,19 @@ button { border: 0; background: transparent; }
   background: rgba(7, 9, 20, 0.93);
   backdrop-filter: blur(16px);
 }
-.brand { display: flex; align-items: center; gap: 10px; padding: 0; color: var(--text); letter-spacing: -.02em; }
+.brand { display: flex; align-items: center; padding: 0; color: var(--text); letter-spacing: -.02em; }
 .brand-lockup { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
-.brand-lockup b { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: -.04em; }
-.brand-lockup b span { color: var(--accent); }
 .brand-lockup small { margin-top: 4px; color: var(--muted-2); font-family: var(--mono); font-size: 5px; letter-spacing: .17em; }
+.arcbook-wordmark { display: inline-flex; align-items: center; color: var(--text); font-family: var(--mono); font-weight: 600; line-height: 1; letter-spacing: -.055em; white-space: nowrap; }
+.arcbook-wordmark.compact { font-size: 13px; }
+.arcbook-wordmark.hero { font-size: 19px; letter-spacing: .04em; }
+.arcbook-wordmark > span:last-child { color: #c2baff; }
+.wordmark-flight { position: relative; display: inline-block; width: 1.68em; height: 1em; margin: 0 -.08em; flex: 0 0 auto; }
+.wordmark-flight::before, .wordmark-flight::after { position: absolute; top: 47%; width: 58%; height: 58%; border-top: .105em solid; content: ''; filter: drop-shadow(0 0 .28em currentColor); }
+.wordmark-flight::before { right: 48%; border-color: var(--accent-2); border-radius: 70% 35% 0 0; color: var(--accent-2); transform: rotate(17deg); transform-origin: right top; }
+.wordmark-flight::after { left: 48%; border-color: var(--sell); border-radius: 35% 70% 0 0; color: var(--sell); transform: rotate(-17deg); transform-origin: left top; }
+.wordmark-flight i { position: absolute; z-index: 2; top: 51%; left: 50%; width: .24em; height: .24em; border-radius: 50%; background: #f6f4ff; box-shadow: 0 0 .2em #fff, 0 0 .65em var(--accent); transform: translate(-50%, -50%); animation: live-pulse 1.7s ease-in-out infinite; }
+.wordmark-flight i::after { position: absolute; inset: -.17em; border: 1px solid rgba(169,157,255,.28); border-radius: 50%; content: ''; }
 .brand-mark { position: relative; display: inline-grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border-radius: 10px; box-shadow: 0 8px 26px rgba(98, 217, 255, .09); }
 .brand-mark::after { position: absolute; inset: 1px; border-radius: 9px; background: linear-gradient(145deg, rgba(255,255,255,.075), transparent 38%); content: ''; pointer-events: none; }
 .brand-mark img { display: block; width: 100%; height: 100%; }
@@ -275,14 +283,8 @@ button { border: 0; background: transparent; }
 .landing-page::after { top: 18%; right: -460px; box-shadow: 0 0 0 72px rgba(255,154,114,.011), 0 0 0 144px rgba(169,157,255,.014); animation: landing-orbit 22s ease-in-out infinite alternate-reverse; }
 .landing-hero { display: grid; width: min(calc(100% - 48px), 1500px); min-height: calc(100vh - 83px); grid-template-columns: minmax(380px, .82fr) minmax(560px, 1.18fr); align-items: center; gap: clamp(42px, 6vw, 104px); margin: 0 auto; padding: 52px 0 74px; }
 .landing-copy { position: relative; z-index: 4; }
-.landing-signature { display: inline-flex; align-items: center; gap: 14px; margin-bottom: 30px; }
-.landing-signal { position: relative; display: inline-block; width: 64px; height: 28px; }
-.landing-signal::before, .landing-signal::after { position: absolute; top: 50%; width: 38px; height: 19px; border-top: 1px solid; content: ''; filter: drop-shadow(0 0 6px currentColor); }
-.landing-signal::before { left: 0; border-color: var(--accent-2); border-radius: 50% 50% 0 0; color: var(--accent-2); transform: translateY(-50%) rotate(19deg); }
-.landing-signal::after { right: 0; border-color: var(--sell); border-radius: 50% 50% 0 0; color: var(--sell); transform: translateY(-50%) rotate(-19deg); }
-.landing-signal i { position: absolute; z-index: 2; top: 50%; left: 50%; width: 5px; height: 5px; border-radius: 50%; background: var(--text); box-shadow: 0 0 16px var(--accent); transform: translate(-50%, -50%); animation: live-pulse 1.7s ease-in-out infinite; }
+.landing-signature { display: inline-flex; align-items: center; margin-bottom: 30px; }
 .landing-signature > span:last-child { display: flex; flex-direction: column; gap: 6px; }
-.landing-signature b { color: var(--text); font-family: var(--mono); font-size: 14px; font-weight: 500; letter-spacing: .12em; }
 .landing-signature small { color: var(--accent-2); font-family: var(--mono); font-size: 7px; letter-spacing: .18em; }
 .landing-copy h1 { margin: 0; color: var(--text); font-size: clamp(72px, 8vw, 128px); font-weight: 500; letter-spacing: -.09em; line-height: .78; }
 .landing-copy h1 em { color: transparent; font-style: normal; background: linear-gradient(100deg, var(--accent-2) 8%, #c7c0ff 51%, var(--sell)); background-clip: text; -webkit-background-clip: text; }
@@ -700,8 +702,7 @@ button { border: 0; background: transparent; }
 @media (max-width: 480px) {
   .landing-hero { padding-top: 48px; }
   .landing-signature { margin-bottom: 21px; }
-  .landing-signal { width: 54px; }
-  .landing-signature b { font-size: 11px; }
+  .arcbook-wordmark.hero { font-size: 16px; }
   .landing-signature small { font-size: 6px; letter-spacing: .13em; }
   .landing-copy h1 { font-size: clamp(61px, 21vw, 90px); }
   .landing-copy > p { font-size: 12px; }
