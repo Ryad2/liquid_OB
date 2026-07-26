@@ -70,7 +70,7 @@ const mcpInitialize = await json(`${mcpUrl}/mcp`, {
     },
   }),
 })
-if (mcpInitialize.result?.serverInfo?.name !== 'liquid-ob-executable-liquidity') {
+if (mcpInitialize.result?.serverInfo?.name !== 'arcbook-executable-liquidity') {
   throw new Error('Public MCP endpoint returned an unexpected server identity')
 }
 const mcpDiscovery = await json(`${mcpUrl}/mcp`, {

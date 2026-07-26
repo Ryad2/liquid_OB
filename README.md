@@ -15,8 +15,22 @@ stateless solver API. ArcBook now has both a deterministic mock and a
 fail-closed live adapter with wallet-driven publish, execute and dock flows.
 A read-only Executable Liquidity MCP, release containers, deployment workflows,
 health/metrics endpoints and a zero-localhost release gate are also implemented.
-Public deployment and hosting remain pending because they require external
-testnet, Graph, DNS/hosting and repository credentials.
+The public demo is deployed on Base Sepolia, indexed by The Graph, and served
+through one HTTPS Vercel application with live solver and MCP functions.
+
+## Live Demo
+
+- Application: <https://arcbook-nu.vercel.app>
+- Solver API: <https://arcbook-nu.vercel.app/api/solver>
+- Executable Liquidity MCP: <https://arcbook-nu.vercel.app/api/mcp>
+- Subgraph: <https://api.studio.thegraph.com/query/1757012/arcbook/v0.1.0>
+- Immutable deployment manifest: [`deployments/84532.json`](deployments/84532.json)
+- Network: Base Sepolia (`84532`)
+
+The seeded release contains one dETH/dUSD market, three independently
+parameterized maker positions and indexed multi-maker route executions. Run
+`pnpm release:verify` with the public URLs from `docs/DEPLOYMENT.md` to verify
+the complete zero-localhost topology.
 
 Protocol work was introduced through small, reviewable commits. External tools
 and dependencies are recorded as they are introduced.

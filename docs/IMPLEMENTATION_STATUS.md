@@ -17,11 +17,14 @@ solver, native Subgraph, stateless solver API, live frontend adapter, wallet
 transaction state machine, ArcBook UI and reusable Graph-backed MCP service are
 implemented and locally tested. Deployment verification, container builds,
 health/metrics probes and a strict public release smoke gate are also present.
-It does **not** yet have public contract, Subgraph, API, MCP or web deployments.
+The Base Sepolia contracts, seeded market, Subgraph, solver API, MCP and web
+application are publicly deployed. The release gate verifies three backed
+positions, indexed route evidence, MCP discovery and runtime bytecode without a
+localhost dependency.
 
-The current repository is ready for public test deployment integration. It is
-not safe for real funds or production claims, and mock UI state must not be
-presented as live protocol state.
+The current repository is ready for a hackathon testnet demo. It is not safe for
+real funds or production claims because it has not received an independent
+security audit.
 
 ## What Is Implemented
 
@@ -58,16 +61,14 @@ presented as live protocol state.
 | Dependency order | Missing deliverable | Blocks |
 | ---: | --- | --- |
 | 1 | Choose a compatible root open-source license | Public sponsor/finalist eligibility |
-| 2 | Run the protected testnet deployment workflow, verify explorers and merge its generated manifest | Public writes and immutable deployment identity |
-| 3 | Deploy the Subgraph; host API, MCP and web images behind HTTPS | Public discovery, routing and product access |
-| 4 | Seed three positions and pass `pnpm release:verify` plus clean-browser wallet E2E twice | Reliable zero-localhost judging demo |
-| 5 | Complete firsthand `FEEDBACK.md`, sponsor form, screenshots, video and submission links | Sponsor/finalist submission |
-| 6 | Obtain independent security review before using assets of value | Any production or real-funds claim |
+| 2 | Complete the sponsor form, screenshots, video and submission links | Sponsor/finalist submission |
+| 3 | Run the wallet demo from a clean judge-like browser and record it | Reliable live judging presentation |
+| 4 | Obtain independent security review before using assets of value | Any production or real-funds claim |
 
 ## Current User-Visible Capabilities
 
-ArcBook can demonstrate all screens against deterministic mock state. With a
-valid public environment, the same composition root additionally supports:
+ArcBook can demonstrate all screens against deterministic mock state during
+development. The deployed live composition root additionally supports:
 
 - market cards, bid/ask spread, block freshness and service health;
 - positions with sell and buy curves, signed alpha, flat branches, reserves,
@@ -82,11 +83,9 @@ valid public environment, the same composition root additionally supports:
   transactions with receipt/revert handling;
 - manifest/API/chain agreement checks and fail-closed live feature flags.
 
-These are **frontend contracts and deterministic fixtures**, not live economic
-results. Mock Holder samples use JavaScript `Number` for visualization. Mock
-quotes use transparent fixed-point arithmetic at fixture prices, but they do
-not implement the final integrated curve kernel or solver optimum. All mock
-transaction plans are deliberately `sendable: false`.
+The public application runs in fail-closed live mode and does not silently fall
+back to these fixtures. Development mock transaction plans remain deliberately
+`sendable: false`.
 
 ## Frozen Versus Provisional
 
@@ -102,11 +101,13 @@ transaction plans are deliberately `sendable: false`.
 - Immutable publish, full dock and dock-plus-republish replacement flow.
 - Source/freshness metadata and feature-gated actions.
 
-### Deployment-Specific
+### Public Deployment
 
-- Final public contract addresses, deployment block and chain profile.
-- Public Subgraph/API endpoints and deployment-specific pagination limits.
-- Public MCP and web URLs, Graph deployment ID and transaction evidence.
+- Contract addresses, deployment block and chain profile are frozen in
+  `deployments/84532.json`.
+- The Subgraph, API, MCP and web URLs are recorded in `README.md` and the
+  deployment runbook.
+- The seeded route and position evidence is checked by `pnpm release:verify`.
 
 Changing a provisional item must only require a live-adapter change. If it
 requires rewriting product components, the frontend boundary has been broken.
@@ -115,22 +116,15 @@ requires rewriting product components, the frontend boundary has been broken.
 
 1. Independent Liquid OB code still needs an explicit compatible open-source
    root license before finalist submission.
-2. The selected official Aqua/SwapVM Base generation and Aqua SDK embedded
-   address differ; deployment configuration must inject the audited address.
-3. Single- and multi-position curve settlement are proven locally but have not
-   yet run on a public network.
-4. The Subgraph, solver API, MCP and web app exist in source but have no
-   recorded public endpoints; ArcBook live mode therefore cannot yet satisfy
-   the zero-localhost gate.
-5. No external security audit exists. Current software must use valueless demo
+2. No external security audit exists. Current software must use valueless demo
    assets only even after a public test deployment.
-6. A successful local or mock demo does not satisfy ETHGlobal's live finalist
-   gate.
+3. The clean-browser visual and wallet flow still requires a final manual run
+   and recording before submission.
 
 ## Definition Of Public Live Readiness
 
-Build-time live support is complete. Enable it for the submitted application
-only when all items below are true:
+The submitted application is enabled in live mode because the automated items
+below are true:
 
 - contract ABI and strategy encoding freeze;
 - public deployment manifest validates against the expected chain;
@@ -141,5 +135,5 @@ only when all items below are true:
 - publish, execute and dock transaction plans are generated from real ABIs;
 - the zero-localhost flow works from a clean browser.
 
-Until then, `VITE_PROTOCOL_MODE=live` must fail closed rather than silently
-fall back to fixtures.
+`VITE_PROTOCOL_MODE=live` continues to fail closed rather than silently falling
+back to fixtures if any public dependency becomes invalid.

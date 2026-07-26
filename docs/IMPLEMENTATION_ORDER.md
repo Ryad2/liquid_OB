@@ -2,10 +2,10 @@
 
 Status: normative development sequence for the complete hackathon product.
 
-Implementation update, 26 July 2026: phases 1 through 15 are implemented and
-locally verified. Phase 16 has automated local/container/release gates but still
-requires a real public deployment and browser run. Phase 17 consists of owner-
-controlled licensing, hosting, media and submission actions.
+Implementation update, 26 July 2026: phases 1 through 16 are implemented. The
+contracts, seeded market, Subgraph, solver API, MCP and web application are live
+on the public Base Sepolia demo topology. Phase 17 now contains only owner-
+controlled licensing, visual demo, media and submission actions.
 
 This document answers **what to build next, in what order, and what must pass
 before moving forward**. Product semantics remain in `PRODUCT_SPEC.md`, math in

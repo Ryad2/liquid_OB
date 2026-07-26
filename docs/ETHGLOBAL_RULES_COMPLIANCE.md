@@ -138,26 +138,27 @@ This is a closing graphic and introduces no requirement.
 
 ## 3. Current Compliance Snapshot
 
-Audit date: 25 July 2026.
+Audit date: 26 July 2026.
 
 | Requirement | Current evidence | Status | Release action |
 | --- | --- | --- | --- |
-| Auditable repository | Public GitHub repository, documented architecture, CI, provenance, and coherent local history | PARTIAL | Push every submission commit and link exact source lines, tests, deployment manifests, and transaction evidence |
+| Auditable repository | Public GitHub repository, documented architecture, CI, provenance, coherent history and committed deployment evidence | READY | Keep the submitted commit and README links immutable |
 | Open source | Third-party notices are preserved, but independent Liquid OB code has no root license | BLOCKED | Select and commit an explicit compatible open-source license before publishing protocol implementation |
-| Deployed | No Liquid OB public deployment or deployment manifest exists | BLOCKED | Deploy the frozen protocol to the selected public network and publish verified addresses and start blocks |
-| Live product | ArcBook and its fail-closed live wallet adapter are implemented; no public application URL is recorded | BLOCKED EXTERNAL | Build the web image with final URLs, publish over HTTPS, and verify from a clean browser |
-| Live data | Native Subgraph schema/mappings/tests exist; no public Graph endpoint is recorded | BLOCKED EXTERNAL | Deploy the committed manifest and expose indexed-block evidence |
-| Live solver | Deterministic solver, hosted API, probes and metrics exist; no public API URL is recorded | BLOCKED EXTERNAL | Host the immutable API image and pass readiness plus route simulation |
-| Graph MCP | Four read-only tools and public Streamable HTTP transport exist; no public MCP URL is recorded | BLOCKED EXTERNAL | Host the MCP image and verify protocol initialization plus tool demo |
+| Deployed | Base Sepolia manifest records all contracts, deployment transactions, code hashes and start block | READY | Preserve `deployments/84532.json` and explorer evidence |
+| Live product | `https://arcbook-nu.vercel.app` serves fail-closed live mode over HTTPS | READY AUTOMATED | Complete one final clean-browser visual and wallet run |
+| Live data | Studio Subgraph `arcbook/v0.1.0` indexes three positions and route history without indexing errors | READY | Keep the versioned endpoint available through judging |
+| Live solver | Public API passes readiness, Graph/RPC freshness and a three-maker onchain route simulation | READY | Record the multi-maker quote in the demo video |
+| Graph MCP | Public MCP passes initialize, readiness and `discover_positions` through the release gate | READY | Demonstrate one tool call in the recorded demo |
 | Demo video | No submitted video URL exists | BLOCKED | Record, upload, and test the final video link without team credentials |
 | Live finalist judging | Requires an owner action and physical availability | PENDING | Select the finalist add-on and attend the judging panel |
-| Git discipline | Local history contains multiple coherent commits; the public remote is behind local work | PARTIAL | Push before judging and preserve small diffs through the remaining build |
+| Git discipline | Public `main` contains multiple coherent implementation, integration and deployment commits | READY | Push only reviewed final submission changes |
 | Project description and screenshots | Detailed repository documents exist; the ETHGlobal project page and final screenshots do not | PARTIAL | Publish concise product copy, architecture proof, screenshots, and live links on the project page |
 | Three-partner maximum | The planned set contains exactly three organizations | PLANNED | Select only 1inch, The Graph, and Uniswap unless the strategy is deliberately changed |
 
-The local Aqua/SwapVM smoke test and official Base fork test are integration
-evidence. They are not a Liquid OB public deployment because the custom curve
-protocol has not been implemented or deployed.
+The local Aqua/SwapVM smoke test and optional official Base fork test remain
+dependency evidence. The separate Base Sepolia manifest, bytecode checks,
+seeded positions and indexed route transactions are the public ArcBook
+deployment evidence.
 
 ## 4. Required Public Demo Topology
 

@@ -60,8 +60,8 @@ sponsor team. The original confirmation is retained privately.
 ## Product Feedback
 
 - Verified observation: the Uniswap API exposes simulated routes over Uniswap
-  AMM and UniswapX liquidity, while ArcBook currently simulates its own
-  multi-maker route before returning unsigned calldata.
+  AMM and UniswapX liquidity, while ArcBook can independently quote and
+  simulate its own multi-maker route before returning unsigned calldata.
 - Future product idea, not implemented in this submission: an ArcBook solver
   could request a Uniswap quote as an external benchmark or fallback venue and
   compare net executable output after gas and fees.
