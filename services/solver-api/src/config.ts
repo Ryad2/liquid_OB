@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
-import { parseDeploymentManifest, type DeploymentManifest } from '@liquid-ob/contracts'
+import { parseDeploymentManifest, type DeploymentManifest } from '../../../packages/contracts/src/index.js'
 
 import { ApiError } from './errors.js'
 

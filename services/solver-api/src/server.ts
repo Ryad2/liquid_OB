@@ -1,4 +1,4 @@
-import type { ActivityQuery, MarketQuery, PositionQuery } from '@liquid-ob/frontend-api'
+import type { ActivityQuery, MarketQuery, PositionQuery } from '../../../packages/frontend-api/src/index.js'
 import cors from '@fastify/cors'
 import Fastify from 'fastify'
 import { isAddress, isHex, type Address, type Hex } from 'viem'

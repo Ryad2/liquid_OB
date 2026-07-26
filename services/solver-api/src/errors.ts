@@ -1,4 +1,4 @@
-import { SolverError } from '@liquid-ob/solver-core'
+import { SolverError } from '../../../packages/solver-core/src/index.js'
 
 export type ApiErrorCode =
   | 'INVALID_REQUEST'

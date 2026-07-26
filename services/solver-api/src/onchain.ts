@@ -3,9 +3,9 @@ import {
   lensAbi,
   quoterAbi,
   type DeploymentManifest,
-} from '@liquid-ob/contracts'
-import { compileCurve, type CompiledCurve, type CurveSide } from '@liquid-ob/curve-math'
-import type { RouteCertificate, SolverCandidate } from '@liquid-ob/solver-core'
+} from '../../../packages/contracts/src/index.js'
+import { compileCurve, type CompiledCurve, type CurveSide } from '../../../packages/curve-math/src/index.js'
+import type { RouteCertificate, SolverCandidate } from '../../../packages/solver-core/src/index.js'
 import {
   encodeAbiParameters,
   encodeFunctionData,

@@ -25,9 +25,9 @@ import {
   type RawAmount,
   type Token,
   type WadInteger,
-} from '@liquid-ob/frontend-api'
-import type { DeploymentManifest } from '@liquid-ob/contracts'
-import { WAD, compileCurve, marginalPriceWad } from '@liquid-ob/curve-math'
+} from '../../../packages/frontend-api/src/index.js'
+import type { DeploymentManifest } from '../../../packages/contracts/src/index.js'
+import { WAD, compileCurve, marginalPriceWad } from '../../../packages/curve-math/src/index.js'
 import type { Address, Hex } from 'viem'
 
 import { ApiError } from './errors.js'

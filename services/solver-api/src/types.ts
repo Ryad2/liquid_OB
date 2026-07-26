@@ -1,4 +1,4 @@
-import type { RouteCertificate, SolverCandidate } from '@liquid-ob/solver-core'
+import type { RouteCertificate, SolverCandidate } from '../../../packages/solver-core/src/index.js'
 import type { Address, Hex } from 'viem'
 
 export interface IndexedToken {

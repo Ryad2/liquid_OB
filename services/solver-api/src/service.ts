@@ -1,4 +1,4 @@
-import { solveRoute, type SolverCandidate } from '@liquid-ob/solver-core'
+import { solveRoute, type SolverCandidate } from '../../../packages/solver-core/src/index.js'
 
 import { ApiError } from './errors.js'
 import type {

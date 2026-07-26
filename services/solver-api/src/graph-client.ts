@@ -3,8 +3,8 @@ import {
   type CompiledCurve,
   type CurveBranch,
   type CurveSide,
-} from '@liquid-ob/curve-math'
-import type { SolverCandidate } from '@liquid-ob/solver-core'
+} from '../../../packages/curve-math/src/index.js'
+import type { SolverCandidate } from '../../../packages/solver-core/src/index.js'
 import { isAddress, isHex, type Address, type Hex } from 'viem'
 import { z } from 'zod'
 

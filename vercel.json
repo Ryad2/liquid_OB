@@ -6,7 +6,8 @@
   "outputDirectory": "apps/web/dist",
   "functions": {
     "api/solver/[...path].ts": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "{services/solver-api/node_modules/@liquid-ob,packages/contracts,packages/curve-math,packages/frontend-api,packages/solver-core}/**"
     },
     "api/mcp/[route].ts": {
       "maxDuration": 60
