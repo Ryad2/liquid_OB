@@ -62,8 +62,8 @@ contract DeployLiquidOB is Script {
         // forge-lint: disable-next-line(unsafe-typecast)
         deployment = _deployCore(aqua, owner, uint16(rawMaxFills));
         if (deployDemoTokens) {
-            deployment.demoBase = new LiquidOBDemoToken("Liquid OB Demo Ether", "dETH", 18, 1_000e18);
-            deployment.demoQuote = new LiquidOBDemoToken("Liquid OB Demo USD", "dUSD", 18, 1_000_000e18);
+            deployment.demoBase = new LiquidOBDemoToken("ArcBook Demo Ether", "dETH", 18, 1_000e18);
+            deployment.demoQuote = new LiquidOBDemoToken("ArcBook Demo USD", "dUSD", 18, 1_000_000e18);
         }
         vm.stopBroadcast();
 
