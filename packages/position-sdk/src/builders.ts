@@ -34,7 +34,7 @@ export function buildPublishPositionPlan(
   }
   const strategy = buildPositionStrategy(input.config, input.maker, input.liquidCurveOpcode)
   const calls: ContractCall[] = []
-  if (input.baseAllocation > baseAllowance) {
+  if (input.baseAllocation > 0n && baseAllowance !== MAX_UINT256) {
     calls.push(
       call(
         'Approve base token to Aqua',
@@ -47,7 +47,7 @@ export function buildPublishPositionPlan(
       ),
     )
   }
-  if (input.quoteAllocation > quoteAllowance) {
+  if (input.quoteAllocation > 0n && quoteAllowance !== MAX_UINT256) {
     calls.push(
       call(
         'Approve quote token to Aqua',

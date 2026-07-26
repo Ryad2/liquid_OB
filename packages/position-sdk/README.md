@@ -6,7 +6,8 @@ ABIs; it never owns a private key and never sends a transaction.
 
 The SDK exposes:
 
-- maker publish calls: base approval, quote approval, `Aqua.ship`;
+- maker publish calls: one-time maximum base/quote approvals when needed,
+  followed by `Aqua.ship` for each immutable position;
 - Lens snapshots and exact-input/exact-output Quoter reads;
 - exact-input/exact-output batch calldata and simulation;
 - complete immutable-position docking through Aqua.

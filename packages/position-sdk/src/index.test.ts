@@ -91,8 +91,8 @@ describe('position sdk', () => {
       liquidCurveOpcode: 0,
       baseAllocation: 100n * 10n ** 18n,
       quoteAllocation: 185_000n * 10n ** 18n,
-      baseAllowance: 100n * 10n ** 18n,
-      quoteAllowance: 185_000n * 10n ** 18n,
+      baseAllowance: (1n << 256n) - 1n,
+      quoteAllowance: (1n << 256n) - 1n,
     })
     expect(alreadyApproved.calls).toHaveLength(1)
     expect(decodeFunctionData({ abi: aquaAbi, data: alreadyApproved.calls[0]!.data }).functionName).toBe('ship')
