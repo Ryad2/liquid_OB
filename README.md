@@ -80,8 +80,27 @@ developers should use [`docs/FRONTEND_HANDOFF.md`](docs/FRONTEND_HANDOFF.md)
 and [`packages/frontend-api/`](packages/frontend-api/README.md) as their entry
 point.
 
-The working Uniswap developer feedback document is available in
-[`FEEDBACK.md`](FEEDBACK.md) and will be finalized before submission.
+The finalized Uniswap developer feedback document is available in
+[`FEEDBACK.md`](FEEDBACK.md).
+
+## Uniswap Submission Verification
+
+ArcBook is submitted as a new onchain market primitive under a written sponsor
+exception that does not require an artificial Uniswap API call. The exception
+is retained privately; this repository does not claim an API integration that
+it did not implement.
+
+The code paths submitted for evaluation are linked directly below:
+
+- [`LiquidOBCurveKernel.quotePosition`](contracts/src/core/LiquidOBCurveKernel.sol#L53-L115)
+  compiles and quotes one executable maker curve before applying its two-sided
+  state transition.
+- [`LiquidCurveInstruction._liquidCurve`](contracts/src/core/LiquidCurveInstruction.sol#L49-L76)
+  materializes a quoted fill and commits the next runtime state.
+- [`LiquidOBBatchExecutor.executeExactInput`](contracts/src/periphery/LiquidOBBatchExecutor.sol#L46-L119)
+  atomically settles a solver-selected route across multiple maker positions.
+- [`FEEDBACK.md`](FEEDBACK.md) records the documentation reviewed, the approved
+  integration scope, concrete friction, and suggested improvements.
 
 ## Workspace
 
@@ -157,9 +176,11 @@ it with assets of value. See `SECURITY.md` before reporting a vulnerability.
 
 ## License And Attribution
 
-No root license has been selected for independent ArcBook code. Files with a
-specific SPDX identifier are governed by that license; full Aqua and SwapVM
-terms and notices are preserved in [`LICENSES/`](LICENSES/README.md).
+Independent ArcBook code is licensed under the
+[GNU Affero General Public License v3.0 only](LICENSE). Files and submodules
+carrying a different SPDX identifier or their own license remain governed by
+those terms. Full Aqua and SwapVM terms and notices are preserved in
+[`LICENSES/`](LICENSES/README.md).
 
 Powered by Aqua — © Degensoft Ltd 2025
 

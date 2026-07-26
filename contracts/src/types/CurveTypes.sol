@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.30;
 
 /// @notice Displayed quote-token units per one base-token unit, scaled by 1e18.

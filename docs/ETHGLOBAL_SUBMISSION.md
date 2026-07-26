@@ -157,7 +157,7 @@ Graph.
 
 **Primary code link**
 
-https://github.com/Ryad2/liquid_OB/blob/26db6f7852ae6cc7fc1be7d3f12353d4b153a123/services/solver-api/src/graph-client.ts#L14-L37
+https://github.com/Ryad2/liquid_OB/blob/main/services/solver-api/src/graph-client.ts#L14-L37
 
 **Ease score:** 8/10
 
@@ -182,7 +182,7 @@ to the scratch bounty without forcing an artificial Uniswap API call.
 
 **Primary code link**
 
-https://github.com/Ryad2/liquid_OB/blob/26db6f7852ae6cc7fc1be7d3f12353d4b153a123/contracts/src/core/LiquidOBCurveKernel.sol#L53-L115
+https://github.com/Ryad2/liquid_OB/blob/main/contracts/src/core/LiquidOBCurveKernel.sol#L53-L115
 
 **Ease score:** 8/10
 
@@ -197,7 +197,7 @@ adding that path and clarifying the expected feedback for exception projects
 would prevent confusion.
 
 Uniswap feedback document:
-https://github.com/Ryad2/liquid_OB/blob/26db6f7852ae6cc7fc1be7d3f12353d4b153a123/FEEDBACK.md
+https://github.com/Ryad2/liquid_OB/blob/main/FEEDBACK.md
 
 ### 1inch
 
@@ -210,7 +210,7 @@ settles exact-input and exact-output multi-maker routes onchain on Base Sepolia.
 
 **Primary code link**
 
-https://github.com/Ryad2/liquid_OB/blob/26db6f7852ae6cc7fc1be7d3f12353d4b153a123/contracts/src/core/LiquidOBSwapVMRouter.sol#L8-L25
+https://github.com/Ryad2/liquid_OB/blob/main/contracts/src/core/LiquidOBSwapVMRouter.sol#L8-L25
 
 **Ease score:** 8/10
 
@@ -230,10 +230,8 @@ Select Base only if it appears in the partner list, because the complete public
 demo is deployed on Base Sepolia. Do not select World, Sui, Hedera, 0G, ENS, or
 any other partner technology that ArcBook does not actually use.
 
-### Open-source qualification warning
+### Open-source qualification
 
-The Graph and Uniswap qualification text requires open-source code. The current
-repository is public but deliberately has no root open-source license, so this
-requirement is not safely satisfied merely by source visibility. Select and add
-a root license before submission, or obtain written sponsor confirmation that
-the current source-available status qualifies.
+Independent ArcBook code is licensed under `AGPL-3.0-only`. Aqua, SwapVM, their
+extensions, and Git submodules retain their existing file-specific licenses and
+notices.

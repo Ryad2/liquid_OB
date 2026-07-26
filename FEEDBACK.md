@@ -69,12 +69,24 @@ sponsor team. The original confirmation is retained privately.
   maker curves could become another route source if a later adapter exposes
   their liquidity to Uniswap routing infrastructure.
 
+## Public Verification
+
+- Repository: https://github.com/Ryad2/liquid_OB
+- Open-source license: https://github.com/Ryad2/liquid_OB/blob/main/LICENSE
+- Executable curve kernel:
+  https://github.com/Ryad2/liquid_OB/blob/main/contracts/src/core/LiquidOBCurveKernel.sol#L53-L115
+- Runtime instruction:
+  https://github.com/Ryad2/liquid_OB/blob/main/contracts/src/core/LiquidCurveInstruction.sol#L49-L76
+- Atomic multi-maker execution:
+  https://github.com/Ryad2/liquid_OB/blob/main/contracts/src/periphery/LiquidOBBatchExecutor.sol#L46-L119
+- Live application: https://arcbook-nu.vercel.app
+
 ## Submission Checklist
 
 - [x] Replace every placeholder with project-specific feedback.
 - [x] Add links to the Uniswap resources reviewed.
 - [x] Verify that no API key, private message, or personal detail is included.
-- [ ] Verify that the repository has an explicit open-source license.
+- [x] Verify that the repository has an explicit open-source license.
 - [ ] Submit the Uniswap Developer Feedback Form.
 - [ ] Include this file's public URL in the form.
 - [ ] Add the requested project-identifying note to the bounty submission.
