@@ -1,5 +1,5 @@
 import { aquaAbi, erc20Abi } from '@liquid-ob/contracts'
-import type { Address, PositionDraft } from '@liquid-ob/frontend-api'
+import type { Address, PositionDraft, RouteQuote } from '@liquid-ob/frontend-api'
 import { decodeFunctionData, toHex, type PublicClient } from 'viem'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -164,6 +164,81 @@ describe('LiveLiquidOBClient', () => {
     expect(plan.steps.map((step) => step.action)).toEqual(['approve-aqua', 'approve-aqua', 'publish-position'])
     expect(approval.functionName).toBe('approve')
     expect(ship.functionName).toBe('ship')
+  })
+
+  it('prepares approval before execution without requiring a pre-approval simulation', async () => {
+    const now = new Date('2026-07-26T00:00:00.000Z')
+    const routeId = toHex(101n, { size: 32 })
+    const marketId = toHex(102n, { size: 32 })
+    const reviewedQuote: RouteQuote = {
+      id: routeId,
+      marketId,
+      side: 'sell',
+      kind: 'exact-input',
+      amountIn: { token: quote, raw: '1000000', formatted: '1' },
+      amountOut: { token: base, raw: '500000000000000000', formatted: '0.5' },
+      limit: { token: base, raw: '497500000000000000', formatted: '0.4975' },
+      slippageBps: 50,
+      displayedEffectivePrice: { baseToken: base.address, quoteToken: quote.address, wad: '2000000000000000000', formatted: '2' },
+      worstMarginalPrice: { baseToken: base.address, quoteToken: quote.address, wad: '2000000000000000000', formatted: '2' },
+      priceImpactBps: 0,
+      fills: [],
+      simulation: { status: 'not-run', blockNumber: null, gasEstimate: null, revertCode: null, message: 'preview' },
+      createdAt: now.toISOString(),
+      expiresAt: new Date(now.getTime() + 600_000).toISOString(),
+      meta: {
+        mode: 'live',
+        source: 'solver',
+        generatedAt: now.toISOString(),
+        chainHeadBlock: 12,
+        indexedBlock: 11,
+        indexLag: 1,
+        stale: false,
+        warnings: [],
+      },
+    }
+    const fetch = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input)
+      const body = url.includes('manifest')
+        ? manifest()
+        : url.endsWith('/v1/bootstrap')
+          ? bootstrap()
+          : {
+              routeId,
+              marketId,
+              side: 'sell',
+              kind: 'exact-input',
+              indexedBlock: '11',
+              chainHeadBlock: '12',
+              indexLag: '1',
+              amountInRaw: '1000000',
+              amountOutRaw: '500000000000000000',
+              limitRaw: '497500000000000000',
+              deadline: Math.floor(now.getTime() / 1_000) + 600,
+              fills: [],
+              transaction: { to: contracts[5], data: '0x1234', value: '0' },
+              simulation: { status: 'not-run', gasEstimate: null, blockNumber: null },
+            }
+      return Response.json(body)
+    })
+    const client = new LiveLiquidOBClient({
+      apiUrl: 'https://api.test',
+      manifestUrl: 'https://app.test/manifest.json',
+      fetch,
+      now: () => now,
+    })
+
+    const plan = await client.prepareExecute({
+      payer: maker,
+      recipient: maker,
+      refundRecipient: maker,
+      quote: reviewedQuote,
+    })
+    const approval = decodeFunctionData({ abi: erc20Abi, data: plan.steps[0]!.transaction.data })
+
+    expect(fetch).toHaveBeenCalledWith('https://api.test/v1/quote', expect.objectContaining({ method: 'POST' }))
+    expect(plan.steps.map((step) => step.action)).toEqual(['approve-executor', 'execute-route'])
+    expect(approval.args).toEqual([contracts[5], 1_000_000n])
   })
 
   it('fails closed when API and deployment manifest addresses differ', async () => {

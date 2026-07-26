@@ -247,7 +247,7 @@ export class LiveLiquidOBClient implements LiquidOBFrontendClient {
     }
     const remainingSeconds = Math.floor((new Date(request.quote.expiresAt).getTime() - this.#now().getTime()) / 1_000)
     const fixed = request.quote.kind === 'exact-input' ? request.quote.amountIn : request.quote.amountOut
-    const route = await this.#post('/v1/route', preparedRouteSchema, {
+    const route = await this.#post('/v1/quote', preparedRouteSchema, {
       marketId: request.quote.marketId,
       side: request.quote.side,
       kind: request.quote.kind,
@@ -259,9 +259,6 @@ export class LiveLiquidOBClient implements LiquidOBFrontendClient {
       deadlineSeconds: Math.max(30, Math.min(3_600, remainingSeconds)),
     }, options?.signal)
     assertSameQuote(request.quote, route)
-    if (route.simulation.status !== 'success') {
-      throw new FrontendGatewayError('SIMULATION_REVERTED', 'The executable route did not pass final simulation.')
-    }
     const approvalRaw = route.kind === 'exact-input' ? route.amountInRaw : route.limitRaw
     const approveData = encodeFunctionData({
       abi: erc20Abi,
@@ -286,7 +283,7 @@ export class LiveLiquidOBClient implements LiquidOBFrontendClient {
         1,
         'execute-route',
         'Execute atomic route',
-        `Settle ${route.fills.length} maker fills atomically after final onchain simulation.`,
+        `Settle ${route.fills.length} maker fills atomically after the approval confirms.`,
         request.payer,
         route.transaction.to as Address,
         route.transaction.data as Hex,
@@ -627,7 +624,9 @@ function mapRoute(route: PreparedRoutePayload, market: MarketDetail, slippageBps
       blockNumber: route.simulation.blockNumber === null ? null : safeNumber(route.simulation.blockNumber, 'simulation block'),
       gasEstimate: route.simulation.gasEstimate as RawAmount | null,
       revertCode: null,
-      message: route.simulation.status === 'success' ? 'Final route simulation succeeded.' : 'Preview only; final simulation runs before execution.',
+      message: route.simulation.status === 'success'
+        ? 'Final route simulation succeeded.'
+        : 'The wallet estimates execution after the approval confirms.',
     },
     createdAt: now.toISOString(),
     expiresAt: new Date(route.deadline * 1_000).toISOString(),

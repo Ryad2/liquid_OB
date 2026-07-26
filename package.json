@@ -22,6 +22,7 @@
     "contracts:test": "forge test --root contracts --force",
     "wallets:testnet": "pnpm --filter @liquid-ob/contracts wallets:testnet",
     "wallets:fund-testnet": "pnpm --filter @liquid-ob/contracts wallets:fund-testnet",
+    "wallets:approve-testnet": "pnpm --filter @liquid-ob/contracts wallets:approve-testnet",
     "deployment:manifest": "pnpm --filter @liquid-ob/contracts manifest",
     "subgraph:codegen": "pnpm --filter @liquid-ob/subgraph codegen",
     "subgraph:build": "pnpm --filter @liquid-ob/subgraph build",
