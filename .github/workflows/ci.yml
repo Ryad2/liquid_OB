@@ -61,6 +61,9 @@ jobs:
       - name: Build contracts
         run: forge build --root contracts --sizes
 
+      - name: Check Subgraph ABIs
+        run: node subgraph/scripts/sync-abis.mjs --check
+
       - name: Check generated ABIs
         run: node packages/contracts/scripts/generate-abis.mjs --check
 

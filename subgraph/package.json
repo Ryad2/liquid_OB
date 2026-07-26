@@ -8,7 +8,7 @@
     "codegen": "graph codegen subgraph.yaml",
     "build": "graph build subgraph.yaml",
     "configure": "node scripts/configure-manifest.mjs",
-    "check": "pnpm abi:check && pnpm codegen && pnpm build",
+    "check": "pnpm codegen && pnpm build",
     "lint": "graph build subgraph.yaml",
     "test": "node scripts/validate-schema.mjs && graph test -v 0.6.0"
   },
