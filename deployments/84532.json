@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "protocol": "ArcBook",
+  "protocolVersion": "1",
+  "network": {
+    "chainId": 84532,
+    "name": "Base Sepolia",
+    "nativeCurrencySymbol": "ETH",
+    "publicRpcUrl": "https://sepolia.base.org",
+    "explorerUrl": "https://sepolia.basescan.org"
+  },
+  "release": {
+    "public": true,
+    "deploymentBlock": 44634296,
+    "deploymentTransaction": "0x2424c73f4a235ce5f58af0641c6053d7940e44c3979dc916c489e237bf3eb0c3",
+    "deployedAt": "2026-07-26T03:35:27.502Z",
+    "repository": "https://github.com/Ryad2/liquid_OB",
+    "sourceCommit": "c854c8cca9f62035f4783316d9e384e60d39dd67"
+  },
+  "config": {
+    "maxFills": 8,
+    "positionEncodingVersion": 1
+  },
+  "contracts": {
+    "aqua": {
+      "address": "0x340d634407567C0e41507e13Af3c5F9C2C2799f4",
+      "deploymentBlock": 44634296,
+      "transactionHash": "0x7bb3f5ac54b10690bce7c3416b66673e1268076d19fbfdecfaa8537fa8124e68",
+      "runtimeCodeHash": "0x01765860cdd4a3398c168fa98037ce91244ad5b0c7931b4f82bc9ac39331a972",
+      "source": "official-aqua-source"
+    },
+    "curveKernel": {
+      "address": "0x0304c7b04C07aa94D5B4D88A5c141B1346bC4bfc",
+      "deploymentBlock": 44634296,
+      "transactionHash": "0xbb991393c1c686774f271534d44098e72036e1828cb20b7a9c6f31cdff3bd58f",
+      "runtimeCodeHash": "0x9a5d47376e939a0694855fbc4ebe649e6d92a46d114958a086f22126d428912d",
+      "source": "liquid-ob"
+    },
+    "router": {
+      "address": "0x4A98e5D8a4789b2E24E7b6E0fCf1D48C815dc421",
+      "deploymentBlock": 44634296,
+      "transactionHash": "0x2424c73f4a235ce5f58af0641c6053d7940e44c3979dc916c489e237bf3eb0c3",
+      "runtimeCodeHash": "0x4f65db36f2c3ae045c028100a59694eea74e13acc8da440b9e895247c9f5c95f",
+      "source": "liquid-ob"
+    },
+    "quoter": {
+      "address": "0x6a9e89Fd94c94F072AbE22DD8A41Bf2C81B9e258",
+      "deploymentBlock": 44634296,
+      "transactionHash": "0x31ddb83fe6f58d80bfef61ee7e7c9b61aa816adf835e2eb035ecf23cecfa8529",
+      "runtimeCodeHash": "0x440bbe852866f327f660d06c03496357f30d6ec78a297962c29120b59166daf8",
+      "source": "liquid-ob"
+    },
+    "lens": {
+      "address": "0xcA1236D5A9dfb34385C237790f403862AD8f2162",
+      "deploymentBlock": 44634296,
+      "transactionHash": "0x055e98d7679afe6b71c620a8b5da63174c36b49d027c1de8f6b278b31add6c5e",
+      "runtimeCodeHash": "0x367ecacd941122446f830a6bc1ddec1062b489e3c8411c22790289dc6ec2b8cb",
+      "source": "liquid-ob"
+    },
+    "batchExecutor": {
+      "address": "0xf7A75d70220999F4440b58063F4dD4CE0C73658e",
+      "deploymentBlock": 44634296,
+      "transactionHash": "0x4db200c5166a6d0540a95e0acab9a39be38d17a894d97b1ca608ccd9de99343b",
+      "runtimeCodeHash": "0xfeaa7a22e945e34793f0f480610e337fe3126606143b1457dd1e1fff627214c3",
+      "source": "liquid-ob"
+    }
+  },
+  "demoTokens": [
+    {
+      "address": "0xBBb49e236F561289f3f2b7700dfa574e8FFb6B81",
+      "deploymentBlock": 44634296,
+      "transactionHash": "0x54f10aedadce8fa53e6ba2a746c8ca980e40467abc4a1aaaac583a232a8cc7d6",
+      "runtimeCodeHash": "0x78c894103af26bd55c0af16898f2c86918ea2a47fc5a3c327344a3b4ddb3d3fb",
+      "source": "demo",
+      "role": "base",
+      "symbol": "dETH",
+      "decimals": 18
+    },
+    {
+      "address": "0x8b92a7A56CBC6791619bD1C1aE86a8Fb8D51230A",
+      "deploymentBlock": 44634296,
+      "transactionHash": "0xd3938766581c4dc6c5fd3f376967c8e87b72df65966d1a11c02e9515327281e3",
+      "runtimeCodeHash": "0xafdae2ef236a3b4f1fc94f048830189787581ec0fcf18feaf5a3c8c2e9269d41",
+      "source": "demo",
+      "role": "quote",
+      "symbol": "dUSD",
+      "decimals": 18
+    }
+  ]
+}

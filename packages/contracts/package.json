@@ -12,6 +12,7 @@
     "generate": "node scripts/generate-abis.mjs",
     "generate:check": "node scripts/generate-abis.mjs --check",
     "wallets:testnet": "node scripts/create-testnet-wallets.mjs",
+    "wallets:fund-testnet": "node scripts/fund-testnet-wallets.mjs",
     "lint": "oxlint src scripts",
     "manifest": "node scripts/create-manifest.mjs",
     "verify:deployment": "node scripts/verify-deployment.mjs",
