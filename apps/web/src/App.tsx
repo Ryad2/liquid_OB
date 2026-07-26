@@ -44,6 +44,9 @@ interface ChartSeries {
   reserveLabel: string
   draft?: boolean
   aggregated?: boolean
+  positionLabel?: string
+  positionIndex?: number
+  color?: string
 }
 
 interface OperationState {
@@ -56,6 +59,10 @@ type ConnectWallet = () => Promise<Address | null>
 type ExecutePlan = (plan: TransactionPlan) => Promise<void>
 
 const MAX_ALPHA = 30
+const positionCurveColors: Record<CurveSide, string[]> = {
+  buy: ['#62d9ff', '#8dbfff', '#a99dff', '#72e4d1'],
+  sell: ['#ff9a72', '#ffbd8e', '#d99cff', '#f17fa2'],
+}
 
 const numberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
@@ -126,6 +133,9 @@ function seriesFromPositions(
       id: `${position.id}-${side}`,
       side,
       label: `P${index + 1} ${side}`,
+      positionLabel: `P${index + 1}`,
+      positionIndex: index,
+      color: positionCurveColors[side][index % positionCurveColors[side].length],
       samples: position[side].marginalSamples,
       progressBps: position[side].runtime.progressBps,
       reserveLabel: `${position[side].runtime.availableOutput.formatted} ${
@@ -361,12 +371,14 @@ function CurveChart({
   selectedId,
   onSelect,
   compact = false,
+  showPositionLabels = false,
 }: {
   series: ChartSeries[]
   market: MarketDetail
   selectedId?: string | null
   onSelect?: (id: string | null) => void
   compact?: boolean
+  showPositionLabels?: boolean
 }) {
   const width = 920
   const height = compact ? 310 : 430
@@ -435,12 +447,23 @@ function CurveChart({
     && aggregateBidPrice > 0
     && aggregateAskPrice > 0
   )
+  const isSeriesVisible = (item: ChartSeries) => (
+    selectedId === undefined
+    || selectedId === null
+    || selectedId === item.id
+    || item.id.startsWith(`${selectedId}-`)
+  )
+  const isPositionMap = showPositionLabels && !isAggregated
 
   return (
     <div className={`curve-chart-shell ${isAggregated ? 'is-aggregated' : ''}`}>
       <div className="chart-corner-label">
-        <span>{isAggregated ? 'Portfolio depth' : 'Range field'}</span>
-        <small>{isAggregated ? 'QUOTE-NORMALIZED DEPTH · %' : 'INVENTORY REMAINING · %'}</small>
+        <span>{isAggregated ? 'Net depth' : isPositionMap ? 'Position map' : 'Range field'}</span>
+        <small>{isAggregated
+          ? 'QUOTE-NORMALIZED DEPTH · %'
+          : isPositionMap
+            ? 'INDIVIDUAL RANGES · START → END'
+            : 'INVENTORY REMAINING · %'}</small>
       </div>
       <svg
         className="curve-chart"
@@ -448,7 +471,9 @@ function CurveChart({
         role="img"
         aria-label={isAggregated
           ? 'Aggregated portfolio bid and ask depth on a shared price axis'
-          : 'Inventory distribution across each position price range'}
+          : isPositionMap
+            ? 'Every portfolio position shown as an independent buy and sell range'
+            : 'Inventory distribution across each position price range'}
         onMouseLeave={() => onSelect?.(null)}
       >
         <defs>
@@ -498,7 +523,7 @@ function CurveChart({
           ) return null
           const startX = xForPrice(startPrice)
           const endX = xForPrice(endPrice)
-          const isVisible = selectedId === undefined || selectedId === null || selectedId === item.id
+          const isVisible = isSeriesVisible(item)
           return (
             <rect
               key={`range-${item.id}`}
@@ -507,6 +532,7 @@ function CurveChart({
               y={inset.top}
               width={Math.max(Math.abs(endX - startX), 2)}
               height={innerHeight}
+              style={item.color === undefined ? undefined : { fill: item.color }}
             />
           )
         })}
@@ -537,7 +563,7 @@ function CurveChart({
         ) : null}
 
         {series.map((item) => {
-          const isSelected = selectedId === undefined || selectedId === null || selectedId === item.id
+          const isSelected = isSeriesVisible(item)
           const path = buildPath(item.samples, xForPrice, yForProgress)
           const progress = item.progressBps ?? 0
           const sampleIndex = Math.min(
@@ -556,6 +582,13 @@ function CurveChart({
           const lastSample = item.samples.at(-1)
           const firstPrice = Number(firstSample?.displayedMarginalPrice.formatted)
           const lastPrice = Number(lastSample?.displayedMarginalPrice.formatted)
+          const labelRatio = 0.22 + (((item.positionIndex ?? 0) % 3) * 0.18)
+          const labelSample = item.samples[Math.round((item.samples.length - 1) * labelRatio)]
+          const labelPrice = Number(labelSample?.displayedMarginalPrice.formatted)
+          const labelX = Number.isFinite(labelPrice) && labelPrice > 0
+            ? xForPrice(labelPrice)
+            : null
+          const labelY = labelSample === undefined ? null : yForProgress(labelSample.progressBps)
 
           return (
             <g
@@ -570,27 +603,57 @@ function CurveChart({
                 tabIndex={onSelect === undefined ? -1 : 0}
                 aria-label={`${item.label}, ${item.reserveLabel}`}
               />
-              <path className={`curve-path curve-${item.side} ${item.draft === true ? 'is-draft' : ''} ${item.aggregated === true ? 'is-aggregate' : ''}`} d={path} />
+              <path
+                className={`curve-path curve-${item.side} ${item.draft === true ? 'is-draft' : ''} ${item.aggregated === true ? 'is-aggregate' : ''}`}
+                d={path}
+                style={item.color === undefined ? undefined : { stroke: item.color }}
+              />
               {firstSample !== undefined && Number.isFinite(firstPrice) && firstPrice > 0 ? (
                 <circle
                   className={`range-endpoint endpoint-${item.side}`}
                   cx={xForPrice(firstPrice)}
                   cy={yForProgress(firstSample.progressBps)}
-                  r="4"
+                  r={showPositionLabels ? 5 : 4}
+                  style={item.color === undefined ? undefined : { fill: item.color }}
                 />
               ) : null}
               {lastSample !== undefined && Number.isFinite(lastPrice) && lastPrice > 0 ? (
                 <circle
-                  className={`range-endpoint endpoint-${item.side}`}
+                  className={`range-endpoint endpoint-${item.side} is-terminal`}
                   cx={xForPrice(lastPrice)}
                   cy={yForProgress(lastSample.progressBps)}
-                  r="4"
+                  r={showPositionLabels ? 5 : 4}
+                  style={item.color === undefined ? undefined : { stroke: item.color }}
                 />
+              ) : null}
+              {showPositionLabels && item.positionLabel !== undefined && labelX !== null && labelY !== null ? (
+                <text
+                  className="position-curve-label"
+                  x={labelX + (item.side === 'buy' ? -8 : 8)}
+                  y={labelY - 6}
+                  textAnchor={item.side === 'buy' ? 'end' : 'start'}
+                  style={item.color === undefined ? undefined : { fill: item.color }}
+                >
+                  {item.positionLabel} · {item.side === 'buy' ? 'B' : 'S'}
+                </text>
               ) : null}
               {item.progressBps !== undefined && activeX !== null ? (
                 <>
-                  <line className={`progress-marker progress-${item.side}`} x1={activeX} x2={activeX} y1={activeY} y2={height - inset.bottom} />
-                  <circle className={`current-point point-${item.side}`} cx={activeX} cy={activeY} r="5.5" />
+                  <line
+                    className={`progress-marker progress-${item.side}`}
+                    x1={activeX}
+                    x2={activeX}
+                    y1={activeY}
+                    y2={height - inset.bottom}
+                    style={item.color === undefined ? undefined : { stroke: item.color }}
+                  />
+                  <circle
+                    className={`current-point point-${item.side}`}
+                    cx={activeX}
+                    cy={activeY}
+                    r="5.5"
+                    style={item.color === undefined ? undefined : { fill: item.color }}
+                  />
                 </>
               ) : null}
             </g>
@@ -600,6 +663,7 @@ function CurveChart({
       <div className="chart-legend">
         <span><i className="legend-dot buy" /> {isAggregated ? 'Aggregated bids' : 'Buy curves'}</span>
         <span><i className="legend-dot sell" /> {isAggregated ? 'Aggregated asks' : 'Sell curves'}</span>
+        {isPositionMap ? <span className="endpoint-key"><i /> start <b /> end</span> : null}
         <span><i className="legend-line" /> Indexed mid price</span>
         <small>PRICE RANGE · {market.quoteToken.symbol}/{market.baseToken.symbol} →</small>
       </div>
@@ -617,16 +681,23 @@ function HeroCurveCanvas({ alpha }: { alpha: number }) {
     if (context === null) return
     let animationFrame = 0
 
-    const pointOnQuadratic = (
+    const pointOnCubic = (
       progress: number,
       start: { x: number; y: number },
-      control: { x: number; y: number },
+      firstControl: { x: number; y: number },
+      secondControl: { x: number; y: number },
       end: { x: number; y: number },
     ) => {
       const inverse = 1 - progress
       return {
-        x: (inverse * inverse * start.x) + (2 * inverse * progress * control.x) + (progress * progress * end.x),
-        y: (inverse * inverse * start.y) + (2 * inverse * progress * control.y) + (progress * progress * end.y),
+        x: (inverse ** 3 * start.x)
+          + (3 * inverse ** 2 * progress * firstControl.x)
+          + (3 * inverse * progress ** 2 * secondControl.x)
+          + (progress ** 3 * end.x),
+        y: (inverse ** 3 * start.y)
+          + (3 * inverse ** 2 * progress * firstControl.y)
+          + (3 * inverse * progress ** 2 * secondControl.y)
+          + (progress ** 3 * end.y),
       }
     }
 
@@ -644,14 +715,20 @@ function HeroCurveCanvas({ alpha }: { alpha: number }) {
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
       context.clearRect(0, 0, width, height)
 
-      const inset = { x: width * 0.07, y: height * 0.1 }
+      const inset = { x: width * 0.055, y: height * 0.08 }
       const innerWidth = width - (inset.x * 2)
-      const innerHeight = height - (inset.y * 1.7)
+      const innerHeight = height - (inset.y * 2)
+      const center = {
+        x: inset.x + (innerWidth / 2),
+        y: inset.y + (innerHeight / 2),
+      }
+      const normalizedAlpha = Math.max(-1, Math.min(alpha / MAX_ALPHA, 1))
+
       context.lineWidth = 1
-      context.strokeStyle = 'rgba(158, 174, 225, 0.1)'
-      for (let index = 0; index <= 5; index += 1) {
-        const x = inset.x + ((innerWidth * index) / 5)
-        const y = inset.y + ((innerHeight * index) / 5)
+      context.strokeStyle = 'rgba(158, 174, 225, 0.075)'
+      for (let index = 0; index <= 8; index += 1) {
+        const x = inset.x + ((innerWidth * index) / 8)
+        const y = inset.y + ((innerHeight * index) / 8)
         context.beginPath()
         context.moveTo(x, inset.y)
         context.lineTo(x, inset.y + innerHeight)
@@ -662,77 +739,134 @@ function HeroCurveCanvas({ alpha }: { alpha: number }) {
         context.stroke()
       }
 
-      const normalizedAlpha = Math.max(-1, Math.min(alpha / MAX_ALPHA, 1))
-      const buyStart = { x: inset.x, y: inset.y + (innerHeight * 0.88) }
-      const buyEnd = { x: inset.x + (innerWidth * 0.47), y: inset.y + (innerHeight * 0.2) }
-      const buyControl = {
-        x: inset.x + (innerWidth * (0.22 + (normalizedAlpha * 0.16))),
-        y: inset.y + (innerHeight * (0.5 - (normalizedAlpha * 0.34))),
+      const orbitPulse = 1 + (Math.sin(time * 0.0014) * 0.045)
+      context.save()
+      context.translate(center.x, center.y)
+      context.scale(1.8, 1)
+      for (let orbit = 0; orbit < 3; orbit += 1) {
+        context.beginPath()
+        context.strokeStyle = `rgba(169, 157, 255, ${0.12 - (orbit * 0.025)})`
+        context.lineWidth = 1
+        context.setLineDash([2 + orbit, 8 + (orbit * 3)])
+        context.arc(0, 0, (38 + (orbit * 31)) * orbitPulse, 0, Math.PI * 2)
+        context.stroke()
       }
-      const sellStart = { x: inset.x + (innerWidth * 0.53), y: inset.y + (innerHeight * 0.2) }
-      const sellEnd = { x: inset.x + innerWidth, y: inset.y + (innerHeight * 0.88) }
-      const sellControl = {
-        x: inset.x + (innerWidth * (0.78 - (normalizedAlpha * 0.16))),
-        y: inset.y + (innerHeight * (0.5 + (normalizedAlpha * 0.34))),
-      }
-
-      const buyGradient = context.createLinearGradient(buyStart.x, buyStart.y, buyEnd.x, buyEnd.y)
-      buyGradient.addColorStop(0, 'rgba(98, 217, 255, 0.32)')
-      buyGradient.addColorStop(1, '#62d9ff')
-      context.strokeStyle = buyGradient
-      context.lineWidth = 2.6
-      context.beginPath()
-      context.moveTo(buyStart.x, buyStart.y)
-      context.quadraticCurveTo(buyControl.x, buyControl.y, buyEnd.x, buyEnd.y)
-      context.stroke()
-
-      const sellGradient = context.createLinearGradient(sellStart.x, sellStart.y, sellEnd.x, sellEnd.y)
-      sellGradient.addColorStop(0, '#a99dff')
-      sellGradient.addColorStop(1, '#ff9a72')
-      context.strokeStyle = sellGradient
-      context.beginPath()
-      context.moveTo(sellStart.x, sellStart.y)
-      context.quadraticCurveTo(sellControl.x, sellControl.y, sellEnd.x, sellEnd.y)
-      context.stroke()
-
-      const midX = inset.x + (innerWidth * 0.5)
-      context.strokeStyle = 'rgba(237, 240, 255, 0.32)'
-      context.setLineDash([4, 6])
-      context.beginPath()
-      context.moveTo(midX, inset.y)
-      context.lineTo(midX, inset.y + innerHeight)
-      context.stroke()
+      context.restore()
       context.setLineDash([])
 
-      const particleProgress = (time * 0.00016) % 1
-      const drawParticles = (
-        start: { x: number; y: number },
-        control: { x: number; y: number },
-        end: { x: number; y: number },
-        color: string,
-      ) => {
-        for (let index = 0; index < 5; index += 1) {
-          const progress = (particleProgress + (index * 0.2)) % 1
-          const point = pointOnQuadratic(progress, start, control, end)
-          const radius = 2.2 + (Math.sin((time * 0.004) + index) * 0.7)
+      const coreGlow = context.createRadialGradient(
+        center.x,
+        center.y,
+        0,
+        center.x,
+        center.y,
+        Math.min(width, height) * 0.2,
+      )
+      coreGlow.addColorStop(0, 'rgba(237, 240, 255, 0.34)')
+      coreGlow.addColorStop(0.18, 'rgba(169, 157, 255, 0.18)')
+      coreGlow.addColorStop(1, 'rgba(169, 157, 255, 0)')
+      context.fillStyle = coreGlow
+      context.fillRect(0, 0, width, height)
+
+      const fieldGradient = context.createLinearGradient(inset.x, center.y, inset.x + innerWidth, center.y)
+      fieldGradient.addColorStop(0, 'rgba(98, 217, 255, 0.28)')
+      fieldGradient.addColorStop(0.43, '#62d9ff')
+      fieldGradient.addColorStop(0.52, '#c6c0ff')
+      fieldGradient.addColorStop(0.6, '#a99dff')
+      fieldGradient.addColorStop(1, 'rgba(255, 154, 114, 0.34)')
+
+      const curves = Array.from({ length: 7 }, (_, index) => {
+        const lane = (index - 3) / 3
+        const start = {
+          x: inset.x,
+          y: center.y + (lane * innerHeight * 0.4),
+        }
+        const end = {
+          x: inset.x + innerWidth,
+          y: center.y - (lane * innerHeight * 0.4),
+        }
+        const alphaTwist = normalizedAlpha * innerHeight * 0.2
+        const firstControl = {
+          x: inset.x + (innerWidth * (0.31 + (normalizedAlpha * 0.055))),
+          y: start.y - (lane * innerHeight * 0.1) - alphaTwist,
+        }
+        const secondControl = {
+          x: inset.x + (innerWidth * (0.69 - (normalizedAlpha * 0.055))),
+          y: end.y + (lane * innerHeight * 0.1) + alphaTwist,
+        }
+        return { start, firstControl, secondControl, end, lane, index }
+      })
+
+      for (const curve of curves) {
+        context.globalAlpha = 0.28 + ((1 - Math.abs(curve.lane)) * 0.68)
+        context.strokeStyle = fieldGradient
+        context.lineWidth = curve.index === 3 ? 3.4 : 1.2 + ((1 - Math.abs(curve.lane)) * 1.1)
+        context.shadowColor = curve.index <= 3 ? '#62d9ff' : '#ff9a72'
+        context.shadowBlur = curve.index === 3 ? 15 : 5
+        context.beginPath()
+        context.moveTo(curve.start.x, curve.start.y)
+        context.bezierCurveTo(
+          curve.firstControl.x,
+          curve.firstControl.y,
+          curve.secondControl.x,
+          curve.secondControl.y,
+          curve.end.x,
+          curve.end.y,
+        )
+        context.stroke()
+      }
+      context.globalAlpha = 1
+      context.shadowBlur = 0
+
+      for (const curveIndex of [0, 3, 6]) {
+        const curve = curves[curveIndex]!
+        for (let particle = 0; particle < 4; particle += 1) {
+          const progress = ((time * 0.00011) + (particle * 0.25) + (curveIndex * 0.037)) % 1
+          const point = pointOnCubic(
+            progress,
+            curve.start,
+            curve.firstControl,
+            curve.secondControl,
+            curve.end,
+          )
+          const color = progress < 0.48 ? '#62d9ff' : progress < 0.58 ? '#c7c0ff' : '#ff9a72'
           context.fillStyle = color
           context.shadowColor = color
-          context.shadowBlur = 10
+          context.shadowBlur = 13
           context.beginPath()
-          context.arc(point.x, point.y, radius, 0, Math.PI * 2)
+          context.arc(point.x, point.y, 1.7 + (Math.sin((time * 0.004) + particle) * 0.45), 0, Math.PI * 2)
           context.fill()
         }
-        context.shadowBlur = 0
       }
-      drawParticles(buyStart, buyControl, buyEnd, '#62d9ff')
-      drawParticles(sellStart, sellControl, sellEnd, '#ff9a72')
+      context.shadowBlur = 0
+
+      const scanX = inset.x + (((time * 0.00008) % 1) * innerWidth)
+      const scanGradient = context.createLinearGradient(scanX - 35, 0, scanX + 35, 0)
+      scanGradient.addColorStop(0, 'rgba(98, 217, 255, 0)')
+      scanGradient.addColorStop(0.5, 'rgba(237, 240, 255, 0.1)')
+      scanGradient.addColorStop(1, 'rgba(255, 154, 114, 0)')
+      context.fillStyle = scanGradient
+      context.fillRect(scanX - 35, inset.y, 70, innerHeight)
+
+      context.fillStyle = '#edf0ff'
+      context.shadowColor = '#a99dff'
+      context.shadowBlur = 18
+      context.beginPath()
+      context.arc(center.x, center.y, 3.2, 0, Math.PI * 2)
+      context.fill()
+      context.shadowBlur = 0
 
       context.fillStyle = 'rgba(137, 144, 173, 0.72)'
-      context.font = '9px "IBM Plex Mono", monospace'
-      context.fillText('1,550', buyStart.x, inset.y + innerHeight + 19)
-      context.fillText('1,945', buyEnd.x - 18, inset.y + innerHeight + 19)
-      context.fillText('2,004', sellStart.x - 18, inset.y + innerHeight + 19)
-      context.fillText('2,350', sellEnd.x - 30, inset.y + innerHeight + 19)
+      context.font = '8px "IBM Plex Mono", monospace'
+      context.textAlign = 'left'
+      context.fillText('BOUND INPUT', inset.x, inset.y + innerHeight + 18)
+      context.textAlign = 'center'
+      context.fillStyle = 'rgba(199, 192, 255, 0.82)'
+      context.fillText(`PARAMETRIC CORE  /  α ${alpha > 0 ? '+' : ''}${alpha.toFixed(2)}`, center.x, inset.y + innerHeight + 18)
+      context.textAlign = 'right'
+      context.fillStyle = 'rgba(137, 144, 173, 0.72)'
+      context.fillText('ROUTED OUTPUT', inset.x + innerWidth, inset.y + innerHeight + 18)
+      context.textAlign = 'start'
 
       animationFrame = window.requestAnimationFrame(draw)
     }
@@ -746,7 +880,7 @@ function HeroCurveCanvas({ alpha }: { alpha: number }) {
       ref={canvasRef}
       className="hero-curve-canvas"
       role="img"
-      aria-label={`Animated ArcBook liquidity field with alpha ${alpha.toFixed(2)}`}
+      aria-label={`Animated ArcBook parametric emblem with alpha ${alpha.toFixed(2)}`}
     />
   )
 }
@@ -765,11 +899,11 @@ function LandingView({
       <section className="landing-hero">
         <div className="landing-copy">
           <div className="landing-signature">
-            <BrandMark variant="hero" />
+            <span className="landing-signal" aria-hidden="true"><i /></span>
             <span><b>ARCBOOK</b><small>CURVE-NATIVE ORDER BOOK</small></span>
           </div>
           <h1 aria-label="Shape the book.">Shape the<br /><em>book.</em></h1>
-          <p>ArcBook turns bounded liquidity into executable curves. Market makers shape the range; traders route across the field.</p>
+          <p>Liquidity is no longer a stack of static orders. Shape a bounded field, publish its geometry and let every fill move through it.</p>
           <div className="landing-actions">
             <button className="landing-primary" onClick={() => onNavigate('trade')}>Start trading <span>↗</span></button>
             <button className="landing-secondary" onClick={() => onNavigate('studio')}>Shape a curve <span>⌁</span></button>
@@ -786,14 +920,14 @@ function LandingView({
           <div className="hero-orbit orbit-two" />
           <article className="hero-field-card">
             <header>
-              <div><span className="token-pair-icon"><i>W</i><i>U</i></span><p><strong>WETH–USDC</strong><small>LIVE RANGE FIELD</small></p></div>
-              <span className="hero-live"><i /> FIELD ACTIVE</span>
+              <div><span className="hero-system-glyph"><i /><i /></span><p><strong>ARCBOOK FIELD</strong><small>PARAMETRIC EXECUTION ENGINE</small></p></div>
+              <span className="hero-live"><i /> ENGINE ACTIVE</span>
             </header>
             <div className="hero-canvas-wrap">
               <HeroCurveCanvas alpha={alpha} />
-              <span className="hero-field-label buy">BUY RANGE</span>
-              <span className="hero-field-label sell">SELL RANGE</span>
-              <span className="hero-mid-label">INDEXED MID · 1,974.5</span>
+              <span className="hero-field-label buy">BOUND LIQUIDITY</span>
+              <span className="hero-field-label sell">ROUTED EXECUTION</span>
+              <span className="hero-mid-label">ARC / CORE {alpha > 0 ? '+' : ''}{alpha.toFixed(2)}</span>
             </div>
             <footer>
               <div className="hero-alpha-readout"><span>CURVE ALPHA</span><strong>{alpha > 0 ? '+' : ''}{alpha.toFixed(2)}</strong></div>
@@ -811,7 +945,7 @@ function LandingView({
               </div>
             </footer>
           </article>
-          <div className="hero-floating-stat stat-top"><span>SPREAD</span><strong>{view.market.spreadBps} bps</strong></div>
+          <div className="hero-floating-stat stat-top"><span>MODEL</span><strong>bounded</strong></div>
           <div className="hero-floating-stat stat-bottom"><span>CURVES</span><strong>{view.market.stats.activePositions * 2} live</strong></div>
         </div>
       </section>
@@ -1287,7 +1421,7 @@ function PortfolioView({
   operation: OperationState
   onDock: (position: PositionSummary) => void
 }) {
-  const [atlasMode, setAtlasMode] = useState<PortfolioAtlasMode>('aggregate')
+  const [atlasMode, setAtlasMode] = useState<PortfolioAtlasMode>('positions')
   const [selectedCurve, setSelectedCurve] = useState<string | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null)
   const walletPositions = walletAddress === null
@@ -1312,7 +1446,7 @@ function PortfolioView({
     : seriesFromPositions(walletPositions)
   const selectedSeriesId = atlasMode === 'aggregate'
     ? null
-    : selectedCurve ?? (selectedPosition === null ? null : `${selectedPosition}-sell`)
+    : selectedCurve ?? selectedPosition
 
   if (walletAddress === null) {
     return (
@@ -1346,21 +1480,40 @@ function PortfolioView({
       <section className="portfolio-chart panel">
         <header className="panel-header portfolio-chart-header">
           <div>
-            <h2>Portfolio depth</h2>
+            <h2>{atlasMode === 'positions' ? 'Position map' : 'Net depth'}</h2>
             <p>{atlasMode === 'aggregate'
-              ? 'Every wallet position, quote-normalized and summed on one shared price axis.'
-              : 'Inspect each position layer and its independent execution range.'}</p>
+              ? 'Optional normalized envelope for comparing total buy and sell inventory.'
+              : 'Every start, end and gap stays visible; no range is joined to another.'}</p>
           </div>
           <div className="segmented-control compact">
-            <button className={atlasMode === 'aggregate' ? 'active' : ''} onClick={() => setAtlasMode('aggregate')}>
-              Aggregated depth
+            <button
+              className={atlasMode === 'positions' ? 'active' : ''}
+              onClick={() => {
+                setAtlasMode('positions')
+                setSelectedCurve(null)
+              }}
+            >
+              Position map
             </button>
-            <button className={atlasMode === 'positions' ? 'active' : ''} onClick={() => setAtlasMode('positions')}>
-              Position layers
+            <button
+              className={atlasMode === 'aggregate' ? 'active' : ''}
+              onClick={() => {
+                setAtlasMode('aggregate')
+                setSelectedCurve(null)
+              }}
+            >
+              Net depth
             </button>
           </div>
         </header>
-        <CurveChart series={chartSeries} market={view.market} selectedId={selectedSeriesId} onSelect={setSelectedCurve} compact />
+        <CurveChart
+          series={chartSeries}
+          market={view.market}
+          selectedId={selectedSeriesId}
+          onSelect={setSelectedCurve}
+          compact
+          showPositionLabels={atlasMode === 'positions'}
+        />
       </section>
 
       <section className="portfolio-positions panel">
