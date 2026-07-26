@@ -74,6 +74,8 @@ describe('ArcBook product frontend', () => {
       for (const path of paths) {
         const data = path.getAttribute('d') ?? ''
         expect(data).not.toMatch(/NaN|Infinity/)
+        expect(data).toContain(' C ')
+        expect(data).not.toContain(' L ')
         const coordinates = data.match(/-?\d+(?:\.\d+)?/g)?.map(Number) ?? []
         expect(coordinates.length).toBeGreaterThan(20)
         expect(coordinates.every((coordinate) => coordinate >= 0 && coordinate <= 920)).toBe(true)

@@ -256,15 +256,103 @@ function buildPath(
   xForPrice: (price: number) => number,
   yForProgress: (progressBps: number) => number,
 ) {
-  return samples.map((sample) => {
+  const projectedPoints = samples.map((sample) => {
     const price = Number(sample.displayedMarginalPrice.formatted)
     if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(sample.progressBps)) return null
     const x = xForPrice(price)
     const y = yForProgress(sample.progressBps)
     return { x, y }
   }).filter((point): point is { x: number; y: number } => point !== null)
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-    .join(' ')
+
+  const points = projectedPoints.reduce<Array<{ x: number; y: number }>>((unique, point) => {
+    const previous = unique.at(-1)
+    if (previous === undefined || Math.abs(point.y - previous.y) > 0.001) {
+      unique.push(point)
+    } else {
+      unique[unique.length - 1] = point
+    }
+    return unique
+  }, [])
+  const first = points.at(0)
+  if (first === undefined) return ''
+  if (points.length === 1) return `M ${first.x.toFixed(2)} ${first.y.toFixed(2)}`
+
+  // Shape-preserving cubic interpolation removes visible joins without letting
+  // the rendered curve overshoot its calculated price samples.
+  const intervals = points.slice(0, -1).map((point, index) => (
+    points[index + 1]!.y - point.y
+  ))
+  const slopes = intervals.map((interval, index) => (
+    (points[index + 1]!.x - points[index]!.x) / interval
+  ))
+  const tangents = Array.from({ length: points.length }, () => 0)
+
+  if (points.length === 2) {
+    tangents[0] = slopes[0]!
+    tangents[1] = slopes[0]!
+  } else {
+    const startInterval = intervals[0]!
+    const nextInterval = intervals[1]!
+    const startSlope = slopes[0]!
+    const nextSlope = slopes[1]!
+    let startTangent = (
+      ((2 * startInterval + nextInterval) * startSlope)
+      - (startInterval * nextSlope)
+    ) / (startInterval + nextInterval)
+    if (startTangent * startSlope <= 0) {
+      startTangent = 0
+    } else if (startSlope * nextSlope < 0 && Math.abs(startTangent) > Math.abs(3 * startSlope)) {
+      startTangent = 3 * startSlope
+    }
+    tangents[0] = startTangent
+
+    for (let index = 1; index < points.length - 1; index += 1) {
+      const previousSlope = slopes[index - 1]!
+      const nextSegmentSlope = slopes[index]!
+      if (previousSlope * nextSegmentSlope <= 0) {
+        tangents[index] = 0
+        continue
+      }
+      const previousInterval = intervals[index - 1]!
+      const nextSegmentInterval = intervals[index]!
+      const previousWeight = (2 * nextSegmentInterval) + previousInterval
+      const nextWeight = nextSegmentInterval + (2 * previousInterval)
+      tangents[index] = (previousWeight + nextWeight) / (
+        (previousWeight / previousSlope) + (nextWeight / nextSegmentSlope)
+      )
+    }
+
+    const finalIndex = points.length - 1
+    const finalInterval = intervals.at(-1)!
+    const previousInterval = intervals.at(-2)!
+    const finalSlope = slopes.at(-1)!
+    const previousSlope = slopes.at(-2)!
+    let finalTangent = (
+      ((2 * finalInterval + previousInterval) * finalSlope)
+      - (finalInterval * previousSlope)
+    ) / (finalInterval + previousInterval)
+    if (finalTangent * finalSlope <= 0) {
+      finalTangent = 0
+    } else if (finalSlope * previousSlope < 0 && Math.abs(finalTangent) > Math.abs(3 * finalSlope)) {
+      finalTangent = 3 * finalSlope
+    }
+    tangents[finalIndex] = finalTangent
+  }
+
+  return points.slice(0, -1).reduce((path, point, index) => {
+    const next = points[index + 1]!
+    const interval = next.y - point.y
+    const controlOffset = interval / 3
+    const firstControl = {
+      x: point.x + (tangents[index]! * controlOffset),
+      y: point.y + controlOffset,
+    }
+    const secondControl = {
+      x: next.x - (tangents[index + 1]! * controlOffset),
+      y: next.y - controlOffset,
+    }
+    return `${path} C ${firstControl.x.toFixed(2)} ${firstControl.y.toFixed(2)} ${secondControl.x.toFixed(2)} ${secondControl.y.toFixed(2)} ${next.x.toFixed(2)} ${next.y.toFixed(2)}`
+  }, `M ${first.x.toFixed(2)} ${first.y.toFixed(2)}`)
 }
 
 function CurveChart({
