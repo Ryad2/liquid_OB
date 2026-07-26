@@ -20,6 +20,7 @@ import './App.css'
 type AppView = 'home' | 'trade' | 'portfolio' | 'studio'
 type CurveFilter = 'all' | CurveSide
 type PortfolioAtlasMode = 'aggregate' | 'positions'
+type TradeDepthMode = 'aggregate' | 'positions' | 'route'
 
 interface GatewayView {
   bootstrap: FrontendBootstrap
@@ -30,6 +31,7 @@ interface GatewayView {
 
 interface ChartSeries {
   id: string
+  positionId?: PositionSummary['id']
   side: CurveSide
   label: string
   samples: CurveSample[]
@@ -115,6 +117,7 @@ function seriesFromPositions(
     const sides: CurveSide[] = filter === 'all' ? ['buy', 'sell'] : [filter]
     return sides.map((side) => ({
       id: `${position.id}-${side}`,
+      positionId: position.id,
       side,
       label: `P${index + 1} ${side}`,
       positionLabel: `P${index + 1}`,
@@ -356,6 +359,9 @@ function CurveChart({
   onSelect,
   compact = false,
   showPositionLabels = false,
+  chartTitle,
+  chartSubtitle,
+  chartAriaLabel,
 }: {
   series: ChartSeries[]
   market: MarketDetail
@@ -363,6 +369,9 @@ function CurveChart({
   onSelect?: (id: string | null) => void
   compact?: boolean
   showPositionLabels?: boolean
+  chartTitle?: string
+  chartSubtitle?: string
+  chartAriaLabel?: string
 }) {
   const width = 920
   const height = compact ? 310 : 430
@@ -438,26 +447,32 @@ function CurveChart({
     || item.id.startsWith(`${selectedId}-`)
   )
   const isPositionMap = showPositionLabels && !isAggregated
+  const resolvedTitle = chartTitle
+    ?? (isAggregated ? 'Net depth' : isPositionMap ? 'Position map' : 'Range field')
+  const resolvedSubtitle = chartSubtitle
+    ?? (isAggregated
+      ? 'QUOTE-NORMALIZED DEPTH · %'
+      : isPositionMap
+        ? 'INDIVIDUAL RANGES · START → END'
+        : 'INVENTORY REMAINING · %')
+  const resolvedAriaLabel = chartAriaLabel
+    ?? (isAggregated
+      ? 'Aggregated portfolio bid and ask depth on a shared price axis'
+      : isPositionMap
+        ? 'Every portfolio position shown as an independent buy and sell range'
+        : 'Inventory distribution across each position price range')
 
   return (
     <div className={`curve-chart-shell ${isAggregated ? 'is-aggregated' : ''}`}>
       <div className="chart-corner-label">
-        <span>{isAggregated ? 'Net depth' : isPositionMap ? 'Position map' : 'Range field'}</span>
-        <small>{isAggregated
-          ? 'QUOTE-NORMALIZED DEPTH · %'
-          : isPositionMap
-            ? 'INDIVIDUAL RANGES · START → END'
-            : 'INVENTORY REMAINING · %'}</small>
+        <span>{resolvedTitle}</span>
+        <small>{resolvedSubtitle}</small>
       </div>
       <svg
         className="curve-chart"
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label={isAggregated
-          ? 'Aggregated portfolio bid and ask depth on a shared price axis'
-          : isPositionMap
-            ? 'Every portfolio position shown as an independent buy and sell range'
-            : 'Inventory distribution across each position price range'}
+        aria-label={resolvedAriaLabel}
         onMouseLeave={() => onSelect?.(null)}
       >
         <defs>
@@ -1111,7 +1126,7 @@ function FunctionalOrderBook({
           )
         })}
       </div>
-      <footer className="book-footer"><span>6 executable sides</span><span>Sorted by marginal price</span></footer>
+      <footer className="book-footer"><span>{positions.length * 2} executable sides</span><span>Sorted by marginal price</span></footer>
     </section>
   )
 }
@@ -1306,12 +1321,23 @@ function TradeView({
   setSlippageBps: (slippage: number) => void
 }) {
   const [selectedCurve, setSelectedCurve] = useState<string | null>(null)
-  const [chartMode, setChartMode] = useState<'liquidity' | 'route'>('liquidity')
+  const [chartMode, setChartMode] = useState<TradeDepthMode>('positions')
   const routePositionIds = new Set(quote?.fills.map((fill) => fill.positionId) ?? [])
-  const chartPositions = chartMode === 'route' && quote !== null
-    ? view.positions.filter((position) => routePositionIds.has(position.id))
-    : view.positions
-  const chartSeries = seriesFromPositions(chartPositions, chartMode === 'route' ? side : 'all')
+  const positionSeries = seriesFromPositions(view.positions)
+  const chartSeries = chartMode === 'aggregate'
+    ? aggregatedPortfolioSeries(view.positions, view.market)
+    : chartMode === 'route'
+      ? positionSeries.filter((item) => (
+          item.side === side
+          && item.positionId !== undefined
+          && routePositionIds.has(item.positionId)
+        ))
+      : positionSeries
+  const chartModeLabel = chartMode === 'aggregate'
+    ? 'NORMALIZED MARKET'
+    : chartMode === 'route'
+      ? `${quote?.fills.length ?? 0} QUOTED FILLS`
+      : `${view.positions.length} POSITIONS · ${view.positions.length * 2} SIDES`
 
   return (
     <>
@@ -1320,12 +1346,29 @@ function TradeView({
         <section className="trade-chart panel">
           <header className="panel-header chart-panel-header">
             <div className="panel-tabs">
-              <button className={chartMode === 'liquidity' ? 'active' : ''} onClick={() => setChartMode('liquidity')}>Curve field</button>
+              <button className={chartMode === 'positions' ? 'active' : ''} onClick={() => setChartMode('positions')}>Position map</button>
+              <button className={chartMode === 'aggregate' ? 'active' : ''} onClick={() => setChartMode('aggregate')}>Net depth</button>
               <button className={chartMode === 'route' ? 'active' : ''} onClick={() => setChartMode('route')}>Route geometry</button>
             </div>
-            <div className="chart-tools"><button className="active">Range depth</button><button disabled>Execution</button><button aria-label="Expand chart">⛶</button></div>
+            <div className="chart-tools">
+              <span className="chart-mode-badge">{chartModeLabel}</span>
+              <button aria-label="Expand chart">⛶</button>
+            </div>
           </header>
-          <CurveChart series={chartSeries} market={view.market} selectedId={selectedCurve} onSelect={setSelectedCurve} />
+          <CurveChart
+            series={chartSeries}
+            market={view.market}
+            selectedId={selectedCurve}
+            onSelect={setSelectedCurve}
+            showPositionLabels={chartMode !== 'aggregate'}
+            chartTitle={chartMode === 'route' ? 'Route geometry' : undefined}
+            chartSubtitle={chartMode === 'route' ? 'QUOTED POSITIONS · EXECUTION ORDER' : undefined}
+            chartAriaLabel={chartMode === 'aggregate'
+              ? 'Aggregated market bid and ask depth on a shared price axis'
+              : chartMode === 'route'
+                ? 'Only the position curves selected by the current quote'
+                : 'Every market position shown as an independent buy and sell range'}
+          />
         </section>
         <FunctionalOrderBook positions={view.positions} selectedId={selectedCurve} onSelect={setSelectedCurve} />
         <TradeTicket

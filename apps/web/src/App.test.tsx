@@ -5,7 +5,7 @@ import App from './App'
 describe('ArcBook product frontend', () => {
   it('renders the functional order book through the stable client', async () => {
     window.history.replaceState({}, '', '#/trade')
-    render(<App />)
+    const { container } = render(<App />)
 
     expect(
       await screen.findByRole('button', { name: /arcbook home/i }),
@@ -14,6 +14,20 @@ describe('ArcBook product frontend', () => {
     expect(screen.getByRole('heading', { name: /curve book/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /pay usdc/i })).toBeInTheDocument()
     expect(screen.getByText(/writes safely disabled/i)).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /every market position/i })).toBeInTheDocument()
+    expect(screen.getByText('P1 · B')).toBeInTheDocument()
+    expect(container.querySelectorAll('.curve-path')).toHaveLength(10)
+
+    fireEvent.click(screen.getByRole('button', { name: /net depth/i }))
+    expect(await screen.findByRole('img', { name: /aggregated market/i })).toBeInTheDocument()
+    expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('button', { name: /route geometry/i }))
+    await waitFor(() => {
+      expect(screen.getByRole('img', { name: /selected by the current quote/i })).toBeInTheDocument()
+      expect(container.querySelectorAll('.curve-path').length).toBeGreaterThan(0)
+      expect(container.querySelectorAll('.curve-path').length).toBeLessThan(5)
+    })
   })
 
   it('opens on the interactive ArcBook landing page', async () => {
