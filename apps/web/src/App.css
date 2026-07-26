@@ -122,6 +122,7 @@ button { border: 0; background: transparent; }
 .chart-tools button { padding: 4px 9px; border-radius: 5px; }
 .chart-tools button.active { background: var(--soft); }
 .chart-tools button:disabled { color: var(--muted-2); }
+.chart-mode-badge { display: flex; align-items: center; margin-right: 2px; color: var(--muted-2); font-family: var(--mono); font-size: 7px; letter-spacing: .08em; white-space: nowrap; }
 
 /* Curve chart */
 .curve-chart-shell { position: relative; height: calc(100% - 46px); min-height: 320px; background: radial-gradient(circle at 20% 18%, rgba(98, 217, 255, .035), transparent 28%), radial-gradient(circle at 82% 24%, rgba(169, 157, 255, .045), transparent 26%), var(--surface); }
@@ -720,7 +721,7 @@ button { border: 0; background: transparent; }
   .landing-ticker > div { height: 45px; }
   .brand > span:last-child { display: none; }
   .wallet-button.connected { min-width: 100px; padding: 0 10px; }
-  .chart-tools button:not(:last-child) { display: none; }
+  .chart-mode-badge { display: none; }
   .panel-tabs button { padding: 0 8px; font-size: 9px; }
   .chart-legend small { display: none; }
   .studio-topline .eyebrow { display: none; }
