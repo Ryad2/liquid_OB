@@ -118,7 +118,7 @@ const deploymentBlocks = [curveKernel, router, quoter, lens, batchExecutor]
 const deploymentBlock = Math.min(...deploymentBlocks)
 const manifest = {
   schemaVersion: 1,
-  protocol: 'Liquid OB',
+  protocol: 'ArcBook',
   protocolVersion: '1',
   network: {
     chainId: expectedChainId,

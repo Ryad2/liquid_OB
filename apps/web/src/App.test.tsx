@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from './App'
 
@@ -78,13 +78,13 @@ describe('ArcBook product frontend', () => {
       target: { value: '0.000000000000000001' },
     })
     fireEvent.change(screen.getByRole('textbox', { name: /sell curve end price/i }), {
-      target: { value: '340000000000000000000' },
+      target: { value: '0.000000000000000003' },
     })
     fireEvent.change(screen.getByRole('textbox', { name: /buy curve start price/i }), {
       target: { value: '300000000000000000000' },
     })
     fireEvent.change(screen.getByRole('textbox', { name: /buy curve end price/i }), {
-      target: { value: '0.000000000000000001' },
+      target: { value: '100000000000000000000' },
     })
     fireEvent.input(screen.getByRole('slider', { name: /sell curve alpha/i }), {
       target: { value: '30' },
@@ -128,5 +128,26 @@ describe('ArcBook product frontend', () => {
     fireEvent.click(screen.getByRole('button', { name: /net depth/i }))
     expect(await screen.findByRole('heading', { name: 'Net depth' })).toBeInTheDocument()
     expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
+  })
+
+  it('exposes real activity navigation and chart expansion controls', async () => {
+    window.history.replaceState({}, '', '#/trade')
+    const { container } = render(<App />)
+
+    await screen.findByRole('heading', { name: /curve book/i })
+    fireEvent.click(screen.getByRole('button', { name: /expand chart/i }))
+    expect(container.querySelector('.trade-chart')).toHaveClass('expanded')
+    fireEvent.click(screen.getByRole('button', { name: /collapse chart/i }))
+    expect(container.querySelector('.trade-chart')).not.toHaveClass('expanded')
+
+    const primaryNavigation = screen.getByRole('navigation', { name: /primary navigation/i })
+    fireEvent.click(within(primaryNavigation).getByRole('button', { name: 'Activity' }))
+    expect(await screen.findByRole('heading', { name: 'Activity' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /protocol event stream/i })).toBeInTheDocument()
+    expect(window.location.hash).toBe('#/activity')
+    expect(within(primaryNavigation).getByRole('link', { name: /docs/i })).toHaveAttribute(
+      'href',
+      'https://github.com/Ryad2/liquid_OB#readme',
+    )
   })
 })

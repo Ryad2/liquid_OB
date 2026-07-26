@@ -24,7 +24,7 @@ export interface DemoTokenDeployment extends Omit<ContractDeployment, 'source'> 
 
 export interface DeploymentManifest {
   schemaVersion: 1
-  protocol: 'Liquid OB'
+  protocol: 'ArcBook'
   protocolVersion: '1'
   network: {
     chainId: number
@@ -65,7 +65,7 @@ export interface DeploymentManifestVerification {
 export function parseDeploymentManifest(input: unknown): DeploymentManifest {
   const root = record(input, 'manifest')
   exact(root.schemaVersion, 1, 'schemaVersion')
-  exact(root.protocol, 'Liquid OB', 'protocol')
+  exact(root.protocol, 'ArcBook', 'protocol')
   exact(root.protocolVersion, '1', 'protocolVersion')
 
   const network = record(root.network, 'network')
@@ -130,7 +130,7 @@ export function parseDeploymentManifest(input: unknown): DeploymentManifest {
 
   return {
     schemaVersion: 1,
-    protocol: 'Liquid OB',
+    protocol: 'ArcBook',
     protocolVersion: '1',
     network: {
       chainId,

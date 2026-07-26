@@ -1,4 +1,4 @@
-# Liquid OB Subgraph
+# ArcBook Subgraph
 
 The Subgraph is the protocol's executable-liquidity discovery layer. Each Aqua
 strategy is indexed as one immutable `Position` and two independent
@@ -7,7 +7,7 @@ strategy is indexed as one immutable `Position` and two independent
 ## Indexed Sources
 
 - Aqua `Shipped`, `Pushed`, `Pulled`, and `Docked` events create positions and
-  maintain virtual allocation/lifecycle state, filtered to the Liquid OB app.
+  maintain virtual allocation/lifecycle state, filtered to the ArcBook app.
 - Router `PositionRuntimeInitialized` and `CurveFilled` events replace the
   complete two-sided logical runtime and version after every fill.
 - BatchExecutor `RouteExecuted` events materialize aggregate route history.

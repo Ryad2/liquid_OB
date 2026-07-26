@@ -17,7 +17,7 @@ describe('liquidity MCP protocol surface', () => {
     const tools = await client.listTools()
     expect(tools.tools.map((tool) => tool.name)).toEqual([
       'discover_positions',
-      'quote_liquid_ob',
+      'quote_arcbook',
       'build_candidate_route',
       'compare_executable_liquidity',
     ])

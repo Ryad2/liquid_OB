@@ -85,7 +85,7 @@ export async function buildServer(options: ServerOptions) {
   })
 
   server.get('/', async () => ({
-    service: 'Liquid OB Solver API',
+    service: 'ArcBook Solver API',
     version: 1,
     endpoints: [
       '/v1/health', '/v1/bootstrap', '/v1/markets', '/v1/positions',

@@ -117,7 +117,7 @@ export class RouteService {
 function rawToWad(raw: bigint, decimals: number): bigint {
   if (raw <= 0n) throw new ApiError('INVALID_REQUEST', 400, 'Amount must be positive')
   if (!Number.isInteger(decimals) || decimals < 0 || decimals > 18) {
-    throw new ApiError('INVALID_REQUEST', 400, 'Token decimals exceed the Liquid OB MVP domain')
+    throw new ApiError('INVALID_REQUEST', 400, 'Token decimals exceed the ArcBook MVP domain')
   }
   return raw * (10n ** BigInt(18 - decimals))
 }

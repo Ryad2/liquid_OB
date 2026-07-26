@@ -20,6 +20,7 @@
     "contracts:fmt": "forge fmt --root contracts --check",
     "contracts:lint": "forge lint --root contracts",
     "contracts:test": "forge test --root contracts --force",
+    "wallets:testnet": "pnpm --filter @liquid-ob/contracts wallets:testnet",
     "deployment:manifest": "pnpm --filter @liquid-ob/contracts manifest",
     "subgraph:codegen": "pnpm --filter @liquid-ob/subgraph codegen",
     "subgraph:build": "pnpm --filter @liquid-ob/subgraph build",

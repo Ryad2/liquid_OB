@@ -25,7 +25,7 @@ function deployment(address: Address, source: string) {
 function manifest() {
   return {
     schemaVersion: 1,
-    protocol: 'Liquid OB',
+    protocol: 'ArcBook',
     protocolVersion: '1',
     network: {
       chainId: 84_532,

@@ -1,6 +1,6 @@
-# Liquid OB Solver API
+# ArcBook Solver API
 
-Stateless best-execution orchestration over the native Liquid OB Subgraph and
+Stateless best-execution orchestration over the native ArcBook Subgraph and
 the deployed contracts.
 
 ## Trust Pipeline

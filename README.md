@@ -1,7 +1,7 @@
-# Liquid OB
+# ArcBook
 
-Liquid OB explores a functional order book in which makers publish bounded,
-executable pricing curves instead of only flat price-and-size orders.
+ArcBook is a functional order book in which makers publish bounded, executable
+pricing curves instead of only flat price-and-size orders.
 
 ## Status
 
@@ -143,7 +143,7 @@ it with assets of value. See `SECURITY.md` before reporting a vulnerability.
 
 ## License And Attribution
 
-No root license has been selected for independent Liquid OB code. Files with a
+No root license has been selected for independent ArcBook code. Files with a
 specific SPDX identifier are governed by that license; full Aqua and SwapVM
 terms and notices are preserved in [`LICENSES/`](LICENSES/README.md).
 

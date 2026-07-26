@@ -50,7 +50,7 @@ export class ExecutableLiquidityService {
       positions,
       discoveredCount: positions.length,
       provenance: {
-        source: 'Liquid OB Subgraph via Solver API',
+        source: 'ArcBook Subgraph via Solver API',
         indexedBlock: snapshot.indexedBlock,
         chainHeadBlock: snapshot.chainHeadBlock,
         indexLag: snapshot.indexLag,
@@ -67,7 +67,7 @@ export class ExecutableLiquidityService {
 
   async buildCandidateRoute(input: QuoteToolInput, signal?: AbortSignal): Promise<Record<string, unknown>> {
     const route = await this.#liquidOb.quote(input, true, signal)
-    if (route.simulation.status !== 'success') throw new Error('Liquid OB candidate route did not pass final onchain simulation')
+    if (route.simulation.status !== 'success') throw new Error('ArcBook candidate route did not pass final onchain simulation')
     return routeEvidence(route, true)
   }
 
@@ -85,7 +85,7 @@ export class ExecutableLiquidityService {
           available: false,
           error: liquidObResult.status === 'rejected'
             ? errorMessage(liquidObResult.reason)
-            : 'Liquid OB route did not pass final onchain simulation',
+            : 'ArcBook route did not pass final onchain simulation',
         }
       : { available: true, ...routeEvidence(simulatedRoute, true) }
     const dex = dexResult.status === 'fulfilled'
@@ -97,20 +97,20 @@ export class ExecutableLiquidityService {
       liquidOb,
       standardizedDex: dex,
       comparison: compareResults(simulatedRoute, dex, input.kind),
-      semanticWarning: 'Only Liquid OB is executable here because its route passed BatchExecutor eth_call. The standardized DEX result is indexed evidence or an explicitly modelled estimate, never executable calldata.',
+      semanticWarning: 'Only ArcBook is executable here because its route passed BatchExecutor eth_call. The standardized DEX result is indexed evidence or an explicitly modelled estimate, never executable calldata.',
     }
   }
 
   async health(signal?: AbortSignal): Promise<Record<string, unknown>> {
     const liquidOb = await this.#liquidOb.health(signal)
-    if (!isHealthy(liquidOb)) throw new Error('Liquid OB API dependencies are not healthy')
+    if (!isHealthy(liquidOb)) throw new Error('ArcBook API dependencies are not healthy')
     return { status: 'ready', liquidOb }
   }
 }
 
 function routeEvidence(route: PreparedRoute, simulated: boolean): Record<string, unknown> {
   return {
-    venue: 'Liquid OB',
+    venue: 'ArcBook',
     executionStatus: simulated ? 'onchain-simulated' : 'unsigned-quote',
     routeId: route.routeId,
     marketId: route.marketId,
@@ -144,14 +144,14 @@ function compareResults(
   kind: 'exact-input' | 'exact-output',
 ): Record<string, unknown> {
   if (liquidOb === null || dex.bestEstimate === null || dex.hasIndexingErrors === true) {
-    return { status: 'not-comparable', preferredVenue: null, reason: 'Both a simulated Liquid OB route and a modelled DEX estimate are required.' }
+    return { status: 'not-comparable', preferredVenue: null, reason: 'Both a simulated ArcBook route and a modelled DEX estimate are required.' }
   }
   const liquidValue = BigInt(kind === 'exact-input' ? liquidOb.amountOutRaw : liquidOb.amountInRaw)
   const dexValue = BigInt(kind === 'exact-input' ? dex.bestEstimate.amountOutRaw : dex.bestEstimate.amountInRaw)
   const liquidWins = kind === 'exact-input' ? liquidValue >= dexValue : liquidValue <= dexValue
   return {
     status: 'indicative-only',
-    preferredVenue: liquidWins ? 'Liquid OB' : dex.venue,
+    preferredVenue: liquidWins ? 'ArcBook' : dex.venue,
     reason: kind === 'exact-input' ? 'Higher indexed/modelled output' : 'Lower indexed/modelled input',
     liquidObRouteSimulated: true,
     executableWinnerConfirmed: false,

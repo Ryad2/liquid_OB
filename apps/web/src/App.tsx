@@ -15,7 +15,7 @@ import type {
   TransactionPlan,
 } from '@liquid-ob/frontend-api'
 import { parseUnits, parseWad } from '@liquid-ob/frontend-api'
-import { protocolClient } from './protocol/client'
+import { getProtocolClient } from './protocol/client'
 import {
   connectInjectedWallet,
   currentInjectedAccount,
@@ -24,7 +24,7 @@ import {
 } from './protocol/wallet'
 import './App.css'
 
-type AppView = 'home' | 'trade' | 'portfolio' | 'studio'
+type AppView = 'home' | 'trade' | 'portfolio' | 'studio' | 'activity'
 type CurveFilter = 'all' | CurveSide
 type PortfolioAtlasMode = 'aggregate' | 'positions'
 type TradeDepthMode = 'aggregate' | 'positions' | 'route'
@@ -104,6 +104,40 @@ function formatPrice(value: number) {
   return value.toPrecision(3)
 }
 
+function activityLabel(type: ActivityItem['type']) {
+  return type.replaceAll('-', ' ')
+}
+
+function exportActivityCsv(activity: ActivityItem[]) {
+  const cells = (values: Array<string | number | null>) => values.map((value) => {
+    const text = value === null ? '' : String(value)
+    return `"${text.replaceAll('"', '""')}"`
+  }).join(',')
+  const rows = [
+    cells(['type', 'maker', 'side', 'amount_in', 'token_in', 'amount_out', 'token_out', 'block', 'transaction', 'timestamp']),
+    ...activity.map((item) => cells([
+      item.type,
+      item.maker,
+      item.side,
+      item.amountIn?.raw ?? null,
+      item.amountIn?.token.symbol ?? null,
+      item.amountOut?.raw ?? null,
+      item.amountOut?.token.symbol ?? null,
+      item.blockNumber,
+      item.transactionHash,
+      item.timestamp,
+    ])),
+  ]
+  const href = URL.createObjectURL(new Blob([`${rows.join('\n')}\n`], { type: 'text/csv;charset=utf-8' }))
+  const link = document.createElement('a')
+  link.href = href
+  link.download = `arcbook-activity-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.append(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(href), 0)
+}
+
 function decimalFromNumber(value: number) {
   if (!Number.isFinite(value) || value <= 0) return '0'
   return value.toLocaleString('en-US', {
@@ -139,7 +173,7 @@ function branchLabel(branch: PositionSummary['sell']['policy']['branch']) {
 
 function getInitialView(): AppView {
   const route = window.location.hash.replace('#/', '')
-  if (route === 'trade' || route === 'portfolio' || route === 'studio') return route
+  if (route === 'trade' || route === 'portfolio' || route === 'studio' || route === 'activity') return route
   return 'home'
 }
 
@@ -1104,6 +1138,7 @@ function AppShell({
     { id: 'trade' as const, label: 'Trade' },
     { id: 'portfolio' as const, label: 'Portfolio' },
     { id: 'studio' as const, label: 'Curve composer' },
+    { id: 'activity' as const, label: 'Activity' },
   ]
 
   return (
@@ -1126,8 +1161,7 @@ function AppShell({
               {item.label}
             </button>
           ))}
-          <button className="muted-nav" disabled>Activity</button>
-          <button className="muted-nav" disabled>Docs</button>
+          <a className="docs-nav" href="https://github.com/Ryad2/liquid_OB#readme" target="_blank" rel="noreferrer">Docs</a>
         </nav>
         <div className="topbar-actions">
           <span className="network-pill"><i className="status-dot" />{bootstrap.mode}</span>
@@ -1141,7 +1175,6 @@ function AppShell({
           >
             {walletAddress === null ? 'Connect' : <><i />{shortAddress(walletAddress)}</>}
           </button>
-          <button className="icon-button" aria-label="Application settings">•••</button>
         </div>
       </header>
       {children}
@@ -1152,7 +1185,7 @@ function AppShell({
             className={activeView === item.id ? 'active' : ''}
             onClick={() => onNavigate(item.id)}
           >
-            <span>{item.id === 'trade' ? '↗' : item.id === 'portfolio' ? '⌁' : '+'}</span>
+            <span>{item.id === 'trade' ? '↗' : item.id === 'portfolio' ? '⌁' : item.id === 'studio' ? '+' : '◌'}</span>
             {item.label === 'Curve composer' ? 'Compose' : item.label}
           </button>
         ))}
@@ -1174,7 +1207,7 @@ function MarketStrip({ view }: { view: GatewayView }) {
           <strong>{market.baseToken.symbol}-{market.quoteToken.symbol}</strong>
           <small>CURVE MARKET / 01</small>
         </div>
-        <button className="pair-switcher" aria-label="Change market">⌄</button>
+        <span className="pair-switcher" title="The public demo currently has one deployed market">01</span>
       </div>
       <dl className="market-stats">
         <div><dt>Best bid</dt><dd className="positive">{market.bestBid?.formatted ?? '—'}</dd></div>
@@ -1213,7 +1246,6 @@ function FunctionalOrderBook({
     <section className="orderbook panel">
       <header className="panel-header">
         <div><h2>Curve book</h2><span className="live-label"><i /> {mode}</span></div>
-        <button className="density-button" aria-label="Book display settings">≡</button>
       </header>
       <div className="book-columns"><span>Marginal</span><span>Available</span><span>Range / α</span></div>
       <div className="book-rows">
@@ -1451,6 +1483,15 @@ function TradeView({
 }) {
   const [selectedCurve, setSelectedCurve] = useState<string | null>(null)
   const [chartMode, setChartMode] = useState<TradeDepthMode>('positions')
+  const [chartExpanded, setChartExpanded] = useState(false)
+  useEffect(() => {
+    if (!chartExpanded) return
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setChartExpanded(false)
+    }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [chartExpanded])
   const routePositionIds = new Set(quote?.fills.map((fill) => fill.positionId) ?? [])
   const positionSeries = seriesFromPositions(view.positions, view.market)
   const chartSeries = chartMode === 'aggregate'
@@ -1472,7 +1513,7 @@ function TradeView({
     <>
       <MarketStrip view={view} />
       <main className="trade-workspace">
-        <section className="trade-chart panel">
+        <section className={`trade-chart panel ${chartExpanded ? 'expanded' : ''}`}>
           <header className="panel-header chart-panel-header">
             <div className="panel-tabs">
               <button className={chartMode === 'positions' ? 'active' : ''} onClick={() => setChartMode('positions')}>Position map</button>
@@ -1481,7 +1522,11 @@ function TradeView({
             </div>
             <div className="chart-tools">
               <span className="chart-mode-badge">{chartModeLabel}</span>
-              <button aria-label="Expand chart">⛶</button>
+              <button
+                aria-label={chartExpanded ? 'Collapse chart' : 'Expand chart'}
+                aria-pressed={chartExpanded}
+                onClick={() => setChartExpanded((current) => !current)}
+              >{chartExpanded ? '×' : '⛶'}</button>
             </div>
           </header>
           <CurveChart
@@ -1602,7 +1647,7 @@ function PortfolioView({
     <main className="page portfolio-page">
       <header className="page-heading">
         <div><span className="eyebrow">POSITION GEOMETRY / 01</span><h1>Portfolio</h1><p>Every live curve, range and inventory state for <b className="wallet-context">{shortAddress(walletAddress)}</b>.</p></div>
-        <div className="page-actions"><button className="secondary-action">Export activity</button><button className="primary-small" onClick={() => onNavigate('studio')}>+ New position</button></div>
+        <div className="page-actions"><button className="secondary-action" onClick={() => exportActivityCsv(walletActivity)}>Export activity</button><button className="primary-small" onClick={() => onNavigate('studio')}>+ New position</button></div>
       </header>
 
       <section className="portfolio-metrics">
@@ -1654,7 +1699,6 @@ function PortfolioView({
       <section className="portfolio-positions panel">
         <header className="panel-header">
           <div><h2>Positions</h2><span className="subtle-count">{walletPositions.length} total</span></div>
-          <div className="table-actions"><button>All markets</button><button>Active</button><button aria-label="Position table settings">≡</button></div>
         </header>
         <div className="data-table-wrap">
           <table className="data-table portfolio-table">
@@ -1703,15 +1747,57 @@ function PortfolioView({
           </div>
         </article>
         <article className="recent-activity-card panel">
-          <header><h2>Recent activity</h2><button>View all</button></header>
+          <header><h2>Recent activity</h2><button onClick={() => onNavigate('activity')}>View all</button></header>
           {walletActivity.map((item) => (
             <div key={item.id}>
               <span className="activity-icon">↗</span>
-              <p><strong>{item.type.replaceAll('-', ' ')}</strong><small>{shortId(item.transactionHash)}</small></p>
+              <p><strong>{activityLabel(item.type)}</strong><small>{shortId(item.transactionHash)}</small></p>
               <time>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
             </div>
           ))}
         </article>
+      </section>
+    </main>
+  )
+}
+
+function ActivityView({ view }: { view: GatewayView }) {
+  const explorer = view.bootstrap.network.explorerUrl?.replace(/\/$/, '') ?? null
+  const fills = view.activity.filter((item) => item.type === 'curve-filled').length
+  const routes = view.activity.filter((item) => item.type === 'route-executed').length
+
+  return (
+    <main className="page activity-page">
+      <header className="page-heading">
+        <div><span className="eyebrow">INDEXED PROTOCOL EVENTS / LIVE</span><h1>Activity</h1><p>Every published position, fill, routed execution and dock event indexed by The Graph.</p></div>
+        <div className="page-actions"><button className="secondary-action" onClick={() => exportActivityCsv(view.activity)}>Export CSV</button></div>
+      </header>
+      <section className="portfolio-metrics activity-metrics">
+        <MetricCard label="Indexed events" value={String(view.activity.length)} detail={`Through block ${numberFormatter.format(view.market.meta.indexedBlock ?? 0)}`} />
+        <MetricCard label="Curve fills" value={String(fills)} detail="Individual maker executions" accent="buy" />
+        <MetricCard label="Atomic routes" value={String(routes)} detail="Multi-maker settlements" accent="sell" />
+        <MetricCard label="Index lag" value={String(view.market.meta.indexLag ?? '—')} detail="Blocks behind chain head" />
+      </section>
+      <section className="panel activity-table-panel">
+        <header className="panel-header"><div><h2>Protocol event stream</h2><span className="subtle-count">{view.market.baseToken.symbol}/{view.market.quoteToken.symbol}</span></div><FreshnessBadge market={view.market} /></header>
+        <div className="data-table-wrap">
+          <table className="data-table activity-table">
+            <thead><tr><th>Event</th><th>Maker</th><th>Flow</th><th>Block</th><th>Time</th><th>Transaction</th></tr></thead>
+            <tbody>
+              {view.activity.map((item) => (
+                <tr key={item.id}>
+                  <td><strong>{activityLabel(item.type)}</strong><small>{item.side ?? 'protocol'}</small></td>
+                  <td><strong>{item.maker === null ? '—' : shortAddress(item.maker)}</strong><small>{item.positionId === null ? 'route-level' : shortId(item.positionId)}</small></td>
+                  <td><strong>{item.amountIn === null ? '—' : `${item.amountIn.formatted} ${item.amountIn.token.symbol}`}</strong><small>{item.amountOut === null ? '—' : `→ ${item.amountOut.formatted} ${item.amountOut.token.symbol}`}</small></td>
+                  <td><strong>{numberFormatter.format(item.blockNumber)}</strong><small>{item.routeId === null ? 'direct event' : shortId(item.routeId)}</small></td>
+                  <td><strong>{new Date(item.timestamp).toLocaleDateString()}</strong><small>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small></td>
+                  <td>{explorer === null ? <code>{shortId(item.transactionHash)}</code> : <a href={`${explorer}/tx/${item.transactionHash}`} target="_blank" rel="noreferrer">{shortId(item.transactionHash)} ↗</a>}</td>
+                </tr>
+              ))}
+              {view.activity.length === 0 ? <tr><td colSpan={6} className="empty-table">No indexed events yet. Publish or execute a position to start the stream.</td></tr> : null}
+            </tbody>
+          </table>
+        </div>
       </section>
     </main>
   )
@@ -1867,7 +1953,7 @@ function MakerStudio({
   useEffect(() => {
     const controller = new AbortController()
     setPreviewLoading(true)
-    protocolClient.previewPosition(draft, { signal: controller.signal })
+    getProtocolClient().previewPosition(draft, { signal: controller.signal })
       .then(setPreview)
       .catch(() => {
         if (!controller.signal.aborted) setPreview(null)
@@ -1910,7 +1996,7 @@ function MakerStudio({
     setPlanError(null)
     setPlanLoading(true)
     try {
-      const prepared = await protocolClient.preparePublish({ maker, draft })
+      const prepared = await getProtocolClient().preparePublish({ maker, draft })
       setPlan(prepared)
     } catch (caught) {
       setPlanError(caught instanceof Error ? caught.message : 'Could not prepare the publication plan.')
@@ -1932,7 +2018,7 @@ function MakerStudio({
       <div className="studio-workspace">
         <section className="studio-visual panel">
           <header className="panel-header">
-            <div className="panel-tabs"><button className="active">Shape field</button><button disabled>Execution curve</button><button disabled>Previous vs draft</button></div>
+            <div><h2>Shape field</h2><span className="subtle-count">Compiled marginal execution geometry</span></div>
             <div className="segmented-control compact">
               {(['all', 'buy', 'sell'] as CurveFilter[]).map((item) => (
                 <button key={item} className={chartSide === item ? 'active' : ''} onClick={() => setChartSide(item)}>{item === 'all' ? 'Both' : item}</button>
@@ -1990,6 +2076,7 @@ function LoadingScreen() {
 }
 
 async function loadGateway(signal?: AbortSignal): Promise<GatewayView> {
+  const protocolClient = getProtocolClient()
   const options = signal === undefined ? {} : { signal }
   const bootstrap = await protocolClient.getBootstrap(options)
   const markets = await protocolClient.listMarkets({}, options)
@@ -2053,7 +2140,7 @@ function App() {
         if (BigInt(raw) <= 0n) throw new Error('Enter a positive amount.')
         setQuoteLoading(true)
         setQuoteError(null)
-        protocolClient.quote({
+        getProtocolClient().quote({
           marketId: view.market.id,
           side,
           kind,
@@ -2136,7 +2223,7 @@ function App() {
     if (account === null) return
     setOperation({ running: true, message: 'Running final onchain simulation…', error: null })
     try {
-      const plan = await protocolClient.prepareExecute({
+      const plan = await getProtocolClient().prepareExecute({
         payer: account,
         quote,
         recipient: account,
@@ -2153,7 +2240,7 @@ function App() {
     if (account === null) return
     setOperation({ running: true, message: 'Preparing dock transaction…', error: null })
     try {
-      const dockPlan = await protocolClient.prepareDock({ maker: account, positionId: position.id })
+      const dockPlan = await getProtocolClient().prepareDock({ maker: account, positionId: position.id })
       await submitPlan(dockPlan, account)
     } catch (caught) {
       setOperation({ running: false, message: null, error: caught instanceof Error ? caught.message : 'Could not prepare the dock transaction.' })
@@ -2223,6 +2310,7 @@ function App() {
           onExecutePlan={executePlan}
         />
       ) : null}
+      {activeView === 'activity' ? <ActivityView view={view} /> : null}
       <div className="global-statusbar">
         <span><i className="status-dot" /> {view.bootstrap.mode} solver {view.bootstrap.meta.stale ? 'degraded' : 'online'}</span>
         <span>ARC / FIELD 01</span><span>{view.bootstrap.protocolVersion}</span>

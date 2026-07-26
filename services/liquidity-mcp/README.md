@@ -1,7 +1,7 @@
-# Liquid OB Executable Liquidity MCP
+# ArcBook Executable Liquidity MCP
 
 Read-only Model Context Protocol server exposing curve-aware liquidity from the
-Liquid OB Solver API and an optional standardized DEX AMM Subgraph.
+ArcBook Solver API and an optional standardized DEX AMM Subgraph.
 
 ## Tools
 
@@ -9,10 +9,10 @@ Liquid OB Solver API and an optional standardized DEX AMM Subgraph.
 - `quote_liquid_ob`: transparent unsigned multi-maker quote.
 - `build_candidate_route`: unsigned calldata returned only after final
   BatchExecutor `eth_call` and gas simulation.
-- `compare_executable_liquidity`: Liquid OB simulation alongside a standardized
+- `compare_executable_liquidity`: ArcBook simulation alongside a standardized
   Graph snapshot or explicitly configured constant-product-v2 estimate.
 
-The comparison is deliberately asymmetric: only Liquid OB calldata is labelled
+The comparison is deliberately asymmetric: only ArcBook calldata is labelled
 onchain-simulated. A DEX Subgraph snapshot is never presented as an executable
 quote.
 

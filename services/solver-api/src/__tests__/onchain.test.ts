@@ -17,7 +17,7 @@ const addresses = Array.from({ length: 6 }, (_value, index) => (
 
 const manifest: DeploymentManifest = {
   schemaVersion: 1,
-  protocol: 'Liquid OB',
+  protocol: 'ArcBook',
   protocolVersion: '1',
   network: {
     chainId: 31_337,

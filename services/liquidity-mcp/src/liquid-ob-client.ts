@@ -73,9 +73,9 @@ export class LiquidOBApiClient implements LiquidOBGateway {
       meta = parsed.meta
       if (!parsed.pageInfo.hasNextPage || parsed.pageInfo.cursor === null) break
       cursor = parsed.pageInfo.cursor
-      if (page === this.#maxPositionPages - 1) throw new Error('Liquid OB position pagination exceeded the safety bound')
+      if (page === this.#maxPositionPages - 1) throw new Error('ArcBook position pagination exceeded the safety bound')
     }
-    if (meta === undefined) throw new Error('Liquid OB position response contained no metadata')
+    if (meta === undefined) throw new Error('ArcBook position response contained no metadata')
     return {
       items,
       indexedBlock: meta.indexedBlock,
@@ -106,7 +106,7 @@ export class LiquidOBApiClient implements LiquidOBGateway {
     if (!response.ok) {
       const envelope = z.object({ error: z.object({ code: z.string(), message: z.string() }) }).safeParse(body)
       const detail = envelope.success ? `${envelope.data.error.code}: ${envelope.data.error.message}` : `HTTP ${response.status}`
-      throw new Error(`Liquid OB API request failed: ${detail}`)
+      throw new Error(`ArcBook API request failed: ${detail}`)
     }
     return body
   }

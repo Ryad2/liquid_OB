@@ -1,6 +1,6 @@
 # `@liquid-ob/curve-math`
 
-Shared maker and frontend SDK for the Liquid OB proof of concept.
+Shared maker and frontend SDK for the ArcBook proof of concept.
 
 It provides four deterministic boundaries:
 

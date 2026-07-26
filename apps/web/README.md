@@ -1,6 +1,6 @@
-# Liquid OB Web
+# ArcBook Web
 
-ArcBook is the Liquid OB maker/taker demo application. It supports a
+ArcBook is the protocol's maker/taker demo application. It supports a
 deterministic local mock and a fail-closed live mode backed by the public
 manifest, Solver API, exact curve math and injected EIP-1193 wallet.
 

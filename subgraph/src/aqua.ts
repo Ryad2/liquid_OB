@@ -31,7 +31,7 @@ export function handleShipped(event: Shipped): void {
   if (decoded === null
     || !decoded.maker.equals(event.params.maker)
     || !Bytes.fromByteArray(crypto.keccak256(event.params.strategy)).equals(event.params.strategyHash)) {
-    log.warning('Ignoring malformed Liquid OB strategy {}', [event.params.strategyHash.toHexString()])
+    log.warning('Ignoring malformed ArcBook strategy {}', [event.params.strategyHash.toHexString()])
     return
   }
 

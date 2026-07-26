@@ -47,7 +47,7 @@ describe('public MCP HTTP transport', () => {
     const payload = await response.json()
 
     expect(response.status).toBe(200)
-    expect(payload.result.serverInfo.name).toBe('liquid-ob-executable-liquidity')
+    expect(payload.result.serverInfo.name).toBe('arcbook-executable-liquidity')
     expect(response.headers.get('mcp-session-id')).toBeNull()
 
     const toolResponse = await fetch(`${baseUrl}/mcp`, {

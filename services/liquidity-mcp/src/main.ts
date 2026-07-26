@@ -20,7 +20,7 @@ if (config.transport === 'stdio') {
   process.once('SIGTERM', () => void server.close().finally(() => process.exit(0)))
 } else {
   const server = await startHttpServer(service, config)
-  process.stderr.write(`Liquid OB liquidity MCP listening on http://${config.host}:${config.port}/mcp\n`)
+  process.stderr.write(`ArcBook liquidity MCP listening on http://${config.host}:${config.port}/mcp\n`)
   const shutdown = () => server.close(() => process.exit(0))
   process.once('SIGINT', shutdown)
   process.once('SIGTERM', shutdown)

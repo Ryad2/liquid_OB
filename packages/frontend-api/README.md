@@ -1,4 +1,4 @@
-# Liquid OB Frontend API
+# ArcBook Frontend API
 
 `@liquid-ob/frontend-api` is the framework-neutral contract between product UI
 and the unfinished protocol stack. It lets frontend work proceed against a
@@ -38,12 +38,12 @@ and exact-output routing, maker preview, and publish/execute/dock/replace plans.
 | Method | Product use | Future authoritative composition |
 | --- | --- | --- |
 | `getBootstrap` | Network, addresses, services, tokens, feature gates | Deployment manifest plus service health |
-| `listMarkets` / `getMarket` | Market picker and explorer | Liquid OB Subgraph |
-| `listPositions` | Order set, maker portfolio, solver transparency | Liquid OB Subgraph |
+| `listMarkets` / `getMarket` | Market picker and explorer | ArcBook Subgraph |
+| `listPositions` | Order set, maker portfolio, solver transparency | ArcBook Subgraph |
 | `getPosition` | Complete manager view | Subgraph history plus Lens/RPC backing refresh |
 | `previewPosition` | Maker editor and chart | Exact bigint `curve-math` and position SDK |
 | `quote` | Taker exact-input/output route | Solver API, selected RPC refresh, final `eth_call` |
-| `listActivity` | Fill, route, publish, and dock history | Liquid OB Subgraph |
+| `listActivity` | Fill, route, publish, and dock history | ArcBook Subgraph |
 | `preparePublish` | Aqua approvals and `ship` | Position SDK plus deployment manifest |
 | `prepareExecute` | Approval and atomic executor call | Solver calldata plus generated contract clients |
 | `prepareDock` | Cancel immutable strategy | Aqua SDK |

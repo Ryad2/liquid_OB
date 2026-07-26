@@ -36,7 +36,7 @@ describe('executable liquidity service', () => {
   it('keeps Graph DEX estimates semantically distinct from executable routes', async () => {
     const result = await service.compareExecutableLiquidity(request)
 
-    expect(result.comparison).toMatchObject({ status: 'indicative-only', preferredVenue: 'Liquid OB' })
+    expect(result.comparison).toMatchObject({ status: 'indicative-only', preferredVenue: 'ArcBook' })
     expect(result.semanticWarning).toContain('never executable calldata')
   })
 

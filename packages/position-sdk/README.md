@@ -1,6 +1,6 @@
 # `@liquid-ob/position-sdk`
 
-Framework-neutral live transaction and read helpers for one validated Liquid OB
+Framework-neutral live transaction and read helpers for one validated ArcBook
 deployment. The package composes canonical strategy encoding with generated
 ABIs; it never owns a private key and never sends a transaction.
 

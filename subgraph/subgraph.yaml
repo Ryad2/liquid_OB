@@ -1,5 +1,5 @@
 specVersion: 1.3.0
-description: Liquid OB executable maker-curve discovery and route history
+description: ArcBook executable maker-curve discovery and route history
 repository: https://github.com/Ryad2/liquid_OB
 schema:
   file: ./schema.graphql

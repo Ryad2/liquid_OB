@@ -1,6 +1,6 @@
 # `@liquid-ob/solver-core`
 
-Pure deterministic route optimization for Liquid OB micro-pools. The package
+Pure deterministic route optimization for ArcBook micro-pools. The package
 has no GraphQL, RPC, HTTP, environment, wallet, or filesystem dependency.
 
 It solves exact-input and exact-output orders by equalizing the executable
