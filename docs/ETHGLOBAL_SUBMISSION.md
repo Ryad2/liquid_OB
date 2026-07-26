@@ -140,3 +140,100 @@ resulting protocol behavior was validated with an independent high-precision
 Python reference model, Foundry unit, integration, security, and fuzz tests,
 Vitest suites, and live Base Sepolia release checks. AI is not part of ArcBook's
 runtime, pricing, routing, or settlement decisions.
+
+## Sponsor prize fields
+
+### The Graph
+
+**How are you using this Protocol / API?**
+
+ArcBook uses a live native Subgraph as the load-bearing discovery layer for
+every maker curve, allocation, runtime update, fill, and route; the solver
+rejects stale or erroring snapshots before preparing executable calldata. On
+top of it, we ship a public reusable Executable Liquidity MCP for AI clients to
+discover positions, quote and simulate multi-maker routes, and compare
+Graph-backed liquidity, making ArcBook applicable to Best AI Tooling for The
+Graph.
+
+**Primary code link**
+
+https://github.com/Ryad2/liquid_OB/blob/26db6f7852ae6cc7fc1be7d3f12353d4b153a123/services/solver-api/src/graph-client.ts#L14-L37
+
+**Ease score:** 8/10
+
+**Additional feedback**
+
+Graph CLI, code generation, and Subgraph Studio made it fast to move from a
+schema to a live endpoint, and `_meta` block provenance is especially valuable
+for a trading solver. The main friction is keeping pagination coherent while
+the indexed head moves and finding production-oriented Subgraph-to-MCP and
+standardized-schema examples; clearer snapshot-pinned pagination guidance and
+an end-to-end MCP template would make this workflow easier.
+
+### Uniswap Foundation
+
+**How are you using this Protocol / API?**
+
+ArcBook is a new onchain market primitive built from scratch: makers publish
+bounded executable equations instead of fixed-price orders, and a deterministic
+solver composes them into atomic multi-maker routes. Submission note: ArcBook /
+Ryad; the Uniswap sponsor team confirmed in writing that this project may apply
+to the scratch bounty without forcing an artificial Uniswap API call.
+
+**Primary code link**
+
+https://github.com/Ryad2/liquid_OB/blob/26db6f7852ae6cc7fc1be7d3f12353d4b153a123/contracts/src/core/LiquidOBCurveKernel.sol#L53-L115
+
+**Ease score:** 8/10
+
+**Additional feedback**
+
+The API documentation was clear and sponsor support was responsive. Because
+this submission follows a written no-API exception, this score reflects the
+documentation and onboarding experience rather than a runtime integration. The
+main ambiguity was that the public bounty text described API use as mandatory
+but offered no place to record an approved from-scratch primitive exception;
+adding that path and clarifying the expected feedback for exception projects
+would prevent confusion.
+
+Uniswap feedback document:
+https://github.com/Ryad2/liquid_OB/blob/26db6f7852ae6cc7fc1be7d3f12353d4b153a123/FEEDBACK.md
+
+### 1inch
+
+**How are you using this Protocol / API?**
+
+ArcBook is a custom Aqua app implementing sophisticated two-sided,
+self-recycling maker positions. It extends the official AquaSwapVMRouter with a
+purpose-built SwapVM curve instruction, keeps maker balances in Aqua, and
+settles exact-input and exact-output multi-maker routes onchain on Base Sepolia.
+
+**Primary code link**
+
+https://github.com/Ryad2/liquid_OB/blob/26db6f7852ae6cc7fc1be7d3f12353d4b153a123/contracts/src/core/LiquidOBSwapVMRouter.sol#L8-L25
+
+**Ease score:** 8/10
+
+**Additional feedback**
+
+Aqua's self-custodial shared balances and SwapVM's custom-instruction model were
+an excellent fit: we could implement a new position type without building a
+separate custody vault. The largest integration cost was assembling a complete
+custom-opcode app across order encoding, maker allowances, the Aqua ship/dock
+lifecycle, frontend signatures, and EIP-170 bytecode limits; an official
+minimal reference app covering those pieces and current testnet deployment
+guidance would materially shorten onboarding.
+
+### Other partner technologies
+
+Select Base only if it appears in the partner list, because the complete public
+demo is deployed on Base Sepolia. Do not select World, Sui, Hedera, 0G, ENS, or
+any other partner technology that ArcBook does not actually use.
+
+### Open-source qualification warning
+
+The Graph and Uniswap qualification text requires open-source code. The current
+repository is public but deliberately has no root open-source license, so this
+requirement is not safely satisfied merely by source visibility. Select and add
+a root license before submission, or obtain written sponsor confirmation that
+the current source-available status qualifies.
