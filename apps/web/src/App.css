@@ -426,7 +426,7 @@ button { border: 0; background: transparent; }
 .recycling-flow > div strong { font-size: 10px; }
 .recycling-flow > div small { color: var(--muted); font-size: 8px; }
 .token-orb { display: grid; width: 36px; height: 36px; grid-row: span 2; place-items: center; border-radius: 9px 50% 50% 50%; background: linear-gradient(145deg, #7367de, #4ca8e0); color: white; font-family: var(--mono); transform: rotate(-7deg); }
-.token-orb.usdc { background: linear-gradient(145deg, #48b7ce, #7d76e7); }
+.token-orb.quote { background: linear-gradient(145deg, #48b7ce, #7d76e7); }
 .flow-arrow { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--muted); font-size: 8px; background: var(--surface); }
 .flow-arrow i { position: absolute; z-index: -1; right: 10px; left: 10px; height: 1px; background: var(--border-strong); }
 .flow-arrow b { color: var(--accent-2); }

@@ -64,7 +64,7 @@ describe('ArcBook product frontend', () => {
     expect(slider).toHaveAttribute('max', '30')
     expect(slider).toHaveAttribute('step', '0.01')
 
-    const numericInput = screen.getByRole('spinbutton', { name: /sell alpha value/i })
+    const numericInput = screen.getByRole('spinbutton', { name: /sell curve alpha value/i })
     expect(numericInput).not.toHaveAttribute('max')
     fireEvent.change(numericInput, { target: { value: '100' } })
     expect(numericInput).toHaveValue(100)

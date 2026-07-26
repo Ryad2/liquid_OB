@@ -64,7 +64,7 @@ interface OperationState {
 type ConnectWallet = () => Promise<Address | null>
 type ExecutePlan = (plan: TransactionPlan) => Promise<void>
 
-const MAX_ALPHA = 30
+const QUICK_ALPHA_RANGE = 30
 const positionCurveColors: Record<CurveSide, string[]> = {
   buy: ['#62d9ff', '#8dbfff', '#a99dff', '#72e4d1'],
   sell: ['#ff9a72', '#ffbd8e', '#d99cff', '#f17fa2'],
@@ -828,7 +828,7 @@ function HeroCurveCanvas({ alpha }: { alpha: number }) {
         x: inset.x + (innerWidth / 2),
         y: inset.y + (innerHeight / 2),
       }
-      const normalizedAlpha = Math.max(-1, Math.min(alpha / MAX_ALPHA, 1))
+      const normalizedAlpha = Math.max(-1, Math.min(alpha / QUICK_ALPHA_RANGE, 1))
 
       context.lineWidth = 1
       context.strokeStyle = 'rgba(158, 174, 225, 0.075)'
@@ -1042,14 +1042,14 @@ function LandingView({
               <div className="hero-alpha-control">
                 <input
                   type="range"
-                  min={-MAX_ALPHA}
-                  max={MAX_ALPHA}
+                  min={-QUICK_ALPHA_RANGE}
+                  max={QUICK_ALPHA_RANGE}
                   step="0.01"
                   value={alpha}
                   onInput={(event) => setAlpha(Number((event.target as HTMLInputElement).value))}
                   aria-label="Landing curve alpha"
                 />
-                <div><span>−{MAX_ALPHA}</span><small>DRAG TO RESHAPE THE BOOK</small><span>+{MAX_ALPHA}</span></div>
+                <div><span>−{QUICK_ALPHA_RANGE}</span><small>DRAG TO RESHAPE THE BOOK</small><span>+{QUICK_ALPHA_RANGE}</span></div>
               </div>
             </footer>
           </article>
@@ -1697,9 +1697,9 @@ function PortfolioView({
         <article className="recycling-card panel">
           <header><div><span className="eyebrow">FLOW ENGINE / 02</span><h2>Inventory recycling</h2></div><span className="live-label"><i /> active</span></header>
           <div className="recycling-flow">
-            <div><span className="token-orb weth">W</span><strong>Sell WETH</strong><small>Maker releases base</small></div>
-            <span className="flow-arrow"><i />USDC received<b>→</b></span>
-            <div><span className="token-orb usdc">$</span><strong>Fund buy curve</strong><small>Marginal price preserved</small></div>
+            <div><span className="token-orb base">{view.market.baseToken.symbol.slice(0, 1)}</span><strong>Sell {view.market.baseToken.symbol}</strong><small>Maker releases base</small></div>
+            <span className="flow-arrow"><i />{view.market.quoteToken.symbol} received<b>→</b></span>
+            <div><span className="token-orb quote">{view.market.quoteToken.symbol.slice(0, 1)}</span><strong>Fund buy curve</strong><small>Marginal price preserved</small></div>
           </div>
         </article>
         <article className="recent-activity-card panel">
@@ -1765,17 +1765,17 @@ function CurveEditor({
         <input
           className={`alpha-slider slider-${side}`}
           type="range"
-          min={-MAX_ALPHA}
-          max={MAX_ALPHA}
+          min={-QUICK_ALPHA_RANGE}
+          max={QUICK_ALPHA_RANGE}
           step="0.01"
-          value={Math.max(-MAX_ALPHA, Math.min(MAX_ALPHA, Number(value.alpha) || 0))}
+          value={Math.max(-QUICK_ALPHA_RANGE, Math.min(QUICK_ALPHA_RANGE, Number(value.alpha) || 0))}
           onInput={(event) => onChange(
             'alpha',
             (event.target as HTMLInputElement).value,
           )}
           aria-label={`${side} curve alpha`}
         />
-        <div className="alpha-scale"><span>-{MAX_ALPHA}</span><span>0</span><span>+{MAX_ALPHA}</span></div>
+        <div className="alpha-scale"><span>-{QUICK_ALPHA_RANGE}</span><span>0</span><span>+{QUICK_ALPHA_RANGE}</span></div>
         <div className="alpha-presets">
           {[-30, -15, 0, 15, 30].map((preset) => (
             <button key={preset} className={Number(value.alpha) === preset ? 'active' : ''} onClick={() => onChange('alpha', String(preset))} type="button">
