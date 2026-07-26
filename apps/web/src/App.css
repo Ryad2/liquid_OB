@@ -146,7 +146,7 @@ button { border: 0; background: transparent; }
 .curve-series { transition: opacity 140ms ease; }
 .curve-series.is-muted { opacity: .15; }
 .curve-hit-area { fill: none; stroke: transparent; stroke-width: 16; cursor: crosshair; }
-.curve-path { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.2; pointer-events: none; }
+.curve-path { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2.2; shape-rendering: geometricPrecision; vector-effect: non-scaling-stroke; pointer-events: none; }
 .curve-path.curve-buy { stroke: var(--buy); }
 .curve-path.curve-sell { stroke: url('#sell-glow'); }
 .curve-path.is-draft { stroke-width: 3.3; filter: drop-shadow(0 0 5px rgba(98, 217, 255, .16)); }
