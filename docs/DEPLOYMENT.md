@@ -200,11 +200,11 @@ commands from `vercel.json`. Configure these Production and Preview variables:
 ```text
 VITE_PROTOCOL_MODE=live
 VITE_CHAIN_ID=84532
-VITE_PUBLIC_RPC_URL=https://sepolia.base.org
+VITE_PUBLIC_RPC_URL=https://base-sepolia-rpc.publicnode.com
 VITE_DEPLOYMENT_MANIFEST_URL=<immutable raw deployments/84532.json URL>
 VITE_SOLVER_URL=https://<project>.vercel.app/api/solver
 
-SOLVER_API_RPC_URL=https://sepolia.base.org
+SOLVER_API_RPC_URL=https://base-sepolia-rpc.publicnode.com
 SOLVER_API_SUBGRAPH_URL=<deployed Graph endpoint>
 SOLVER_API_MAX_INDEX_LAG=5
 SOLVER_API_MAX_FILLS=8

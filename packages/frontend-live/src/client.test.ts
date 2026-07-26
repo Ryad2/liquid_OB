@@ -147,7 +147,11 @@ describe('LiveLiquidOBClient', () => {
 
   it('prepares real ERC-20 approvals followed by an Aqua ship call', async () => {
     const fetch = fetcher()
-    const publicClient = { readContract: vi.fn(async () => 1) } as unknown as PublicClient
+    const publicClient = {
+      readContract: vi.fn(async (request: { functionName: string }) => (
+        request.functionName === 'liquidCurveOpcode' ? 1 : 0n
+      )),
+    } as unknown as PublicClient
     const client = new LiveLiquidOBClient({
       apiUrl: 'https://api.test',
       manifestUrl: 'https://app.test/manifest.json',
@@ -164,6 +168,25 @@ describe('LiveLiquidOBClient', () => {
     expect(plan.steps.map((step) => step.action)).toEqual(['approve-aqua', 'approve-aqua', 'publish-position'])
     expect(approval.functionName).toBe('approve')
     expect(ship.functionName).toBe('ship')
+  })
+
+  it('skips approvals that already cover the requested Aqua allocations', async () => {
+    const publicClient = {
+      readContract: vi.fn(async (request: { functionName: string }) => (
+        request.functionName === 'liquidCurveOpcode' ? 1 : (1n << 256n) - 1n
+      )),
+    } as unknown as PublicClient
+    const client = new LiveLiquidOBClient({
+      apiUrl: 'https://api.test',
+      manifestUrl: 'https://app.test/manifest.json',
+      fetch: fetcher(),
+      publicClient,
+    })
+
+    const plan = await client.preparePublish({ maker, draft: draft() })
+
+    expect(plan.steps.map((step) => step.action)).toEqual(['publish-position'])
+    expect(decodeFunctionData({ abi: aquaAbi, data: plan.steps[0]!.transaction.data }).functionName).toBe('ship')
   })
 
   it('binds the native browser fetch receiver when no fetch override is provided', async () => {

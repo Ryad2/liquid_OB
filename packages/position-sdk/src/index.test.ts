@@ -78,10 +78,24 @@ describe('position sdk', () => {
     })
 
     expect(plan.calls).toHaveLength(3)
-    expect(decodeFunctionData({ abi: erc20Abi, data: plan.calls[0]!.data }).functionName).toBe('approve')
+    const baseApproval = decodeFunctionData({ abi: erc20Abi, data: plan.calls[0]!.data })
+    expect(baseApproval.functionName).toBe('approve')
+    expect(baseApproval.args[1]).toBe((1n << 256n) - 1n)
     expect(decodeFunctionData({ abi: erc20Abi, data: plan.calls[1]!.data }).functionName).toBe('approve')
     expect(decodeFunctionData({ abi: aquaAbi, data: plan.calls[2]!.data }).functionName).toBe('ship')
     expect(plan.strategy.strategyHash).toMatch(/^0x[0-9a-f]{64}$/)
+
+    const alreadyApproved = buildPublishPositionPlan(manifest, {
+      maker,
+      config,
+      liquidCurveOpcode: 0,
+      baseAllocation: 100n * 10n ** 18n,
+      quoteAllocation: 185_000n * 10n ** 18n,
+      baseAllowance: 100n * 10n ** 18n,
+      quoteAllowance: 185_000n * 10n ** 18n,
+    })
+    expect(alreadyApproved.calls).toHaveLength(1)
+    expect(decodeFunctionData({ abi: aquaAbi, data: alreadyApproved.calls[0]!.data }).functionName).toBe('ship')
   })
 
   it('encodes a bounded exact-input route and complete dock', () => {

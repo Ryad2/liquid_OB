@@ -1,5 +1,6 @@
 import {
   batchExecutorAbi,
+  erc20Abi,
   lensAbi,
   quoterAbi,
   routerAbi,
@@ -38,9 +39,30 @@ export async function preparePublishPosition(
     quoteAllocation: bigint
   },
 ): Promise<PublishPositionPlan> {
+  const [liquidCurveOpcode, baseAllowance, quoteAllowance] = await Promise.all([
+    readLiquidCurveOpcode(client, manifest),
+    readAllowance(client, input.config.baseToken, input.maker, manifest.contracts.aqua.address),
+    readAllowance(client, input.config.quoteToken, input.maker, manifest.contracts.aqua.address),
+  ])
   return buildPublishPositionPlan(manifest, {
     ...input,
-    liquidCurveOpcode: await readLiquidCurveOpcode(client, manifest),
+    liquidCurveOpcode,
+    baseAllowance,
+    quoteAllowance,
+  })
+}
+
+async function readAllowance(
+  client: PublicClient,
+  token: Address,
+  owner: Address,
+  spender: Address,
+): Promise<bigint> {
+  return client.readContract({
+    address: token,
+    abi: erc20Abi,
+    functionName: 'allowance',
+    args: [owner, spender],
   })
 }
 

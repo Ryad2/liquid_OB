@@ -33,7 +33,7 @@ for (const [index, name] of keyNames.entries()) {
 contents = setEnvironmentValue(contents, 'DEPLOYER_ADDRESS', accounts[0].address)
 contents = setEnvironmentValue(contents, 'MAKER_ADDRESS', accounts[1].address)
 contents = setEnvironmentValue(contents, 'TAKER_ADDRESS', accounts[2].address)
-contents = setEnvironmentValue(contents, 'BASE_SEPOLIA_RPC_URL', 'https://sepolia.base.org')
+contents = setEnvironmentValue(contents, 'BASE_SEPOLIA_RPC_URL', 'https://base-sepolia-rpc.publicnode.com')
 contents = setEnvironmentValue(contents, 'LIQUID_OB_OWNER', accounts[0].address)
 contents = setEnvironmentValue(contents, 'DEMO_MAKER', accounts[1].address)
 contents = setEnvironmentValue(contents, 'LIQUID_OB_DEPLOY_AQUA', 'true')

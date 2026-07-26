@@ -229,7 +229,7 @@ export class LiveLiquidOBClient implements LiquidOBFrontendClient {
         index,
         publish ? 'publish-position' : 'approve-aqua',
         call.label,
-        publish ? 'Publish the immutable two-sided strategy through Aqua.' : 'Authorize the exact initial inventory allocation.',
+        publish ? 'Publish the immutable two-sided strategy through Aqua.' : 'Authorize Aqua settlement for current and future position inventory.',
         request.maker,
         call.to,
         call.data,

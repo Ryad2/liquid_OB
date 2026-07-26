@@ -16,6 +16,8 @@ import type {
   PublishPositionPlan,
 } from './types.js'
 
+const MAX_UINT256 = (1n << 256n) - 1n
+
 export function buildPublishPositionPlan(
   manifest: DeploymentManifest,
   input: PublishPositionInput,
@@ -24,33 +26,36 @@ export function buildPublishPositionPlan(
   if (input.baseAllocation < 0n || input.quoteAllocation < 0n) {
     throw new Error('Allocations cannot be negative')
   }
+  const baseAllowance = input.baseAllowance ?? 0n
+  const quoteAllowance = input.quoteAllowance ?? 0n
+  if (baseAllowance < 0n || quoteAllowance < 0n) throw new Error('Allowances cannot be negative')
   if (input.baseAllocation === 0n && input.quoteAllocation === 0n) {
     throw new Error('At least one allocation must be positive')
   }
   const strategy = buildPositionStrategy(input.config, input.maker, input.liquidCurveOpcode)
   const calls: ContractCall[] = []
-  if (input.baseAllocation > 0n) {
+  if (input.baseAllocation > baseAllowance) {
     calls.push(
       call(
-        'Approve base allocation to Aqua',
+        'Approve base token to Aqua',
         input.config.baseToken,
         encodeFunctionData({
           abi: erc20Abi,
           functionName: 'approve',
-          args: [manifest.contracts.aqua.address, input.baseAllocation],
+          args: [manifest.contracts.aqua.address, MAX_UINT256],
         }),
       ),
     )
   }
-  if (input.quoteAllocation > 0n) {
+  if (input.quoteAllocation > quoteAllowance) {
     calls.push(
       call(
-        'Approve quote allocation to Aqua',
+        'Approve quote token to Aqua',
         input.config.quoteToken,
         encodeFunctionData({
           abi: erc20Abi,
           functionName: 'approve',
-          args: [manifest.contracts.aqua.address, input.quoteAllocation],
+          args: [manifest.contracts.aqua.address, MAX_UINT256],
         }),
       ),
     )

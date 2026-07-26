@@ -56,6 +56,8 @@ export interface PublishPositionInput {
   liquidCurveOpcode: number
   baseAllocation: bigint
   quoteAllocation: bigint
+  baseAllowance?: bigint
+  quoteAllowance?: bigint
 }
 
 export interface PublishPositionPlan {

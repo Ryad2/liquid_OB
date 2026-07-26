@@ -18,7 +18,7 @@ pnpm --filter @liquid-ob/contracts manifest -- \
   --chain-id 84532 \
   --network-name "Base Sepolia" \
   --explorer-url https://sepolia.basescan.org \
-  --public-rpc-url https://sepolia.base.org \
+  --public-rpc-url https://base-sepolia-rpc.publicnode.com \
   --public true \
   --out deployments/84532.json
 ```
