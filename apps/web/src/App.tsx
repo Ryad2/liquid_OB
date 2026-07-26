@@ -36,12 +36,16 @@ interface GatewayView {
   activity: ActivityItem[]
 }
 
+interface ChartSample extends CurveSample {
+  quoteLiquidity?: number
+}
+
 interface ChartSeries {
   id: string
   positionId?: PositionSummary['id']
   side: CurveSide
   label: string
-  samples: CurveSample[]
+  samples: ChartSample[]
   progressBps?: number
   reserveLabel: string
   draft?: boolean
@@ -68,6 +72,10 @@ const positionCurveColors: Record<CurveSide, string[]> = {
 
 const numberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
+})
+const compactNumberFormatter = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
 })
 
 function shortAddress(address: string) {
@@ -104,10 +112,20 @@ function decimalFromNumber(value: number) {
   })
 }
 
-function BrandMark({ variant = 'default' }: { variant?: 'default' | 'large' | 'hero' }) {
+function BrandMark({ variant = 'default' }: { variant?: 'default' | 'large' }) {
   return (
     <span className={`brand-mark ${variant === 'default' ? '' : variant}`} aria-hidden="true">
       <img src="/arcbook-mark.svg" alt="" />
+    </span>
+  )
+}
+
+function ArcBookWordmark({ variant = 'compact' }: { variant?: 'compact' | 'hero' }) {
+  return (
+    <span className={`arcbook-wordmark ${variant}`} role="img" aria-label="ArcBook">
+      <span aria-hidden="true">ARCB</span>
+      <span className="wordmark-flight" aria-hidden="true"><i /></span>
+      <span aria-hidden="true">OK</span>
     </span>
   )
 }
@@ -127,24 +145,53 @@ function getInitialView(): AppView {
 
 function seriesFromPositions(
   positions: PositionSummary[],
+  market: MarketDetail,
   filter: CurveFilter = 'all',
 ): ChartSeries[] {
   return positions.flatMap((position, index) => {
     const sides: CurveSide[] = filter === 'all' ? ['buy', 'sell'] : [filter]
-    return sides.map((side) => ({
-      id: `${position.id}-${side}`,
-      positionId: position.id,
-      side,
-      label: `P${index + 1} ${side}`,
-      positionLabel: `P${index + 1}`,
-      positionIndex: index,
-      color: positionCurveColors[side][index % positionCurveColors[side].length],
-      samples: position[side].marginalSamples,
-      progressBps: position[side].runtime.progressBps,
-      reserveLabel: `${position[side].runtime.availableOutput.formatted} ${
-        position[side].runtime.availableOutput.token.symbol
-      }`,
-    }))
+    return sides.map((side) => {
+      const curve = position[side]
+      const currentProgress = curve.runtime.progressBps
+      const currentPrice = Number(curve.runtime.currentMarginalPrice.formatted)
+      const currentReserve = Number(curve.runtime.availableOutput.formatted)
+      const currentQuoteLiquidity = side === 'sell'
+        ? currentReserve * currentPrice
+        : currentReserve
+      const currentSample: ChartSample = {
+        progressBps: currentProgress,
+        displayedMarginalPrice: curve.runtime.currentMarginalPrice,
+        remainingReserve: curve.runtime.availableOutput.formatted,
+        quoteLiquidity: currentQuoteLiquidity,
+      }
+      const executableSamples = curve.marginalSamples
+        .filter((sample) => sample.progressBps > currentProgress)
+        .map((sample): ChartSample => {
+          const price = Number(sample.displayedMarginalPrice.formatted)
+          const remainingReserve = Number(sample.remainingReserve)
+          return {
+            ...sample,
+            quoteLiquidity: side === 'sell'
+              ? remainingReserve * price
+              : remainingReserve,
+          }
+        })
+
+      return {
+        id: `${position.id}-${side}`,
+        positionId: position.id,
+        side,
+        label: `P${index + 1} ${side}`,
+        positionLabel: `P${index + 1}`,
+        positionIndex: index,
+        color: positionCurveColors[side][index % positionCurveColors[side].length],
+        samples: [currentSample, ...executableSamples],
+        progressBps: currentProgress,
+        reserveLabel: `${curve.runtime.availableOutput.formatted} ${
+          curve.runtime.availableOutput.token.symbol
+        } · ${formatNumber(currentQuoteLiquidity, 0)} ${market.quoteToken.symbol} eq.`,
+      }
+    })
   })
 }
 
@@ -182,24 +229,19 @@ function aggregatedPortfolioSeries(
   positions: PositionSummary[],
   market: MarketDetail,
 ): ChartSeries[] {
-  const bid = Number(market.bestBid?.formatted)
-  const ask = Number(market.bestAsk?.formatted)
-  const referencePrice = bid > 0 && ask > 0
-    ? Math.exp((Math.log(bid) + Math.log(ask)) / 2)
-    : 1
-
   return (['buy', 'sell'] as CurveSide[]).flatMap((side) => {
     const curves = positions.map((position) => {
       const curve = position[side]
       const currentPrice = Number(curve.runtime.currentMarginalPrice.formatted)
       const endPrice = Number(curve.policy.endPrice.formatted)
       const available = Number(curve.runtime.availableOutput.formatted)
-      const quoteValue = side === 'sell' ? available * referencePrice : available
+      const quoteValue = side === 'sell' ? available * currentPrice : available
       return {
         samples: curve.marginalSamples,
         currentPrice,
         endPrice,
         currentProgressBps: curve.runtime.progressBps,
+        available,
         quoteValue,
       }
     }).filter((curve) => (
@@ -225,7 +267,7 @@ function aggregatedPortfolioSeries(
     const totalQuoteValue = curves.reduce((total, curve) => total + curve.quoteValue, 0)
     const templatePrice = curves[0]!.samples[0]!.displayedMarginalPrice
 
-    const samples = Array.from({ length: 61 }, (_, index): CurveSample => {
+    const samples = Array.from({ length: 61 }, (_, index): ChartSample => {
       const ratio = index / 60
       const price = useLogInterpolation
         ? Math.exp(logStart + ((logEnd - logStart) * ratio))
@@ -238,7 +280,8 @@ function aggregatedPortfolioSeries(
           0,
           Math.min((10_000 - remainingProgress) / availableSpan, 1),
         )
-        return total + (curve.quoteValue * remainingFraction)
+        const remainingReserve = curve.available * remainingFraction
+        return total + (side === 'sell' ? remainingReserve * price : remainingReserve)
       }, 0)
       const formattedPrice = decimalFromNumber(price)
       const displayedMarginalPrice: DisplayPrice = {
@@ -247,9 +290,12 @@ function aggregatedPortfolioSeries(
         formatted: formattedPrice,
       }
       return {
-        progressBps: Math.round((1 - (remainingQuoteValue / totalQuoteValue)) * 10_000),
+        progressBps: Math.round(
+          Math.max(0, Math.min(1 - (remainingQuoteValue / totalQuoteValue), 1)) * 10_000,
+        ),
         displayedMarginalPrice,
         remainingReserve: decimalFromNumber(remainingQuoteValue),
+        quoteLiquidity: remainingQuoteValue,
       }
     })
 
@@ -265,15 +311,15 @@ function aggregatedPortfolioSeries(
 }
 
 function buildPath(
-  samples: CurveSample[],
+  samples: ChartSample[],
   xForPrice: (price: number) => number,
-  yForProgress: (progressBps: number) => number,
+  yForSample: (sample: ChartSample) => number,
 ) {
   const projectedPoints = samples.map((sample) => {
     const price = Number(sample.displayedMarginalPrice.formatted)
     if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(sample.progressBps)) return null
     const x = xForPrice(price)
-    const y = yForProgress(sample.progressBps)
+    const y = yForSample(sample)
     return { x, y }
   }).filter((point): point is { x: number; y: number } => point !== null)
 
@@ -426,6 +472,39 @@ function CurveChart({
   const yForProgress = (progressBps: number) => (
     inset.top + (Math.max(0, Math.min(progressBps, 10_000)) / 10_000) * innerHeight
   )
+  const quoteLiquidityValues = series.flatMap((item) => (
+    item.samples
+      .map((sample) => sample.quoteLiquidity)
+      .filter((value): value is number => value !== undefined && Number.isFinite(value) && value >= 0)
+  ))
+  const usesQuoteLiquidityScale = (
+    series.length > 0
+    && quoteLiquidityValues.length > 0
+    && series.every((item) => item.samples.every((sample) => (
+      sample.quoteLiquidity !== undefined
+      && Number.isFinite(sample.quoteLiquidity)
+      && sample.quoteLiquidity >= 0
+    )))
+  )
+  const maximumQuoteLiquidity = Math.max(...quoteLiquidityValues, 1)
+  const liquidityMagnitude = 10 ** Math.floor(Math.log10(maximumQuoteLiquidity))
+  const normalizedLiquidity = maximumQuoteLiquidity / liquidityMagnitude
+  const roundedLiquidity = normalizedLiquidity <= 1
+    ? 1
+    : normalizedLiquidity <= 2
+      ? 2
+      : normalizedLiquidity <= 5
+        ? 5
+        : 10
+  const quoteScaleMaximum = roundedLiquidity * liquidityMagnitude
+  const yForQuoteLiquidity = (quoteLiquidity: number) => (
+    inset.top + (1 - (Math.max(0, Math.min(quoteLiquidity, quoteScaleMaximum)) / quoteScaleMaximum)) * innerHeight
+  )
+  const yForSample = (sample: ChartSample) => (
+    usesQuoteLiquidityScale && sample.quoteLiquidity !== undefined
+      ? yForQuoteLiquidity(sample.quoteLiquidity)
+      : yForProgress(sample.progressBps)
+  )
   const marketBid = Number(market.bestBid?.formatted)
   const marketAsk = Number(market.bestAsk?.formatted)
   const referencePrice = (
@@ -444,7 +523,7 @@ function CurveChart({
     )
     return useLogScale ? Math.exp(safeExponent) : scaledTick
   })
-  const inventoryTicks = [0, 2_500, 5_000, 7_500, 10_000]
+  const inventoryTicks = [0, 0.25, 0.5, 0.75, 1]
   const isAggregated = series.some((item) => item.aggregated === true)
   const aggregateBid = series.find((item) => item.aggregated === true && item.side === 'buy')
   const aggregateAsk = series.find((item) => item.aggregated === true && item.side === 'sell')
@@ -467,9 +546,13 @@ function CurveChart({
     ?? (isAggregated ? 'Net depth' : isPositionMap ? 'Position map' : 'Range field')
   const resolvedSubtitle = chartSubtitle
     ?? (isAggregated
-      ? 'QUOTE-NORMALIZED DEPTH · %'
+      ? usesQuoteLiquidityScale
+        ? `AGGREGATED DEPTH · ${market.quoteToken.symbol} EQ.`
+        : 'QUOTE-NORMALIZED DEPTH · %'
       : isPositionMap
-        ? 'INDIVIDUAL RANGES · START → END'
+        ? usesQuoteLiquidityScale
+          ? `ABSOLUTE REMAINING DEPTH · ${market.quoteToken.symbol} EQ.`
+          : 'INDIVIDUAL RANGES · START → END'
         : 'INVENTORY REMAINING · %')
   const resolvedAriaLabel = chartAriaLabel
     ?? (isAggregated
@@ -503,12 +586,15 @@ function CurveChart({
         </defs>
 
         {inventoryTicks.map((tick) => {
-          const y = yForProgress(tick)
+          const y = inset.top + (tick * innerHeight)
+          const quoteLiquidityTick = quoteScaleMaximum * (1 - tick)
           return (
             <g key={tick}>
               <line className="chart-grid-line" x1={inset.left} x2={width - inset.right} y1={y} y2={y} />
               <text className="chart-axis-label" x={inset.left - 12} y={y + 4}>
-                {100 - (tick / 100)}%
+                {usesQuoteLiquidityScale
+                  ? compactNumberFormatter.format(quoteLiquidityTick)
+                  : `${100 - (tick * 100)}%`}
               </text>
             </g>
           )
@@ -572,19 +658,21 @@ function CurveChart({
             className="aggregate-spread-link"
             x1={xForPrice(aggregateBidPrice)}
             x2={xForPrice(aggregateAskPrice)}
-            y1={yForProgress(0)}
-            y2={yForProgress(0)}
+            y1={aggregateBid?.samples[0] === undefined ? inset.top : yForSample(aggregateBid.samples[0])}
+            y2={aggregateAsk?.samples[0] === undefined ? inset.top : yForSample(aggregateAsk.samples[0])}
           />
         ) : null}
 
         {series.map((item) => {
           const isSelected = isSeriesVisible(item)
-          const path = buildPath(item.samples, xForPrice, yForProgress)
+          const path = buildPath(item.samples, xForPrice, yForSample)
           const progress = item.progressBps ?? 0
-          const sampleIndex = Math.min(
-            item.samples.length - 1,
-            Math.round((progress / 10_000) * (item.samples.length - 1)),
-          )
+          const sampleIndex = usesQuoteLiquidityScale
+            ? 0
+            : Math.min(
+                item.samples.length - 1,
+                Math.round((progress / 10_000) * (item.samples.length - 1)),
+              )
           const activeSample = item.samples[sampleIndex]
           const activePrice = activeSample === undefined
             ? null
@@ -592,7 +680,7 @@ function CurveChart({
           const activeX = activePrice === null || !Number.isFinite(activePrice) || activePrice <= 0
             ? null
             : xForPrice(activePrice)
-          const activeY = yForProgress(progress)
+          const activeY = activeSample === undefined ? yForProgress(progress) : yForSample(activeSample)
           const firstSample = item.samples.at(0)
           const lastSample = item.samples.at(-1)
           const firstPrice = Number(firstSample?.displayedMarginalPrice.formatted)
@@ -603,7 +691,7 @@ function CurveChart({
           const labelX = Number.isFinite(labelPrice) && labelPrice > 0
             ? xForPrice(labelPrice)
             : null
-          const labelY = labelSample === undefined ? null : yForProgress(labelSample.progressBps)
+          const labelY = labelSample === undefined ? null : yForSample(labelSample)
 
           return (
             <g
@@ -627,7 +715,7 @@ function CurveChart({
                 <circle
                   className={`range-endpoint endpoint-${item.side}`}
                   cx={xForPrice(firstPrice)}
-                  cy={yForProgress(firstSample.progressBps)}
+                  cy={yForSample(firstSample)}
                   r={showPositionLabels ? 5 : 4}
                   style={item.color === undefined ? undefined : { fill: item.color }}
                 />
@@ -636,7 +724,7 @@ function CurveChart({
                 <circle
                   className={`range-endpoint endpoint-${item.side} is-terminal`}
                   cx={xForPrice(lastPrice)}
-                  cy={yForProgress(lastSample.progressBps)}
+                  cy={yForSample(lastSample)}
                   r={showPositionLabels ? 5 : 4}
                   style={item.color === undefined ? undefined : { stroke: item.color }}
                 />
@@ -680,7 +768,10 @@ function CurveChart({
         <span><i className="legend-dot sell" /> {isAggregated ? 'Aggregated asks' : 'Sell curves'}</span>
         {isPositionMap ? <span className="endpoint-key"><i /> start <b /> end</span> : null}
         <span><i className="legend-line" /> Indexed mid price</span>
-        <small>PRICE RANGE · {market.quoteToken.symbol}/{market.baseToken.symbol} →</small>
+        <small>
+          {usesQuoteLiquidityScale ? `DEPTH · ${market.quoteToken.symbol} EQ. ↑ · ` : ''}
+          PRICE · {market.quoteToken.symbol}/{market.baseToken.symbol} →
+        </small>
       </div>
     </div>
   )
@@ -914,8 +1005,10 @@ function LandingView({
       <section className="landing-hero">
         <div className="landing-copy">
           <div className="landing-signature">
-            <span className="landing-signal" aria-hidden="true"><i /></span>
-            <span><b>ARCBOOK</b><small>CURVE-NATIVE ORDER BOOK</small></span>
+            <span>
+              <ArcBookWordmark variant="hero" />
+              <small>CURVE-NATIVE ORDER BOOK</small>
+            </span>
           </div>
           <h1 aria-label="Shape the book.">Shape the<br /><em>book.</em></h1>
           <p>Liquidity is no longer a stack of static orders. Shape a bounded field, publish its geometry and let every fill move through it.</p>
@@ -1017,9 +1110,8 @@ function AppShell({
     <div className="app-shell">
       <header className="topbar">
         <button className="brand" onClick={() => onNavigate('home')} aria-label="ArcBook home">
-          <BrandMark />
           <span className="brand-lockup">
-            <b>ARC<span>BOOK</span></b>
+            <ArcBookWordmark />
             <small>CURVE-NATIVE MARKETS</small>
           </span>
         </button>
@@ -1360,7 +1452,7 @@ function TradeView({
   const [selectedCurve, setSelectedCurve] = useState<string | null>(null)
   const [chartMode, setChartMode] = useState<TradeDepthMode>('positions')
   const routePositionIds = new Set(quote?.fills.map((fill) => fill.positionId) ?? [])
-  const positionSeries = seriesFromPositions(view.positions)
+  const positionSeries = seriesFromPositions(view.positions, view.market)
   const chartSeries = chartMode === 'aggregate'
     ? aggregatedPortfolioSeries(view.positions, view.market)
     : chartMode === 'route'
@@ -1486,7 +1578,7 @@ function PortfolioView({
   ), 0)
   const chartSeries = atlasMode === 'aggregate'
     ? aggregatedPortfolioSeries(walletPositions, view.market)
-    : seriesFromPositions(walletPositions)
+    : seriesFromPositions(walletPositions, view.market)
   const selectedSeriesId = atlasMode === 'aggregate'
     ? null
     : selectedCurve ?? selectedPosition
