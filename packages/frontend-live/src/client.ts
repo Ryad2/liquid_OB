@@ -124,7 +124,7 @@ export class LiveLiquidOBClient implements LiquidOBFrontendClient {
     this.#apiUrl = endpoint(options.apiUrl, 'solver API')
     this.#manifestUrl = endpoint(options.manifestUrl, 'deployment manifest')
     this.#rpcUrl = options.rpcUrl === undefined ? undefined : endpoint(options.rpcUrl, 'RPC')
-    this.#fetch = options.fetch ?? globalThis.fetch
+    this.#fetch = options.fetch ?? globalThis.fetch.bind(globalThis)
     this.#providedPublicClient = options.publicClient
     this.#timeoutMs = Math.max(1_000, options.timeoutMs ?? 12_000)
     this.#now = options.now ?? (() => new Date())

@@ -166,6 +166,28 @@ describe('LiveLiquidOBClient', () => {
     expect(ship.functionName).toBe('ship')
   })
 
+  it('binds the native browser fetch receiver when no fetch override is provided', async () => {
+    const nativeFetch = globalThis.fetch
+    const receiverCheckedFetch = vi.fn(function (this: typeof globalThis, input: string | URL | Request) {
+      if (this !== globalThis) throw new TypeError('Illegal invocation')
+      const body = String(input).includes('manifest') ? manifest() : bootstrap()
+      return Promise.resolve(Response.json(body))
+    }) as typeof globalThis.fetch
+    globalThis.fetch = receiverCheckedFetch
+
+    try {
+      const client = new LiveLiquidOBClient({
+        apiUrl: 'https://api.test',
+        manifestUrl: 'https://app.test/manifest.json',
+      })
+
+      await expect(client.getBootstrap()).resolves.toMatchObject({ protocolName: 'ArcBook' })
+      expect(receiverCheckedFetch).toHaveBeenCalledTimes(2)
+    } finally {
+      globalThis.fetch = nativeFetch
+    }
+  })
+
   it('prepares approval before execution without requiring a pre-approval simulation', async () => {
     const now = new Date('2026-07-26T00:00:00.000Z')
     const routeId = toHex(101n, { size: 32 })
