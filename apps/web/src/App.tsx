@@ -120,9 +120,9 @@ function BrandMark({ variant = 'default' }: { variant?: 'default' | 'large' }) {
   )
 }
 
-function ArcBookWordmark({ variant = 'compact' }: { variant?: 'compact' | 'hero' }) {
+function ArcBookWordmark() {
   return (
-    <span className={`arcbook-wordmark ${variant}`} role="img" aria-label="ArcBook">
+    <span className="arcbook-wordmark compact" role="img" aria-label="ArcBook">
       <span aria-hidden="true">ARCB</span>
       <span className="wordmark-flight" aria-hidden="true"><i /></span>
       <span aria-hidden="true">OK</span>
@@ -168,9 +168,18 @@ function seriesFromPositions(
         .filter((sample) => sample.progressBps > currentProgress)
         .map((sample): ChartSample => {
           const price = Number(sample.displayedMarginalPrice.formatted)
-          const remainingReserve = Number(sample.remainingReserve)
+          const executableProgress = Math.max(10_000 - currentProgress, 1)
+          const remainingFraction = Math.max(
+            0,
+            Math.min((10_000 - sample.progressBps) / executableProgress, 1),
+          )
+          // Runtime y/yInt is homothetically rescaled whenever the opposite
+          // side receives inventory. Project from the current executable
+          // reserve instead of reconnecting the curve to immutable seed data.
+          const remainingReserve = currentReserve * remainingFraction
           return {
             ...sample,
+            remainingReserve: decimalFromNumber(remainingReserve),
             quoteLiquidity: side === 'sell'
               ? remainingReserve * price
               : remainingReserve,
@@ -181,7 +190,7 @@ function seriesFromPositions(
         id: `${position.id}-${side}`,
         positionId: position.id,
         side,
-        label: `P${index + 1} ${side}`,
+        label: `${shortAddress(position.maker)} ${side} side, version ${position.runtimeVersion}`,
         positionLabel: `P${index + 1}`,
         positionIndex: index,
         color: positionCurveColors[side][index % positionCurveColors[side].length],
@@ -272,16 +281,15 @@ function aggregatedPortfolioSeries(
       const price = useLogInterpolation
         ? Math.exp(logStart + ((logEnd - logStart) * ratio))
         : startPrice + ((endPrice - startPrice) * ratio)
-      const remainingQuoteValue = curves.reduce((total, curve) => {
+      const cumulativeQuoteDepth = curves.reduce((total, curve) => {
         const progress = progressAtPrice(curve.samples, price)
-        const remainingProgress = Math.max(progress, curve.currentProgressBps)
         const availableSpan = Math.max(10_000 - curve.currentProgressBps, 1)
-        const remainingFraction = Math.max(
+        const executedFraction = Math.max(
           0,
-          Math.min((10_000 - remainingProgress) / availableSpan, 1),
+          Math.min((progress - curve.currentProgressBps) / availableSpan, 1),
         )
-        const remainingReserve = curve.available * remainingFraction
-        return total + (side === 'sell' ? remainingReserve * price : remainingReserve)
+        const executableReserve = curve.available * executedFraction
+        return total + (side === 'sell' ? executableReserve * price : executableReserve)
       }, 0)
       const formattedPrice = decimalFromNumber(price)
       const displayedMarginalPrice: DisplayPrice = {
@@ -291,11 +299,11 @@ function aggregatedPortfolioSeries(
       }
       return {
         progressBps: Math.round(
-          Math.max(0, Math.min(1 - (remainingQuoteValue / totalQuoteValue), 1)) * 10_000,
+          Math.max(0, Math.min(cumulativeQuoteDepth / totalQuoteValue, 1)) * 10_000,
         ),
         displayedMarginalPrice,
-        remainingReserve: decimalFromNumber(remainingQuoteValue),
-        quoteLiquidity: remainingQuoteValue,
+        remainingReserve: decimalFromNumber(cumulativeQuoteDepth),
+        quoteLiquidity: cumulativeQuoteDepth,
       }
     })
 
@@ -451,7 +459,7 @@ function CurveChart({
   const rawLogMin = Math.log(rawMin)
   const rawLogMax = Math.log(rawMax)
   const rawLogSpan = Math.max(rawLogMax - rawLogMin, 0)
-  const useLogScale = rawLogSpan >= Math.log(6)
+  const useLogScale = rawLogSpan >= Math.log(2.4)
   const logPadding = Math.max(rawLogSpan * 0.06, 0.025)
   const linearPadding = Math.max((rawMax - rawMin) * 0.08, rawMax * 0.005)
   const innerHeight = height - inset.top - inset.bottom
@@ -489,13 +497,8 @@ function CurveChart({
   const maximumQuoteLiquidity = Math.max(...quoteLiquidityValues, 1)
   const liquidityMagnitude = 10 ** Math.floor(Math.log10(maximumQuoteLiquidity))
   const normalizedLiquidity = maximumQuoteLiquidity / liquidityMagnitude
-  const roundedLiquidity = normalizedLiquidity <= 1
-    ? 1
-    : normalizedLiquidity <= 2
-      ? 2
-      : normalizedLiquidity <= 5
-        ? 5
-        : 10
+  const roundedLiquidity = [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 7.5, 10]
+    .find((candidate) => normalizedLiquidity <= candidate) ?? 10
   const quoteScaleMaximum = roundedLiquidity * liquidityMagnitude
   const yForQuoteLiquidity = (quoteLiquidity: number) => (
     inset.top + (1 - (Math.max(0, Math.min(quoteLiquidity, quoteScaleMaximum)) / quoteScaleMaximum)) * innerHeight
@@ -547,7 +550,7 @@ function CurveChart({
   const resolvedSubtitle = chartSubtitle
     ?? (isAggregated
       ? usesQuoteLiquidityScale
-        ? `AGGREGATED DEPTH · ${market.quoteToken.symbol} EQ.`
+        ? `CUMULATIVE EXECUTABLE DEPTH · ${market.quoteToken.symbol} EQ.`
         : 'QUOTE-NORMALIZED DEPTH · %'
       : isPositionMap
         ? usesQuoteLiquidityScale
@@ -560,6 +563,14 @@ function CurveChart({
       : isPositionMap
         ? 'Every portfolio position shown as an independent buy and sell range'
         : 'Inventory distribution across each position price range')
+  const selectedSeries = selectedId === undefined || selectedId === null
+    ? null
+    : series.find((item) => (
+      item.id === selectedId
+      || item.id.startsWith(`${selectedId}-`)
+    )) ?? null
+  const selectedStart = selectedSeries?.samples.at(0)?.displayedMarginalPrice.formatted
+  const selectedEnd = selectedSeries?.samples.at(-1)?.displayedMarginalPrice.formatted
 
   return (
     <div className={`curve-chart-shell ${isAggregated ? 'is-aggregated' : ''}`}>
@@ -567,6 +578,13 @@ function CurveChart({
         <span>{resolvedTitle}</span>
         <small>{resolvedSubtitle}</small>
       </div>
+      {selectedSeries !== null ? (
+        <div className={`chart-hover-card ${selectedSeries.side}`} aria-live="polite">
+          <span>{selectedSeries.positionLabel ?? selectedSeries.side} · {selectedSeries.side}</span>
+          <strong>{selectedStart ?? '—'} → {selectedEnd ?? '—'}</strong>
+          <small>{selectedSeries.reserveLabel}</small>
+        </div>
+      ) : null}
       <svg
         className="curve-chart"
         viewBox={`0 0 ${width} ${height}`}
@@ -664,7 +682,15 @@ function CurveChart({
         ) : null}
 
         {series.map((item) => {
-          const isSelected = isSeriesVisible(item)
+          const isVisible = isSeriesVisible(item)
+          const isFocused = (
+            selectedId !== undefined
+            && selectedId !== null
+            && (
+              selectedId === item.id
+              || item.id.startsWith(`${selectedId}-`)
+            )
+          )
           const path = buildPath(item.samples, xForPrice, yForSample)
           const progress = item.progressBps ?? 0
           const sampleIndex = usesQuoteLiquidityScale
@@ -685,21 +711,29 @@ function CurveChart({
           const lastSample = item.samples.at(-1)
           const firstPrice = Number(firstSample?.displayedMarginalPrice.formatted)
           const lastPrice = Number(lastSample?.displayedMarginalPrice.formatted)
-          const labelRatio = 0.22 + (((item.positionIndex ?? 0) % 3) * 0.18)
-          const labelSample = item.samples[Math.round((item.samples.length - 1) * labelRatio)]
-          const labelPrice = Number(labelSample?.displayedMarginalPrice.formatted)
-          const labelX = Number.isFinite(labelPrice) && labelPrice > 0
-            ? xForPrice(labelPrice)
-            : null
-          const labelY = labelSample === undefined ? null : yForSample(labelSample)
+          const areaPath = (
+            path !== ''
+            && Number.isFinite(firstPrice)
+            && Number.isFinite(lastPrice)
+            && firstPrice > 0
+            && lastPrice > 0
+          )
+            ? `${path} L ${xForPrice(lastPrice).toFixed(2)} ${(height - inset.bottom).toFixed(2)} L ${xForPrice(firstPrice).toFixed(2)} ${(height - inset.bottom).toFixed(2)} Z`
+            : ''
 
           return (
             <g
               key={item.id}
-              className={`curve-series ${item.aggregated === true ? 'is-aggregate' : ''} ${isSelected ? 'is-selected' : 'is-muted'}`}
+              className={`curve-series ${item.aggregated === true ? 'is-aggregate' : ''} ${isVisible ? 'is-visible' : 'is-muted'} ${isFocused ? 'is-focused' : ''}`}
               onMouseEnter={() => onSelect?.(item.id)}
               onFocus={() => onSelect?.(item.id)}
             >
+              <title>{`${item.label}. Range ${formatPrice(firstPrice)} to ${formatPrice(lastPrice)}. ${item.reserveLabel}.`}</title>
+              <path
+                className={`curve-area curve-area-${item.side} ${item.aggregated === true ? 'is-aggregate' : ''}`}
+                d={areaPath}
+                style={item.color === undefined ? undefined : { fill: item.color }}
+              />
               <path
                 className={`curve-hit-area curve-${item.side}`}
                 d={path}
@@ -728,17 +762,6 @@ function CurveChart({
                   r={showPositionLabels ? 5 : 4}
                   style={item.color === undefined ? undefined : { stroke: item.color }}
                 />
-              ) : null}
-              {showPositionLabels && item.positionLabel !== undefined && labelX !== null && labelY !== null ? (
-                <text
-                  className="position-curve-label"
-                  x={labelX + (item.side === 'buy' ? -8 : 8)}
-                  y={labelY - 6}
-                  textAnchor={item.side === 'buy' ? 'end' : 'start'}
-                  style={item.color === undefined ? undefined : { fill: item.color }}
-                >
-                  {item.positionLabel} · {item.side === 'buy' ? 'B' : 'S'}
-                </text>
               ) : null}
               {item.progressBps !== undefined && activeX !== null ? (
                 <>
@@ -963,7 +986,7 @@ function HeroCurveCanvas({ alpha }: { alpha: number }) {
       context.shadowBlur = 0
 
       context.fillStyle = 'rgba(137, 144, 173, 0.72)'
-      context.font = '8px "IBM Plex Mono", monospace'
+      context.font = '10px "JetBrains Mono", monospace'
       context.textAlign = 'left'
       context.fillText('BOUND INPUT', inset.x, inset.y + innerHeight + 18)
       context.textAlign = 'center'
@@ -986,16 +1009,14 @@ function HeroCurveCanvas({ alpha }: { alpha: number }) {
       ref={canvasRef}
       className="hero-curve-canvas"
       role="img"
-      aria-label={`Animated ArcBook parametric emblem with alpha ${alpha.toFixed(2)}`}
+      aria-label={`Animated parametric liquidity field with alpha ${alpha.toFixed(2)}`}
     />
   )
 }
 
 function LandingView({
-  view,
   onNavigate,
 }: {
-  view: GatewayView
   onNavigate: (view: AppView) => void
 }) {
   const [alpha, setAlpha] = useState(4.2)
@@ -1004,17 +1025,12 @@ function LandingView({
     <main className="landing-page">
       <section className="landing-hero">
         <div className="landing-copy">
-          <div className="landing-signature">
-            <span>
-              <ArcBookWordmark variant="hero" />
-              <small>CURVE-NATIVE ORDER BOOK</small>
-            </span>
-          </div>
+          <span className="landing-kicker"><i /> CURVE-NATIVE ORDER BOOK ARCHITECTURE</span>
           <h1 aria-label="Shape the book.">Shape the<br /><em>book.</em></h1>
           <p>Liquidity is no longer a stack of static orders. Shape a bounded field, publish its geometry and let every fill move through it.</p>
           <div className="landing-actions">
-            <button className="landing-primary" onClick={() => onNavigate('trade')}>Start trading <span>↗</span></button>
-            <button className="landing-secondary" onClick={() => onNavigate('studio')}>Shape a curve <span>⌁</span></button>
+            <button className="landing-primary" onClick={() => onNavigate('trade')}>Start trading <span aria-hidden="true">↗</span></button>
+            <button className="landing-secondary" onClick={() => onNavigate('studio')}>Shape a curve <span aria-hidden="true">→</span></button>
           </div>
           <div className="landing-proof">
             <span><b>01</b><small>Two-sided<br />positions</small></span>
@@ -1024,11 +1040,9 @@ function LandingView({
         </div>
 
         <div className="landing-stage">
-          <div className="hero-orbit orbit-one" />
-          <div className="hero-orbit orbit-two" />
           <article className="hero-field-card">
             <header>
-              <div><span className="hero-system-glyph"><i /><i /></span><p><strong>ARCBOOK FIELD</strong><small>PARAMETRIC EXECUTION ENGINE</small></p></div>
+              <div><span className="hero-system-glyph"><i /><i /></span><p><strong>LIVE CURVE SIMULATOR</strong><small>PARAMETRIC EXECUTION PREVIEW</small></p></div>
               <span className="hero-live"><i /> ENGINE ACTIVE</span>
             </header>
             <div className="hero-canvas-wrap">
@@ -1053,22 +1067,13 @@ function LandingView({
               </div>
             </footer>
           </article>
-          <div className="hero-floating-stat stat-top"><span>MODEL</span><strong>bounded</strong></div>
-          <div className="hero-floating-stat stat-bottom"><span>CURVES</span><strong>{view.market.stats.activePositions * 2} live</strong></div>
         </div>
       </section>
 
-      <div className="landing-ticker" aria-hidden="true">
-        <div>
-          <span>SHAPE LIQUIDITY</span><i>◆</i><span>PUBLISH THE RANGE</span><i>◆</i><span>ROUTE THE FIELD</span><i>◆</i>
-          <span>SHAPE LIQUIDITY</span><i>◆</i><span>PUBLISH THE RANGE</span><i>◆</i><span>ROUTE THE FIELD</span><i>◆</i>
-        </div>
-      </div>
-
       <section className="landing-principles">
-        <div><span>01 / SHAPE</span><h2>Liquidity becomes a function.</h2><p>Choose two price endpoints, fund both sides and use alpha to shape how inventory is released.</p></div>
-        <div><span>02 / PUBLISH</span><h2>The range becomes the order.</h2><p>Every maker position is transparent, bounded and ready to be composed into executable routes.</p></div>
-        <div><span>03 / ROUTE</span><h2>The book moves with the fill.</h2><p>Inventory recycles between both sides while the marginal field advances deterministically.</p></div>
+        <article><span>01 / SHAPE</span><h2>Liquidity becomes a function.</h2><p>Choose two price endpoints, fund both sides and use alpha to shape how inventory is released.</p></article>
+        <article><span>02 / PUBLISH</span><h2>The range becomes the order.</h2><p>Every maker position is transparent, bounded and ready to be composed into executable routes.</p></article>
+        <article><span>03 / ROUTE</span><h2>The book moves with the fill.</h2><p>Inventory recycles between both sides while the marginal field advances deterministically.</p></article>
       </section>
     </main>
   )
@@ -1130,16 +1135,25 @@ function AppShell({
           <button className="muted-nav" disabled>Docs</button>
         </nav>
         <div className="topbar-actions">
-          <span className="network-pill"><i className="status-dot" />{bootstrap.mode}</span>
+          <span className={`network-pill ${bootstrap.mode}`}>
+            <i className="status-dot" />
+            {bootstrap.mode === 'mock' ? 'Demo environment' : bootstrap.network.name}
+          </span>
           <button
             className={`wallet-button ${walletAddress === null ? '' : 'connected'}`}
             onClick={onWalletToggle}
             aria-pressed={walletAddress !== null}
             title={walletAddress === null
-              ? 'Connect a wallet to reveal its portfolio.'
-              : 'Disconnect this wallet from the application.'}
+              ? bootstrap.mode === 'mock'
+                ? 'Select the seeded maker account used by the deterministic demo.'
+                : 'Connect an injected wallet to reveal its portfolio and prepare transactions.'
+              : bootstrap.mode === 'mock'
+                ? 'Clear the selected demo maker.'
+                : 'Disconnect this wallet from the application.'}
           >
-            {walletAddress === null ? 'Connect' : <><i />{shortAddress(walletAddress)}</>}
+            {walletAddress === null
+              ? bootstrap.mode === 'mock' ? 'Use demo maker' : 'Connect wallet'
+              : <><i />{bootstrap.mode === 'mock' ? 'Demo · ' : ''}{shortAddress(walletAddress)}</>}
           </button>
           <button className="icon-button" aria-label="Application settings">•••</button>
         </div>
@@ -1201,13 +1215,22 @@ function FunctionalOrderBook({
   mode: FrontendBootstrap['mode']
 }) {
   const rows = [
-    ...positions.map((position, index) => ({ position, index, side: 'sell' as const })),
-    ...positions.map((position, index) => ({ position, index, side: 'buy' as const })),
-  ].sort((left, right) => {
+    ...positions.map((position, positionIndex) => ({ position, positionIndex, side: 'sell' as const })),
+    ...positions.map((position, positionIndex) => ({ position, positionIndex, side: 'buy' as const })),
+  ].map((row) => {
+    const curve = row.position[row.side]
+    const marginalPrice = Number(curve.runtime.currentMarginalPrice.formatted)
+    const available = Number(curve.runtime.availableOutput.formatted)
+    const quoteDepth = row.side === 'sell'
+      ? available * marginalPrice
+      : available
+    return { ...row, quoteDepth: Number.isFinite(quoteDepth) ? Math.max(quoteDepth, 0) : 0 }
+  }).sort((left, right) => {
     const leftPrice = Number(left.position[left.side].runtime.currentMarginalPrice.formatted)
     const rightPrice = Number(right.position[right.side].runtime.currentMarginalPrice.formatted)
     return rightPrice - leftPrice
   })
+  const maximumQuoteDepth = Math.max(...rows.map((row) => row.quoteDepth), 1)
 
   return (
     <section className="orderbook panel">
@@ -1217,21 +1240,30 @@ function FunctionalOrderBook({
       </header>
       <div className="book-columns"><span>Marginal</span><span>Available</span><span>Range / α</span></div>
       <div className="book-rows">
-        {rows.map(({ position, index, side }) => {
+        {rows.map(({ position, positionIndex, side, quoteDepth }) => {
           const curve = position[side]
           const seriesId = `${position.id}-${side}`
+          const depthWidth = Math.max(8, Math.min(96, (quoteDepth / maximumQuoteDepth) * 96))
           return (
             <button
               key={seriesId}
               className={`book-row ${side} ${selectedId === seriesId ? 'selected' : ''}`}
+              aria-label={`Position P${positionIndex + 1}, ${side} side, maker ${shortAddress(position.maker)}, marginal ${curve.runtime.currentMarginalPrice.formatted}, available ${curve.runtime.availableOutput.formatted} ${curve.runtime.availableOutput.token.symbol}`}
               onMouseEnter={() => onSelect(seriesId)}
               onFocus={() => onSelect(seriesId)}
               onMouseLeave={() => onSelect(null)}
             >
-              <span><strong>{curve.runtime.currentMarginalPrice.formatted}</strong><small>P{index + 1} · {side}</small></span>
+              <span>
+                <strong>{curve.runtime.currentMarginalPrice.formatted}</strong>
+                <small>P{positionIndex + 1} · v{position.runtimeVersion}</small>
+              </span>
               <span><strong>{curve.runtime.availableOutput.formatted}</strong><small>{curve.runtime.availableOutput.token.symbol}</small></span>
               <span><strong>{curve.policy.startPrice.formatted} → {curve.policy.endPrice.formatted}</strong><small>α {curve.policy.alpha}</small></span>
-              <i className="book-depth" style={{ width: `${Math.max(18, 94 - curve.runtime.progressBps / 130)}%` }} />
+              <i
+                className="book-depth"
+                style={{ width: `${depthWidth}%` }}
+                aria-hidden="true"
+              />
             </button>
           )
         })}
@@ -1277,6 +1309,21 @@ function TradeTicket({
   const payToken = side === 'sell' ? view.market.quoteToken : view.market.baseToken
   const receiveToken = side === 'sell' ? view.market.baseToken : view.market.quoteToken
   const fixedToken = kind === 'exact-input' ? payToken : receiveToken
+  const isLiveWritable = view.bootstrap.mode === 'live' && view.bootstrap.features.liveWrites
+  const canExecute = (
+    isLiveWritable
+    && view.bootstrap.features.executeRoutes
+    && quote !== null
+    && !quote.meta.stale
+    && quote.simulation.status === 'success'
+  )
+  const executionLabel = operation.running
+    ? operation.message ?? 'Executing…'
+    : !isLiveWritable
+      ? 'Preview only — live deployment required'
+      : walletAddress === null
+        ? 'Connect wallet & execute'
+        : 'Execute atomic route'
 
   return (
     <aside className="trade-ticket panel">
@@ -1290,9 +1337,9 @@ function TradeTicket({
       </div>
 
       <div className="ticket-body">
-        <div className="segmented-control">
-          <button className={kind === 'exact-input' ? 'active' : ''} onClick={() => setKind('exact-input')}>Exact pay</button>
-          <button className={kind === 'exact-output' ? 'active' : ''} onClick={() => setKind('exact-output')}>Exact receive</button>
+        <div className="segmented-control" role="group" aria-label="Amount mode">
+          <button className={kind === 'exact-input' ? 'active' : ''} onClick={() => setKind('exact-input')} aria-pressed={kind === 'exact-input'}>Exact pay</button>
+          <button className={kind === 'exact-output' ? 'active' : ''} onClick={() => setKind('exact-output')} aria-pressed={kind === 'exact-output'}>Exact receive</button>
         </div>
 
         <label className="amount-field">
@@ -1301,7 +1348,9 @@ function TradeTicket({
             <input value={amount} onChange={(event) => setAmount(event.target.value)} inputMode="decimal" aria-label={`${kind === 'exact-input' ? 'Pay' : 'Receive'} amount`} />
             <strong>{fixedToken.symbol}</strong>
           </div>
-          <small>Available 0.00 {fixedToken.symbol}</small>
+          <small>{view.bootstrap.mode === 'mock'
+            ? 'Demo quote · no wallet balance queried'
+            : `Wallet balance is verified when the ${fixedToken.symbol} approval is prepared`}</small>
         </label>
 
         <div className="route-arrow" aria-hidden="true">↓</div>
@@ -1327,12 +1376,20 @@ function TradeTicket({
 
         <button
           className="primary-action"
-          disabled={!view.bootstrap.features.executeRoutes || quote === null || quoteLoading || operation.running}
-          title={view.bootstrap.features.executeRoutes ? 'Simulate the final route and submit it to your wallet.' : 'Execution is disabled in this environment.'}
+          disabled={!canExecute || quoteLoading || operation.running}
+          title={canExecute
+            ? 'Submit the solver-certified atomic route to your wallet.'
+            : 'Real execution requires a healthy public deployment in live mode.'}
           onClick={onExecute}
         >
-          {operation.running ? operation.message ?? 'Executing…' : walletAddress === null ? 'Connect & execute' : 'Execute route'}
+          {executionLabel}
         </button>
+        {!isLiveWritable ? (
+          <div className="environment-notice" role="status">
+            <strong>Simulation environment</strong>
+            <span>The route is calculated end to end, but no wallet transaction is created from mock state.</span>
+          </div>
+        ) : null}
         {operation.error !== null ? <div className="inline-error" role="alert">{operation.error}</div> : null}
         {operation.error === null && operation.message !== null ? <div className="execution-message">{operation.message}</div> : null}
         <div className="execution-safety">
@@ -1363,9 +1420,9 @@ function PositionTabs({ view, quote }: { view: GatewayView; quote: RouteQuote | 
   return (
     <section className="position-dock panel">
       <div className="dock-tabs" role="tablist">
-        <button className={tab === 'positions' ? 'active' : ''} onClick={() => setTab('positions')} role="tab">Positions <span>{view.positions.length}</span></button>
-        <button className={tab === 'route' ? 'active' : ''} onClick={() => setTab('route')} role="tab">Current route <span>{quote?.fills.length ?? 0}</span></button>
-        <button className={tab === 'activity' ? 'active' : ''} onClick={() => setTab('activity')} role="tab">Activity <span>{view.activity.length}</span></button>
+        <button className={tab === 'positions' ? 'active' : ''} onClick={() => setTab('positions')} role="tab" aria-selected={tab === 'positions'}>Positions <span>{view.positions.length}</span></button>
+        <button className={tab === 'route' ? 'active' : ''} onClick={() => setTab('route')} role="tab" aria-selected={tab === 'route'}>Current route <span>{quote?.fills.length ?? 0}</span></button>
+        <button className={tab === 'activity' ? 'active' : ''} onClick={() => setTab('activity')} role="tab" aria-selected={tab === 'activity'}>Activity <span>{view.activity.length}</span></button>
       </div>
       {tab === 'positions' ? (
         <div className="data-table-wrap">
@@ -1450,7 +1507,7 @@ function TradeView({
   onExecute: () => void
 }) {
   const [selectedCurve, setSelectedCurve] = useState<string | null>(null)
-  const [chartMode, setChartMode] = useState<TradeDepthMode>('positions')
+  const [chartMode, setChartMode] = useState<TradeDepthMode>('aggregate')
   const routePositionIds = new Set(quote?.fills.map((fill) => fill.positionId) ?? [])
   const positionSeries = seriesFromPositions(view.positions, view.market)
   const chartSeries = chartMode === 'aggregate'
@@ -1463,7 +1520,7 @@ function TradeView({
         ))
       : positionSeries
   const chartModeLabel = chartMode === 'aggregate'
-    ? 'NORMALIZED MARKET'
+    ? 'EXECUTABLE MARKET DEPTH'
     : chartMode === 'route'
       ? `${quote?.fills.length ?? 0} QUOTED FILLS`
       : `${view.positions.length} POSITIONS · ${view.positions.length * 2} SIDES`
@@ -1474,10 +1531,10 @@ function TradeView({
       <main className="trade-workspace">
         <section className="trade-chart panel">
           <header className="panel-header chart-panel-header">
-            <div className="panel-tabs">
-              <button className={chartMode === 'positions' ? 'active' : ''} onClick={() => setChartMode('positions')}>Position map</button>
-              <button className={chartMode === 'aggregate' ? 'active' : ''} onClick={() => setChartMode('aggregate')}>Net depth</button>
-              <button className={chartMode === 'route' ? 'active' : ''} onClick={() => setChartMode('route')}>Route geometry</button>
+            <div className="panel-tabs" role="tablist" aria-label="Depth visualization">
+              <button className={chartMode === 'positions' ? 'active' : ''} onClick={() => setChartMode('positions')} role="tab" aria-selected={chartMode === 'positions'}>Position map</button>
+              <button className={chartMode === 'aggregate' ? 'active' : ''} onClick={() => setChartMode('aggregate')} role="tab" aria-selected={chartMode === 'aggregate'}>Net depth</button>
+              <button className={chartMode === 'route' ? 'active' : ''} onClick={() => setChartMode('route')} role="tab" aria-selected={chartMode === 'route'}>Route geometry</button>
             </div>
             <div className="chart-tools">
               <span className="chart-mode-badge">{chartModeLabel}</span>
@@ -1489,7 +1546,7 @@ function TradeView({
             market={view.market}
             selectedId={selectedCurve}
             onSelect={setSelectedCurve}
-            showPositionLabels={chartMode !== 'aggregate'}
+            showPositionLabels={false}
             chartTitle={chartMode === 'route' ? 'Route geometry' : undefined}
             chartSubtitle={chartMode === 'route' ? 'QUOTED POSITIONS · EXECUTION ORDER' : undefined}
             chartAriaLabel={chartMode === 'aggregate'
@@ -1527,15 +1584,13 @@ function MetricCard({
   label,
   value,
   detail,
-  accent,
 }: {
   label: string
   value: string
   detail: string
-  accent?: 'buy' | 'sell'
 }) {
   return (
-    <article className={`metric-card ${accent === undefined ? '' : `metric-${accent}`}`}>
+    <article className="metric-card">
       <span>{label}</span><strong>{value}</strong><small>{detail}</small>
     </article>
   )
@@ -1591,7 +1646,13 @@ function PortfolioView({
           <span className="eyebrow">WALLET REQUIRED / PRIVATE VIEW</span>
           <h1>Your liquidity, tied to your address.</h1>
           <p>Connect a wallet to resolve its positions, inventory ranges and maker activity. Until then, no portfolio data is displayed.</p>
-          <button className="primary-small wallet-gate-action" onClick={onConnect}>Connect wallet</button>
+          <button
+            className="primary-small wallet-gate-action"
+            aria-label={view.bootstrap.mode === 'mock' ? 'Use demo maker for portfolio' : 'Connect wallet for portfolio'}
+            onClick={onConnect}
+          >
+            {view.bootstrap.mode === 'mock' ? 'Use demo maker' : 'Connect wallet'}
+          </button>
           <small>{view.bootstrap.mode === 'mock' ? 'Demo mode connects a seeded maker address.' : `Transactions target ${view.bootstrap.network.name}.`}</small>
         </section>
       </main>
@@ -1607,8 +1668,8 @@ function PortfolioView({
 
       <section className="portfolio-metrics">
         <MetricCard label="Active positions" value={String(walletPositions.length)} detail={`${walletPositions.length * 2} executable curve sides`} />
-        <MetricCard label="Quote inventory" value={`${formatNumber(totalBuy, 0)} ${view.market.quoteToken.symbol}`} detail="Available across buy curves" accent="buy" />
-        <MetricCard label="Base inventory" value={`${formatNumber(totalSell, 2)} ${view.market.baseToken.symbol}`} detail="Available across sell curves" accent="sell" />
+        <MetricCard label="Quote inventory" value={`${formatNumber(totalBuy, 0)} ${view.market.quoteToken.symbol}`} detail="Available across buy curves" />
+        <MetricCard label="Base inventory" value={`${formatNumber(totalSell, 2)} ${view.market.baseToken.symbol}`} detail="Available across sell curves" />
         <MetricCard label="Wallet routed volume" value={`$${formatNumber(routedVolume, 0)}`} detail={`${walletActivity.length} wallet-linked event${walletActivity.length === 1 ? '' : 's'}`} />
       </section>
 
@@ -1620,9 +1681,11 @@ function PortfolioView({
               ? 'Optional normalized envelope for comparing total buy and sell inventory.'
               : 'Every start, end and gap stays visible; no range is joined to another.'}</p>
           </div>
-          <div className="segmented-control compact">
+          <div className="segmented-control compact" role="tablist" aria-label="Portfolio chart mode">
             <button
               className={atlasMode === 'positions' ? 'active' : ''}
+              role="tab"
+              aria-selected={atlasMode === 'positions'}
               onClick={() => {
                 setAtlasMode('positions')
                 setSelectedCurve(null)
@@ -1632,6 +1695,8 @@ function PortfolioView({
             </button>
             <button
               className={atlasMode === 'aggregate' ? 'active' : ''}
+              role="tab"
+              aria-selected={atlasMode === 'aggregate'}
               onClick={() => {
                 setAtlasMode('aggregate')
                 setSelectedCurve(null)
@@ -1682,9 +1747,13 @@ function PortfolioView({
                       className="row-menu"
                       aria-label={`Dock position P${index + 1}`}
                       title="Dock position and release both Aqua allocations"
-                      disabled={operation.running || position.lifecycle !== 'active'}
+                      disabled={
+                        operation.running
+                        || position.lifecycle !== 'active'
+                        || !view.bootstrap.features.liveWrites
+                      }
                       onClick={() => onDock(position)}
-                    >Dock</button>
+                    >{view.bootstrap.features.liveWrites ? 'Dock' : 'Preview'}</button>
                   </td>
                 </tr>
               ))}
@@ -1826,7 +1895,11 @@ function PublishReview({
           disabled={plan?.sendable !== true || loading || operation.running}
           onClick={onExecute}
         >
-          {operation.running ? operation.message ?? 'Publishing…' : plan?.sendable === true ? 'Sign & publish position' : 'Wallet sending disabled'}
+          {operation.running
+            ? operation.message ?? 'Publishing…'
+            : plan?.sendable === true
+              ? 'Sign & publish position'
+              : 'Preview only — publication disabled'}
         </button>
         {operation.error !== null ? <div className="inline-error" role="alert">{operation.error}</div> : null}
         <small className="modal-footnote">Each step is enabled only after the previous transaction receipt is confirmed.</small>
@@ -1932,10 +2005,14 @@ function MakerStudio({
       <div className="studio-workspace">
         <section className="studio-visual panel">
           <header className="panel-header">
-            <div className="panel-tabs"><button className="active">Shape field</button><button disabled>Execution curve</button><button disabled>Previous vs draft</button></div>
-            <div className="segmented-control compact">
+            <div className="panel-tabs" role="tablist" aria-label="Composer visualization">
+              <button className="active" role="tab" aria-selected="true">Shape field</button>
+              <button disabled role="tab" aria-selected="false">Execution curve</button>
+              <button disabled role="tab" aria-selected="false">Previous vs draft</button>
+            </div>
+            <div className="segmented-control compact" role="tablist" aria-label="Visible curve sides">
               {(['all', 'buy', 'sell'] as CurveFilter[]).map((item) => (
-                <button key={item} className={chartSide === item ? 'active' : ''} onClick={() => setChartSide(item)}>{item === 'all' ? 'Both' : item}</button>
+                <button key={item} className={chartSide === item ? 'active' : ''} onClick={() => setChartSide(item)} role="tab" aria-selected={chartSide === item}>{item === 'all' ? 'Both' : item}</button>
               ))}
             </div>
           </header>
@@ -1958,7 +2035,15 @@ function MakerStudio({
             <div><span>Required approvals</span><strong>2 assets</strong></div>
             <div><span>Network</span><strong>{view.bootstrap.network.name}</strong></div>
           </div>
-          <button className="primary-action publish-button" disabled={preview?.canPublish !== true || previewLoading} onClick={() => void openReview()}>Review position</button>
+          {view.bootstrap.mode === 'mock' ? (
+            <div className="environment-notice studio-notice">
+              <strong>Draft simulation</strong>
+              <span>Curve math is previewed locally. Publishing needs a healthy public deployment and a real wallet.</span>
+            </div>
+          ) : null}
+          <button className="primary-action publish-button" disabled={preview?.canPublish !== true || previewLoading} onClick={() => void openReview()}>
+            {view.bootstrap.features.publishPosition ? 'Review position' : 'Review transaction preview'}
+          </button>
           <p className="control-footnote">The field maps remaining inventory against each side’s exact compiled price range.</p>
         </aside>
       </div>
@@ -2001,6 +2086,23 @@ async function loadGateway(signal?: AbortSignal): Promise<GatewayView> {
     protocolClient.listActivity({ marketId: firstMarket.id }, options),
   ])
   return { bootstrap, market, positions: positions.items, activity: activity.items }
+}
+
+async function waitForIndexedGateway(
+  targetBlock: number,
+  onWaiting: (indexedBlock: number | null) => void,
+): Promise<{ view: GatewayView; indexed: boolean }> {
+  const deadline = Date.now() + 75_000
+  let latest = await loadGateway()
+  while ((latest.market.meta.indexedBlock ?? -1) < targetBlock && Date.now() < deadline) {
+    onWaiting(latest.market.meta.indexedBlock)
+    await new Promise((resolve) => window.setTimeout(resolve, 1_500))
+    latest = await loadGateway()
+  }
+  return {
+    view: latest,
+    indexed: (latest.market.meta.indexedBlock ?? -1) >= targetBlock,
+  }
 }
 
 function App() {
@@ -2112,14 +2214,30 @@ function App() {
     if (view === null) return
     setOperation({ running: true, message: 'Waiting for wallet…', error: null })
     try {
-      const hashes = await executeTransactionPlan(plan, account, view.bootstrap, (progressValue) => {
+      const receipts = await executeTransactionPlan(plan, account, view.bootstrap, (progressValue) => {
         const position = `${progressValue.index + 1}/${progressValue.total}`
         const phase = progressValue.state === 'awaiting-signature' ? 'Sign' : progressValue.state === 'confirming' ? 'Confirming' : 'Confirmed'
         setOperation({ running: true, message: `${phase} ${position}: ${progressValue.step.title}`, error: null })
       })
-      setOperation({ running: true, message: 'Refreshing indexed protocol state…', error: null })
-      setView(await loadGateway())
-      setOperation({ running: false, message: `${hashes.length} transaction${hashes.length === 1 ? '' : 's'} confirmed.`, error: null })
+      const targetBlock = Math.max(...receipts.map((receipt) => receipt.blockNumber))
+      setOperation({ running: true, message: `Waiting for indexed state at block ${targetBlock.toLocaleString()}…`, error: null })
+      const refreshed = await waitForIndexedGateway(targetBlock, (indexedBlock) => {
+        setOperation({
+          running: true,
+          message: indexedBlock === null
+            ? `Transactions confirmed · waiting for block ${targetBlock.toLocaleString()}…`
+            : `Transactions confirmed · index ${indexedBlock.toLocaleString()} → ${targetBlock.toLocaleString()}…`,
+          error: null,
+        })
+      })
+      setView(refreshed.view)
+      setOperation({
+        running: false,
+        message: refreshed.indexed
+          ? `${receipts.length} transaction${receipts.length === 1 ? '' : 's'} confirmed and curves rescaled.`
+          : `${receipts.length} transaction${receipts.length === 1 ? '' : 's'} confirmed; indexer is still catching up.`,
+        error: null,
+      })
     } catch (caught) {
       setOperation({ running: false, message: null, error: caught instanceof Error ? caught.message : 'Transaction failed.' })
     }
@@ -2183,7 +2301,7 @@ function App() {
       onWalletToggle={toggleWallet}
       bootstrap={view.bootstrap}
     >
-      {activeView === 'home' ? <LandingView view={view} onNavigate={navigate} /> : null}
+      {activeView === 'home' ? <LandingView onNavigate={navigate} /> : null}
       {activeView === 'trade' ? (
         <TradeView
           view={view}
@@ -2223,7 +2341,7 @@ function App() {
           onExecutePlan={executePlan}
         />
       ) : null}
-      <div className="global-statusbar">
+      <div className="global-statusbar" role="status" aria-live="polite">
         <span><i className="status-dot" /> {view.bootstrap.mode} solver {view.bootstrap.meta.stale ? 'degraded' : 'online'}</span>
         <span>ARC / FIELD 01</span><span>{view.bootstrap.protocolVersion}</span>
         <span>{operation.error ?? operation.message ?? (view.bootstrap.features.liveWrites ? 'Writes enabled' : 'Writes safely disabled')}</span>

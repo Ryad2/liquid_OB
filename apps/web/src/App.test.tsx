@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import App from './App'
+import appStyles from './App.css?raw'
 
 describe('ArcBook product frontend', () => {
   it('renders the functional order book through the stable client', async () => {
@@ -14,8 +15,16 @@ describe('ArcBook product frontend', () => {
     expect(screen.getByRole('heading', { name: /curve book/i })).toBeInTheDocument()
     expect(screen.getByRole('tab', { name: /pay usdc/i })).toBeInTheDocument()
     expect(screen.getByText(/writes safely disabled/i)).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /aggregated market/i })).toBeInTheDocument()
+    expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
+    const depthWidths = [...container.querySelectorAll<HTMLElement>('.book-depth')]
+      .map((bar) => Number.parseFloat(bar.style.width))
+    expect(depthWidths.every((width) => Number.isFinite(width) && width >= 8 && width <= 96)).toBe(true)
+    expect(new Set(depthWidths.map(Math.round)).size).toBeGreaterThan(3)
+
+    fireEvent.click(screen.getByRole('tab', { name: /position map/i }))
     expect(screen.getByRole('img', { name: /every market position/i })).toBeInTheDocument()
-    expect(screen.getByText('P1 · B')).toBeInTheDocument()
+    expect(screen.queryByText('P1 · B')).not.toBeInTheDocument()
     expect(container.querySelectorAll('.curve-path')).toHaveLength(10)
     const positionStartHeights = [...container.querySelectorAll<SVGPathElement>('.curve-path')]
       .map((path) => Number(path.getAttribute('d')?.match(/^M [\d.]+ ([\d.]+)/)?.[1]))
@@ -23,14 +32,14 @@ describe('ArcBook product frontend', () => {
       .map((height) => Math.round(height))
     expect(new Set(positionStartHeights).size).toBeGreaterThan(3)
 
-    fireEvent.click(screen.getByRole('button', { name: /net depth/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /net depth/i }))
     expect(await screen.findByRole('img', { name: /aggregated market/i })).toBeInTheDocument()
     expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
-    const aggregateStartHeights = [...container.querySelectorAll<SVGPathElement>('.curve-path')]
-      .map((path) => Number(path.getAttribute('d')?.match(/^M [\d.]+ ([\d.]+)/)?.[1]))
-    expect(aggregateStartHeights[0]).not.toBe(aggregateStartHeights[1])
+    const aggregatePaths = [...container.querySelectorAll<SVGPathElement>('.curve-path')]
+      .map((path) => path.getAttribute('d'))
+    expect(aggregatePaths[0]).not.toBe(aggregatePaths[1])
 
-    fireEvent.click(screen.getByRole('button', { name: /route geometry/i }))
+    fireEvent.click(screen.getByRole('tab', { name: /route geometry/i }))
     await waitFor(() => {
       expect(screen.getByRole('img', { name: /selected by the current quote/i })).toBeInTheDocument()
       expect(container.querySelectorAll('.curve-path').length).toBeGreaterThan(0)
@@ -45,8 +54,12 @@ describe('ArcBook product frontend', () => {
     expect(
       await screen.findByRole('heading', { name: /shape the book/i }),
     ).toBeInTheDocument()
-    expect(screen.getAllByRole('img', { name: 'ArcBook' })).toHaveLength(2)
-    expect(screen.getByText('ARCBOOK FIELD')).toBeInTheDocument()
+    expect(screen.getAllByRole('img', { name: 'ArcBook' })).toHaveLength(1)
+    expect(screen.getByText('CURVE-NATIVE ORDER BOOK ARCHITECTURE')).toBeInTheDocument()
+    expect(screen.queryByText('ARCBOOK FIELD')).not.toBeInTheDocument()
+    expect(appStyles).not.toMatch(
+      /\.hero-canvas-wrap::after\s*\{[^}]*content:\s*['"]ARCBOOK['"]/,
+    )
     expect(screen.queryByText('WETH–USDC')).not.toBeInTheDocument()
     expect(screen.getByRole('slider', { name: /landing curve alpha/i })).toHaveValue('4.2')
 
@@ -117,15 +130,26 @@ describe('ArcBook product frontend', () => {
     ).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Position map' })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }))
+    fireEvent.click(screen.getByRole('button', { name: /demo maker for portfolio/i }))
 
     expect(await screen.findByRole('heading', { name: 'Position map' })).toBeInTheDocument()
     expect(screen.getByText('3 total')).toBeInTheDocument()
     expect(container.querySelectorAll('.curve-path')).toHaveLength(6)
-    expect(screen.getByText('P1 · B')).toBeInTheDocument()
-    expect(screen.getByText('P3 · S')).toBeInTheDocument()
+    expect(container.querySelectorAll('.position-curve-label')).toHaveLength(0)
+    const metricCards = [...container.querySelectorAll<HTMLElement>('.metric-card')]
+    expect(metricCards).toHaveLength(4)
+    expect(metricCards.every((card) => (
+      !card.classList.contains('metric-buy')
+      && !card.classList.contains('metric-sell')
+    ))).toBe(true)
 
-    fireEvent.click(screen.getByRole('button', { name: /net depth/i }))
+    const firstCurveTarget = container.querySelector<SVGPathElement>('.curve-hit-area')
+    expect(firstCurveTarget).not.toBeNull()
+    fireEvent.focus(firstCurveTarget as SVGPathElement)
+    expect(screen.getByText(/P1 · buy/i)).toBeInTheDocument()
+    expect(screen.getByText(/^9800 USDC · 9,800 USDC eq\.$/i)).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('tab', { name: /net depth/i }))
     expect(await screen.findByRole('heading', { name: 'Net depth' })).toBeInTheDocument()
     expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
   })

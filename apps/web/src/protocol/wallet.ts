@@ -25,6 +25,11 @@ export interface TransactionProgress {
   transactionHash: `0x${string}` | null
 }
 
+export interface ConfirmedTransaction {
+  hash: `0x${string}`
+  blockNumber: number
+}
+
 declare global {
   interface Window {
     ethereum?: EthereumProvider
@@ -55,11 +60,11 @@ export async function executeTransactionPlan(
   account: Address,
   bootstrap: FrontendBootstrap,
   onProgress?: (progress: TransactionProgress) => void,
-): Promise<`0x${string}`[]> {
+): Promise<ConfirmedTransaction[]> {
   if (!plan.sendable || plan.mode !== 'live') throw new Error('This transaction plan is not sendable.')
   const provider = requireProvider()
   await ensureChain(provider, bootstrap)
-  const hashes: `0x${string}`[] = []
+  const receipts: ConfirmedTransaction[] = []
   for (const [index, transactionStep] of plan.steps.entries()) {
     assertTransaction(transactionStep.transaction, account, bootstrap.network.chainId)
     onProgress?.({ step: transactionStep, index, total: plan.steps.length, state: 'awaiting-signature', transactionHash: null })
@@ -68,12 +73,12 @@ export async function executeTransactionPlan(
       params: [rpcTransaction(transactionStep.transaction)],
     })
     const hash = transactionHash(result)
-    hashes.push(hash)
     onProgress?.({ step: transactionStep, index, total: plan.steps.length, state: 'confirming', transactionHash: hash })
-    await waitForReceipt(provider, hash)
+    const blockNumber = await waitForReceipt(provider, hash)
+    receipts.push({ hash, blockNumber })
     onProgress?.({ step: transactionStep, index, total: plan.steps.length, state: 'confirmed', transactionHash: hash })
   }
-  return hashes
+  return receipts
 }
 
 export function watchInjectedWallet(
@@ -119,13 +124,23 @@ async function ensureChain(provider: EthereumProvider, bootstrap: FrontendBootst
   }
 }
 
-async function waitForReceipt(provider: EthereumProvider, hash: `0x${string}`): Promise<void> {
+async function waitForReceipt(provider: EthereumProvider, hash: `0x${string}`): Promise<number> {
   const deadline = Date.now() + 180_000
   while (Date.now() < deadline) {
     const value = await provider.request({ method: 'eth_getTransactionReceipt', params: [hash] })
     if (value !== null && typeof value === 'object') {
-      const status = (value as { status?: unknown }).status
-      if (status === '0x1' || status === '0x01') return
+      const receipt = value as { status?: unknown; blockNumber?: unknown }
+      const status = receipt.status
+      if (status === '0x1' || status === '0x01') {
+        if (typeof receipt.blockNumber !== 'string' || !/^0x[0-9a-fA-F]+$/.test(receipt.blockNumber)) {
+          throw new Error(`Transaction ${hash} returned no valid receipt block.`)
+        }
+        const blockNumber = Number(BigInt(receipt.blockNumber))
+        if (!Number.isSafeInteger(blockNumber)) {
+          throw new Error(`Transaction ${hash} receipt block exceeds the supported range.`)
+        }
+        return blockNumber
+      }
       if (status === '0x0' || status === '0x00') throw new Error(`Transaction ${hash} reverted.`)
     }
     await new Promise((resolve) => setTimeout(resolve, 1_500))

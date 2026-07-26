@@ -11,6 +11,7 @@ const account = '0x0000000000000000000000000000000000000010' as Address
 const target = '0x0000000000000000000000000000000000000020' as Address
 const hashA = `0x${'11'.repeat(32)}` as const
 const hashB = `0x${'22'.repeat(32)}` as const
+const receiptBlock = 1_234
 
 const bootstrap: FrontendBootstrap = {
   protocolName: 'ArcBook',
@@ -59,7 +60,9 @@ class Provider implements EthereumProvider {
     }
     if (request.method === 'eth_requestAccounts' || request.method === 'eth_accounts') return [account]
     if (request.method === 'eth_sendTransaction') return this.sends++ === 0 ? hashA : hashB
-    if (request.method === 'eth_getTransactionReceipt') return { status: '0x1' }
+    if (request.method === 'eth_getTransactionReceipt') {
+      return { status: '0x1', blockNumber: `0x${receiptBlock.toString(16)}` }
+    }
     throw new Error(`Unexpected ${request.method}`)
   }
 }
@@ -82,7 +85,10 @@ describe('injected wallet adapter', () => {
     provider.chainId = '0x14a34'
     window.ethereum = provider
 
-    await expect(executeTransactionPlan(plan(), account, bootstrap)).resolves.toEqual([hashA, hashB])
+    await expect(executeTransactionPlan(plan(), account, bootstrap)).resolves.toEqual([
+      { hash: hashA, blockNumber: receiptBlock },
+      { hash: hashB, blockNumber: receiptBlock },
+    ])
     expect(provider.calls).toEqual([
       'eth_chainId',
       'eth_sendTransaction', 'eth_getTransactionReceipt',

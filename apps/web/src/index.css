@@ -1,9 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  color: #edf0ff;
-  background: #070914;
-  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-ui: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-data: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+  color: #f8fafc;
+  background: #07090e;
+  font-family: var(--font-ui);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,7 +19,7 @@ html {
   min-width: 320px;
   min-height: 100%;
   overflow-x: clip;
-  background: #070914;
+  background: #07090e;
   scroll-behavior: smooth;
 }
 body {
@@ -25,8 +28,15 @@ body {
   min-height: 100vh;
   overflow-x: clip;
   overscroll-behavior-x: none;
+  font-size: 14px;
+  line-height: 1.5;
+}
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  text-wrap: balance;
 }
 button, input, select { color: inherit; font: inherit; }
+input::placeholder { color: #64748b; }
 button { cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: not-allowed; }
 button:focus-visible,
@@ -34,9 +44,9 @@ input:focus-visible,
 select:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid #62d9ff;
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
-::selection { color: #070914; background: #a99dff; }
+::selection { color: #07090e; background: #a99dff; }
 
 * {
   scrollbar-color: rgba(169, 157, 255, .34) rgba(255, 255, 255, .025);
