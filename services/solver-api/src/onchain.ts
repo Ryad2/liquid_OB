@@ -130,7 +130,7 @@ export class ViemChainGateway implements ChainGateway {
         abi: lensAbi,
         functionName: 'getPosition',
         args: [position],
-      }) as unknown as LensPositionSnapshot
+      } as never) as unknown as LensPositionSnapshot
     } catch (error) {
       throw new ApiError(
         'RPC_UNAVAILABLE',
@@ -152,7 +152,7 @@ export class ViemChainGateway implements ChainGateway {
           strategyHash: candidate.strategyHash,
           strategy: candidate.strategy,
         }))],
-      }) as unknown as readonly LensPositionSnapshot[]
+      } as never) as unknown as readonly LensPositionSnapshot[]
 
       return candidates.map((candidate, index) => refreshCandidate(candidate, snapshots[index]!))
     } catch (error) {
@@ -201,11 +201,11 @@ export class ViemChainGateway implements ChainGateway {
         ? await this.#client.multicall({
             allowFailure: false,
             contracts: contracts.map((contract) => ({ ...contract, functionName: 'quoteExactInput' as const })),
-          })
+          } as never)
         : await this.#client.multicall({
             allowFailure: false,
             contracts: contracts.map((contract) => ({ ...contract, functionName: 'quoteExactOutput' as const })),
-          })
+          } as never)
       // Viem cannot preserve tuple output inference across a dynamically sized contract list.
       quotes = result as unknown as readonly OnchainPositionQuote[]
     } catch (error) {
