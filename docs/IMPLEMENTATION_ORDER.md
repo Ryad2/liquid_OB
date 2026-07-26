@@ -2,6 +2,11 @@
 
 Status: normative development sequence for the complete hackathon product.
 
+Implementation update, 26 July 2026: phases 1 through 15 are implemented and
+locally verified. Phase 16 has automated local/container/release gates but still
+requires a real public deployment and browser run. Phase 17 consists of owner-
+controlled licensing, hosting, media and submission actions.
+
 This document answers **what to build next, in what order, and what must pass
 before moving forward**. Product semantics remain in `PRODUCT_SPEC.md`, math in
 `MATH_SPEC.md`, and module boundaries in `ARCHITECTURE.md`.
@@ -566,6 +571,12 @@ Subgraph, and solver API.
 
 ## 18. Phase 15: Build The Reusable Graph MCP Artifact
 
+Implementation status: completed locally on 26 July 2026. The service exposes
+all four tools through stdio and stateless Streamable HTTP, consumes live Liquid
+OB routes, optionally composes a standardized DEX AMM Subgraph, and labels
+indexed estimates as non-executable. Public endpoint and tool video remain
+Phase 16/17 evidence.
+
 This phase begins only after the native Subgraph and solver are real.
 
 ### Work
@@ -680,17 +691,10 @@ Each commit below must pass the complete available suite:
 
 ## 23. Immediate Next Action
 
-The next implementation prompt should begin **Phase 4C only**:
+No protocol implementation phase remains before public integration. The next
+action is to select the root license, configure the protected `testnet`
+environment, run `.github/workflows/deploy-testnet.yml`, review and merge its
+manifest PR, then deploy the Subgraph and three release images. Finish by
+running `pnpm release:verify` from an environment containing only public URLs.
 
-1. implement buy-side displayed-to-native bounds directly;
-2. implement sell-side reciprocal endpoint conversion and alpha sign change;
-3. derive `betaNative = alphaNative - 1` without narrowing or overflow;
-4. select and canonicalize the exact equal-endpoint flat branch;
-5. derive deterministic `mu` and `kappa` commitments while using the Phase 4B
-   intervals to reject nonpositive, overflowed, or numerically ambiguous
-   configurations;
-6. compare every compiler branch and rejected domain against the independent
-   Phase 3 vectors.
-
-Do not implement coordinate functions, exact-input/output swap maps, or
-two-sided transitions until `CurveCompiler` passes independently.
+Do not add another protocol feature before this public vertical slice passes.

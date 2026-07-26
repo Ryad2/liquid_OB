@@ -5,13 +5,16 @@ import { isAddress, isHex, type Address, type Hex } from 'viem'
 import { z } from 'zod'
 
 import { ApiError, normalizeError } from './errors.js'
+import { HttpMetrics } from './metrics.js'
 import type { RouteRequest } from './types.js'
 
 const bodySchema = z.object({
   marketId: z.string(),
   side: z.enum(['sell', 'buy']),
   kind: z.enum(['exact-input', 'exact-output']),
-  amount: z.string().regex(/^\d+$/),
+  amount: z.string().min(1).max(78).regex(/^\d+$/)
+    .refine((value) => BigInt(value) > 0n, 'amount must be positive')
+    .refine((value) => BigInt(value) <= (1n << 256n) - 1n, 'amount exceeds uint256'),
   slippageBps: z.number().int().min(0).max(1_000),
   payer: z.string(),
   recipient: z.string().optional(),
@@ -54,6 +57,8 @@ export interface ServerOptions {
 }
 
 export async function buildServer(options: ServerOptions) {
+  const metrics = new HttpMetrics()
+  const starts = new WeakMap<object, bigint>()
   const server = Fastify({
     logger: options.logger ?? false,
     bodyLimit: 64 * 1024,
@@ -63,15 +68,41 @@ export async function buildServer(options: ServerOptions) {
     origin: options.corsOrigins?.length ? options.corsOrigins : false,
     methods: ['GET', 'POST'],
   })
+  server.addHook('onRequest', async (request, reply) => {
+    starts.set(request, process.hrtime.bigint())
+    void reply.headers({
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'DENY',
+      'referrer-policy': 'no-referrer',
+    })
+  })
+  server.addHook('onResponse', async (request, reply) => {
+    const started = starts.get(request)
+    if (started === undefined) return
+    const route = request.routeOptions.url ?? 'unknown'
+    metrics.observe(request.method, route, reply.statusCode, Number(process.hrtime.bigint() - started) / 1e9)
+  })
 
   server.get('/', async () => ({
     service: 'Liquid OB Solver API',
     version: 1,
     endpoints: [
       '/v1/health', '/v1/bootstrap', '/v1/markets', '/v1/positions',
-      '/v1/activity', '/v1/quote', '/v1/route',
+      '/v1/activity', '/v1/quote', '/v1/route', '/livez', '/readyz', '/metrics',
     ],
   }))
+  server.get('/livez', async () => ({ status: 'alive', uptimeSeconds: Math.floor(process.uptime()) }))
+  server.get('/readyz', async (request) => {
+    const health = await options.service.health(request.signal)
+    if (!healthy(health)) throw new ApiError('SUBGRAPH_UNAVAILABLE', 503, 'Solver dependencies are not ready')
+    if (options.product !== undefined) await options.product.bootstrap(request.signal)
+    return { status: 'ready' }
+  })
+  server.get('/metrics', async (_request, reply) => {
+    void reply.type('text/plain; version=0.0.4; charset=utf-8')
+    return metrics.render()
+  })
   server.get('/v1/health', async (request) => toJson(await options.service.health(request.signal)))
   server.get('/v1/bootstrap', async (request) => toJson(await requireProduct(options).bootstrap(request.signal)))
   server.get('/v1/markets', async (request) => {
@@ -134,6 +165,10 @@ export async function buildServer(options: ServerOptions) {
     })
   })
   return server
+}
+
+function healthy(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && (value as { status?: unknown }).status === 'healthy'
 }
 
 function requireProduct(options: ServerOptions): NonNullable<ServerOptions['product']> {

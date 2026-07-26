@@ -520,9 +520,10 @@ This stateless service orchestrates, but never settles, an order:
 7. return transparent route details, indexed block, chain-head block, and
    unsigned calldata.
 
-Suggested endpoints are `POST /quote`, `POST /route`, and `GET /health`. Any
-caller may reproduce or replace this service. Contracts never authenticate a
-preferred solver.
+Implemented endpoints are `POST /v1/quote`, `POST /v1/route`, product read
+routes under `/v1`, and `/livez`, `/readyz`, `/metrics`. Any caller may
+reproduce or replace this service. Contracts never authenticate a preferred
+solver.
 
 ### 8.2 `services/liquidity-mcp`
 
@@ -889,6 +890,7 @@ contracts/
 
 packages/
   frontend-api/             stable UI gateway and deterministic mock
+  frontend-live/            manifest-validated live gateway and tx plans
   curve-math/               exact TypeScript math mirror
   position-sdk/             strategy and Aqua lifecycle SDK
   contracts/                generated ABIs and deployment clients

@@ -13,6 +13,7 @@
     "generate:check": "node scripts/generate-abis.mjs --check",
     "lint": "oxlint src scripts",
     "manifest": "node scripts/create-manifest.mjs",
+    "verify:deployment": "node scripts/verify-deployment.mjs",
     "test": "vitest run"
   },
   "dependencies": {

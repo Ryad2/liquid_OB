@@ -13,9 +13,11 @@ settlement. Exact-input and exact-output fills update a versioned two-sided
 runtime and immediately recycle incoming inventory into the opposite curve.
 The demo-scoped security gate covers adversarial route validation and atomic
 rollback. Deployment tooling, generated ABIs, a deterministic multi-maker
-solver, native Subgraph, stateless solver API and ArcBook product UI are
-implemented and locally tested. It does **not** yet have public contract,
-Subgraph or API deployments, nor a live wallet/frontend adapter.
+solver, native Subgraph, stateless solver API, live frontend adapter, wallet
+transaction state machine, ArcBook UI and reusable Graph-backed MCP service are
+implemented and locally tested. Deployment verification, container builds,
+health/metrics probes and a strict public release smoke gate are also present.
+It does **not** yet have public contract, Subgraph, API, MCP or web deployments.
 
 The current repository is ready for public test deployment integration. It is
 not safe for real funds or production claims, and mock UI state must not be
@@ -43,23 +45,29 @@ presented as live protocol state.
 | Deterministic solver | Pure `@liquid-ob/solver-core` exact-input/output optimizer with capacity clipping, stable tie-breaks, fill bounds and reserve shortlist | A complete indexed market snapshot can be converted into a reproducible best-execution certificate without RPC or hidden state |
 | Native Subgraph | Protocol entities and Aqua/Router/BatchExecutor mappings, canonical strategy decoder, pagination queries and Matchstick lifecycle tests | Published positions, allocations, recycled sides, fills, routes and snapshots can be discovered at a declared indexed block |
 | Solver API | Fastify Graph-to-solver-to-Lens-to-Quoter pipeline with freshness gates, calldata encoding and final `eth_call`/gas simulation | An untrusted stateless service can return unsigned, version-bound BatchExecutor routes while settlement remains authoritative onchain |
+| Product read API | Bootstrap, markets, positions, details and activity endpoints pinned to one indexed Graph block with Lens reconciliation | The product can render coherent live state without querying GraphQL or RPC directly from components |
 | Frontend contract | `@liquid-ob/frontend-api` types, amount helpers, client interface and stable errors | UI can be built without importing unfinished ABIs or backend transports |
 | Frontend mock | Three makers, market/position/activity reads, maker preview, exact-in/out routes and transaction plans | Every major screen can be developed with deterministic data |
-| ArcBook product UI | Responsive landing, functional order book, route ticket, portfolio and curve composer consuming one `LiquidOBFrontendClient` | Product UX is integrated without coupling React components to unfinished transports |
+| Live frontend adapter | `@liquid-ob/frontend-live` runtime schemas, manifest/API reconciliation, exact preview, Aqua publication, execution and dock/replace plans | Live mode fails closed on stale/mismatched infrastructure and emits only deployment-bound transaction plans |
+| Wallet and ArcBook UI | EIP-1193 connect/switch/send/receipt flow plus responsive landing, order book, route ticket, portfolio and curve composer | A connected user can publish, execute and dock through the same product gateway without component-level ABI coupling |
+| Executable Liquidity MCP | Four read-only MCP tools over stdio and stateless Streamable HTTP, with Liquid OB simulation and optional standardized DEX Graph evidence | Agents can discover and reason over curve liquidity while executable and merely indexed evidence remain explicitly distinct |
+| Release operations | Non-root API/MCP/web images, Compose, testnet/Subgraph/image workflows, probes, metrics, bytecode verifier and public zero-localhost gate | The same tested artifacts can be promoted without hand-editing addresses or accepting mock/local dependencies |
 
 ## What Is Not Implemented Yet
 
 | Dependency order | Missing deliverable | Blocks |
 | ---: | --- | --- |
-| 1 | Public contract deployment, explorer verification and committed live manifest | Any live frontend mode |
-| 2 | Public Subgraph deployment and hosted solver API configuration | Public best-execution and discovery endpoints |
-| 3 | Live `LiquidOBFrontendClient`, wallet transport and receipt state machine | End-to-end public product actions |
-| 4 | Public seeded market, browser E2E and zero-localhost acceptance run | Reliable judging demo |
-| 5 | Graph MCP/monitoring, videos and submission evidence | Sponsor/finalist completion |
+| 1 | Choose a compatible root open-source license | Public sponsor/finalist eligibility |
+| 2 | Run the protected testnet deployment workflow, verify explorers and merge its generated manifest | Public writes and immutable deployment identity |
+| 3 | Deploy the Subgraph; host API, MCP and web images behind HTTPS | Public discovery, routing and product access |
+| 4 | Seed three positions and pass `pnpm release:verify` plus clean-browser wallet E2E twice | Reliable zero-localhost judging demo |
+| 5 | Complete firsthand `FEEDBACK.md`, sponsor form, screenshots, video and submission links | Sponsor/finalist submission |
+| 6 | Obtain independent security review before using assets of value | Any production or real-funds claim |
 
 ## Current User-Visible Capabilities
 
-The frontend mock can currently demonstrate:
+ArcBook can demonstrate all screens against deterministic mock state. With a
+valid public environment, the same composition root additionally supports:
 
 - market cards, bid/ask spread, block freshness and service health;
 - positions with sell and buy curves, signed alpha, flat branches, reserves,
@@ -70,6 +78,9 @@ The frontend mock can currently demonstrate:
 - maker draft validation and marginal schedule sampling;
 - publish, execute, dock and replacement transaction step UX;
 - position and route activity feeds.
+- wallet network switching and ordered approval/publication/execution/dock
+  transactions with receipt/revert handling;
+- manifest/API/chain agreement checks and fail-closed live feature flags.
 
 These are **frontend contracts and deterministic fixtures**, not live economic
 results. Mock Holder samples use JavaScript `Number` for visualization. Mock
@@ -91,13 +102,11 @@ transaction plans are deliberately `sendable: false`.
 - Immutable publish, full dock and dock-plus-republish replacement flow.
 - Source/freshness metadata and feature-gated actions.
 
-### Still Provisional Behind The Adapter
+### Deployment-Specific
 
 - Final public contract addresses, deployment block and chain profile.
-- Accepted EVM transcendental domains and final gas limits.
-- Solver HTTP versus browser deployment choice.
 - Public Subgraph/API endpoints and deployment-specific pagination limits.
-- Wallet library and UI component framework choices.
+- Public MCP and web URLs, Graph deployment ID and transaction evidence.
 
 Changing a provisional item must only require a live-adapter change. If it
 requires rewriting product components, the frontend boundary has been broken.
@@ -110,16 +119,18 @@ requires rewriting product components, the frontend boundary has been broken.
    address differ; deployment configuration must inject the audited address.
 3. Single- and multi-position curve settlement are proven locally but have not
    yet run on a public network.
-4. The Subgraph and solver API exist in source but have no public endpoints;
-   the ArcBook UI therefore still fails closed to its labelled mock mode.
+4. The Subgraph, solver API, MCP and web app exist in source but have no
+   recorded public endpoints; ArcBook live mode therefore cannot yet satisfy
+   the zero-localhost gate.
 5. No external security audit exists. Current software must use valueless demo
    assets only even after a public test deployment.
 6. A successful local or mock demo does not satisfy ETHGlobal's live finalist
    gate.
 
-## Definition Of Backend-Ready For Frontend Switch
+## Definition Of Public Live Readiness
 
-The frontend remains in mock mode until all items below are true:
+Build-time live support is complete. Enable it for the submitted application
+only when all items below are true:
 
 - contract ABI and strategy encoding freeze;
 - public deployment manifest validates against the expected chain;

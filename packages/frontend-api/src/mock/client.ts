@@ -876,7 +876,7 @@ export class MockLiquidOBClient implements LiquidOBFrontendClient {
       steps,
       warnings: [
         'Mock calldata is a UI fixture and must never be submitted to a wallet.',
-        'Switch to the future live adapter only after deployment manifests and ABI generation.',
+        'Switch to live mode only with a validated public manifest and healthy live services.',
       ],
       meta: this.meta(),
     }

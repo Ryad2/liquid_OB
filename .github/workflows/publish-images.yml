@@ -1,0 +1,60 @@
+name: Publish release images
+
+on:
+  workflow_dispatch:
+    inputs:
+      chain_id:
+        required: true
+        default: "84532"
+      public_rpc_url:
+        required: true
+      manifest_url:
+        required: true
+      solver_url:
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Build and publish API, MCP, and web
+        shell: bash
+        env:
+          CHAIN_ID: ${{ inputs.chain_id }}
+          PUBLIC_RPC_URL: ${{ inputs.public_rpc_url }}
+          MANIFEST_URL: ${{ inputs.manifest_url }}
+          SOLVER_URL: ${{ inputs.solver_url }}
+        run: |
+          set -euo pipefail
+          namespace="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}"
+          api_image="$namespace/liquid-ob-solver-api"
+          mcp_image="$namespace/liquid-ob-liquidity-mcp"
+          web_image="$namespace/liquid-ob-web"
+          docker build -f services/solver-api/Dockerfile \
+            -t "$api_image:$GITHUB_SHA" -t "$api_image:latest" .
+          docker build -f services/liquidity-mcp/Dockerfile \
+            -t "$mcp_image:$GITHUB_SHA" -t "$mcp_image:latest" .
+          docker build -f apps/web/Dockerfile \
+            --build-arg VITE_PROTOCOL_MODE=live \
+            --build-arg VITE_CHAIN_ID="$CHAIN_ID" \
+            --build-arg VITE_PUBLIC_RPC_URL="$PUBLIC_RPC_URL" \
+            --build-arg VITE_DEPLOYMENT_MANIFEST_URL="$MANIFEST_URL" \
+            --build-arg VITE_SOLVER_URL="$SOLVER_URL" \
+            -t "$web_image:$GITHUB_SHA" -t "$web_image:latest" .
+          docker push --all-tags "$api_image"
+          docker push --all-tags "$mcp_image"
+          docker push --all-tags "$web_image"

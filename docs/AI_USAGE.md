@@ -208,8 +208,9 @@ design decision, mathematical assumption, test, and submitted line of code.
   deterministic mock markets/positions/routes, maker preview, unsendable
   transaction plans, package tests, and a web integration harness.
 - Decision: frontend components consume one product gateway and never import
-  fixtures, provisional ABIs or transport clients. The future live adapter
-  replaces only the composition root and may not silently fall back to mock.
+  fixtures, provisional ABIs or transport clients. The then-planned live
+  adapter would replace only the composition root and may not silently fall
+  back to mock.
 - Human review required: final screen design, wallet stack, live adapter,
   deployment manifest, exact SDK math, service URLs and every enabled write.
 - Output: `packages/frontend-api/`, `docs/IMPLEMENTATION_STATUS.md`,
@@ -253,6 +254,30 @@ design decision, mathematical assumption, test, and submitted line of code.
 - Output: `TranscendentalMath.sol`, its unit tests,
   `TRANSCENDENTAL_MATH_AUDIT.md`, ADR-017, and
   `prompts/0016-bounded-transcendental-math.md`.
+
+## 25-26 July 2026: protocol, product and release implementation
+
+- Tool: OpenAI Codex
+- Work: implemented and tested the remaining curve compiler/kernel,
+  two-sided runtime, Aqua/SwapVM settlement, lifecycle Lens, atomic batch
+  executor, deployment scripts, generated clients, solver, native Subgraph,
+  Solver API, live frontend adapter, wallet/UI flows, Graph-backed MCP service,
+  containers, observability and release workflows.
+- Verification: deterministic, unit, integration, differential, fuzz and
+  adversarial contract tests; TypeScript type/lint/unit/build gates; Matchstick
+  Subgraph tests; MCP in-memory and HTTP protocol tests; container builds and
+  explicit public-release checks.
+- Decision: all offchain services remain untrusted and unsigned; The Graph is
+  discovery, Lens/Quoter/RPC are refresh, BatchExecutor simulation is the last
+  pre-wallet gate, and contracts remain authoritative. Live mode never falls
+  back to mock.
+- Human review required: every economic assumption and numerical bound,
+  independent security audit, root-license selection, sponsor eligibility,
+  public deployment/hosting credentials, explorer verification, firsthand
+  feedback, live transaction evidence and final demo/submission.
+- Imported implementation: only pinned dependencies already itemized in
+  `PROVENANCE.md` and `LICENSES/`; the MCP server uses the official SDK package
+  without copied source.
 
 Material future specifications and implementation plans are stored in
 `prompts/`. Routine autocomplete and formatting do not need separate entries.

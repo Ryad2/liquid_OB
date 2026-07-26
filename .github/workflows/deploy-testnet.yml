@@ -1,0 +1,193 @@
+name: Deploy testnet protocol
+
+on:
+  workflow_dispatch:
+    inputs:
+      chain_id:
+        description: EVM chain ID
+        required: true
+        default: "84532"
+      network_name:
+        description: Human-readable network name
+        required: true
+        default: Base Sepolia
+      public_rpc_url:
+        description: Public browser-safe HTTPS RPC URL
+        required: true
+      explorer_url:
+        description: Public block explorer base URL
+        required: true
+        default: https://sepolia.basescan.org
+      deploy_aqua:
+        description: Deploy pinned Aqua source instead of injecting an address
+        type: boolean
+        required: true
+        default: true
+      aqua_address:
+        description: Existing Aqua address when deploy_aqua is false
+        required: false
+      max_fills:
+        description: Maximum fills per atomic route
+        required: true
+        default: "8"
+      demo_epoch:
+        description: bytes32 demo epoch/salt
+        required: true
+        default: "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: deploy-testnet-${{ inputs.chain_id }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: testnet
+    env:
+      RPC_URL: ${{ secrets.TESTNET_RPC_URL }}
+      DEPLOYER_PRIVATE_KEY: ${{ secrets.TESTNET_DEPLOYER_PRIVATE_KEY }}
+      MAKER_PRIVATE_KEY: ${{ secrets.TESTNET_MAKER_PRIVATE_KEY }}
+      TAKER_PRIVATE_KEY: ${{ secrets.TESTNET_TAKER_PRIVATE_KEY }}
+      BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+      CHAIN_ID: ${{ inputs.chain_id }}
+      NETWORK_NAME: ${{ inputs.network_name }}
+      PUBLIC_RPC_URL: ${{ inputs.public_rpc_url }}
+      EXPLORER_URL: ${{ inputs.explorer_url }}
+      AQUA_ADDRESS: ${{ inputs.aqua_address }}
+      MAX_FILLS: ${{ inputs.max_fills }}
+      DEMO_EPOCH: ${{ inputs.demo_epoch }}
+    steps:
+      - name: Check out exact source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: true
+          submodules: recursive
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.5.1
+          cache: true
+
+      - name: Validate protected inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RPC_URL"
+          test -n "$DEPLOYER_PRIVATE_KEY"
+          test -n "$MAKER_PRIVATE_KEY"
+          test -n "$TAKER_PRIVATE_KEY"
+          if [ "${{ inputs.deploy_aqua }}" != "true" ]; then test -n "$AQUA_ADDRESS"; fi
+          node -e "const u=new URL(process.env.PUBLIC_RPC_URL); if(u.protocol!=='https:') throw Error('public RPC must use HTTPS')"
+          node -e "const u=new URL(process.env.EXPLORER_URL); if(u.protocol!=='https:') throw Error('explorer must use HTTPS')"
+
+      - name: Install and run release gates
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm contracts:fmt
+          pnpm contracts:lint
+          pnpm contracts:build
+          pnpm contracts:test
+
+      - name: Deploy immutable topology
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.deploy_aqua }}" = "false" ]; then export LIQUID_OB_AQUA="$AQUA_ADDRESS"; fi
+          export LIQUID_OB_DEPLOY_AQUA="${{ inputs.deploy_aqua }}"
+          export LIQUID_OB_DEPLOY_DEMO_TOKENS=true
+          export LIQUID_OB_MAX_FILLS="$MAX_FILLS"
+          verify=()
+          if [ -n "$BASESCAN_API_KEY" ]; then verify=(--verify --etherscan-api-key "$BASESCAN_API_KEY"); fi
+          forge script contracts/script/DeployLiquidOB.s.sol:DeployLiquidOB \
+            --root contracts --rpc-url "$RPC_URL" --broadcast "${verify[@]}" -vvvv
+
+      - name: Generate and verify public manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          aqua=()
+          if [ "${{ inputs.deploy_aqua }}" = "false" ]; then aqua=(--aqua "$AQUA_ADDRESS"); fi
+          pnpm deployment:manifest -- \
+            --broadcast "contracts/broadcast/DeployLiquidOB.s.sol/$CHAIN_ID/run-latest.json" \
+            --rpc-url "$RPC_URL" --chain-id "$CHAIN_ID" --network-name "$NETWORK_NAME" \
+            --explorer-url "$EXPLORER_URL" --public-rpc-url "$PUBLIC_RPC_URL" \
+            --public true --max-fills "$MAX_FILLS" --out "deployments/$CHAIN_ID.json" \
+            "${aqua[@]}"
+          pnpm --filter @liquid-ob/contracts verify:deployment -- \
+            --manifest "deployments/$CHAIN_ID.json" --rpc-url "$RPC_URL"
+
+      - name: Export deployment addresses
+        shell: bash
+        run: |
+          node <<'NODE' >> "$GITHUB_ENV"
+          const fs = require('node:fs')
+          const manifest = JSON.parse(fs.readFileSync(`deployments/${process.env.CHAIN_ID}.json`, 'utf8'))
+          console.log(`LIQUID_OB_AQUA=${manifest.contracts.aqua.address}`)
+          console.log(`LIQUID_OB_ROUTER=${manifest.contracts.router.address}`)
+          console.log(`LIQUID_OB_BATCH_EXECUTOR=${manifest.contracts.batchExecutor.address}`)
+          console.log(`DEMO_BASE_TOKEN=${manifest.demoTokens.find((token) => token.role === 'base').address}`)
+          console.log(`DEMO_QUOTE_TOKEN=${manifest.demoTokens.find((token) => token.role === 'quote').address}`)
+          NODE
+          echo "DEMO_MAKER=$(cast wallet address --private-key "$MAKER_PRIVATE_KEY")" >> "$GITHUB_ENV"
+
+      - name: Seed three positions and execute two stateful routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/demo-evidence
+          forge script contracts/script/SeedDemoPositions.s.sol:SeedDemoPositions \
+            --root contracts --rpc-url "$RPC_URL" --broadcast -vvvv
+          cp "contracts/broadcast/SeedDemoPositions.s.sol/$CHAIN_ID/run-latest.json" \
+            tmp/demo-evidence/seed.json
+          forge script contracts/script/ReplayDemoRoute.s.sol:ReplayDemoRoute \
+            --root contracts --rpc-url "$RPC_URL" --broadcast -vvvv
+          cp "contracts/broadcast/ReplayDemoRoute.s.sol/$CHAIN_ID/run-latest.json" \
+            tmp/demo-evidence/replay-1.json
+          forge script contracts/script/ReplayDemoRoute.s.sol:ReplayDemoRoute \
+            --root contracts --rpc-url "$RPC_URL" --broadcast -vvvv
+          cp "contracts/broadcast/ReplayDemoRoute.s.sol/$CHAIN_ID/run-latest.json" \
+            tmp/demo-evidence/replay-2.json
+
+      - name: Upload immutable deployment evidence
+        uses: actions/upload-artifact@v6
+        with:
+          name: liquid-ob-${{ inputs.chain_id }}-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            deployments/${{ inputs.chain_id }}.json
+            contracts/broadcast/DeployLiquidOB.s.sol/${{ inputs.chain_id }}/run-latest.json
+            tmp/demo-evidence/seed.json
+            tmp/demo-evidence/replay-1.json
+            tmp/demo-evidence/replay-2.json
+
+      - name: Open manifest review pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="release/manifest-$CHAIN_ID-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add "deployments/$CHAIN_ID.json"
+          git commit -m "chore: record public $NETWORK_NAME deployment"
+          git push origin "$branch"
+          gh pr create --base "$GITHUB_REF_NAME" --head "$branch" \
+            --title "chore: record public $NETWORK_NAME deployment" \
+            --body "Automated public manifest from workflow run $GITHUB_RUN_ID. Review explorer links and merge before deploying the Subgraph/API."

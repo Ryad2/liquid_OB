@@ -1,0 +1,17 @@
+.git
+.github
+.vscode
+.openai
+**/node_modules
+**/dist
+**/out
+**/cache
+**/broadcast
+**/.latest.json
+**/.bin
+contracts/lib
+tmp
+*.log
+.env
+.env.*
+!.env.example

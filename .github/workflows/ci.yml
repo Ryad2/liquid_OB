@@ -101,3 +101,27 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Check release scripts
+        run: |
+          node --check apps/web/server.mjs
+          node --check scripts/verify-public-demo.mjs
+          node --check packages/contracts/scripts/verify-deployment.mjs
+
+  containers:
+    name: Container builds
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build solver API image
+        run: docker build -f services/solver-api/Dockerfile -t liquid-ob-solver-api:ci .
+
+      - name: Build liquidity MCP image
+        run: docker build -f services/liquidity-mcp/Dockerfile -t liquid-ob-liquidity-mcp:ci .
+
+      - name: Build mock web image
+        run: docker build -f apps/web/Dockerfile --build-arg VITE_PROTOCOL_MODE=mock -t liquid-ob-web:ci .

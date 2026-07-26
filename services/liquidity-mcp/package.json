@@ -1,5 +1,5 @@
 {
-  "name": "@liquid-ob/solver-api",
+  "name": "@liquid-ob/liquidity-mcp",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,13 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fastify/cors": "11.3.0",
-    "@liquid-ob/contracts": "workspace:*",
-    "@liquid-ob/curve-math": "workspace:*",
-    "@liquid-ob/frontend-api": "workspace:*",
-    "@liquid-ob/solver-core": "workspace:*",
-    "fastify": "5.10.0",
-    "viem": "^2.55.8",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "zod": "4.4.3"
   },
   "devDependencies": {

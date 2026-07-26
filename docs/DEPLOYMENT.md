@@ -150,3 +150,83 @@ Before the live demo, retain:
 
 An Anvil transcript is useful engineering evidence but is never presented as
 the required public deployment.
+
+## 9. Automated Testnet Promotion
+
+The manual GitHub workflow `.github/workflows/deploy-testnet.yml` runs the
+contract release gates, deploys the immutable topology, optionally verifies it
+on the explorer, creates and independently verifies the manifest, seeds three
+positions, executes two stateful routes, uploads broadcast evidence and opens a
+manifest review PR. Configure these protected `testnet` environment secrets:
+
+```text
+TESTNET_RPC_URL
+TESTNET_DEPLOYER_PRIVATE_KEY
+TESTNET_MAKER_PRIVATE_KEY
+TESTNET_TAKER_PRIVATE_KEY
+BASESCAN_API_KEY                 # optional when explorer verification is unavailable
+```
+
+Use dedicated valueless keys. Review every explorer address and bytecode hash
+before merging the generated manifest; workflow success is not approval by
+itself.
+
+After the manifest is merged, run `deploy-subgraph.yml` with
+`GRAPH_DEPLOY_KEY`, the exact chain ID/network and Subgraph Studio slug. The
+workflow derives contract addresses and start blocks from the committed
+manifest before codegen, build and deployment.
+
+## 10. Hosted Services
+
+`publish-images.yml` publishes immutable-SHA and `latest` images for:
+
+- `solver-api`: Graph discovery, Lens/Quoter refresh, product reads and final
+  route simulation;
+- `liquidity-mcp`: four read-only executable-liquidity tools over Streamable
+  HTTP;
+- `web`: prebuilt ArcBook assets with the final chain, RPC, manifest and API
+  URLs embedded at build time.
+
+The Dockerfiles run as unprivileged users. API and MCP healthchecks use
+dependency-aware `/readyz`; the web image uses `/healthz`. Terminate TLS at the
+hosting platform and never expose private Graph/RPC keys through `VITE_`
+variables.
+
+For a local container rehearsal only:
+
+```bash
+cp services/solver-api/.env.example services/solver-api/.env
+cp services/liquidity-mcp/.env.example services/liquidity-mcp/.env
+docker compose -f compose.demo.yaml up --build
+```
+
+This Compose topology is not finalist evidence because its URLs are local.
+
+## 11. Public Release Gate
+
+Set only public HTTPS endpoints, then run:
+
+```bash
+PUBLIC_APP_URL=https://app.example \
+PUBLIC_API_URL=https://api.example \
+PUBLIC_MANIFEST_URL=https://app.example/deployments/84532.json \
+PUBLIC_SUBGRAPH_URL=https://gateway.thegraph.com/api/KEY/subgraphs/id/ID \
+PUBLIC_MCP_URL=https://mcp.example \
+PUBLIC_RPC_URL=https://rpc.example \
+pnpm release:verify
+```
+
+The gate rejects localhost and private networks, then checks CSP, manifest/API
+identity, service readiness, fresh writable bootstrap, at least three backed
+positions, indexed route evidence, Graph health, MCP protocol identity, RPC
+chain ID and runtime bytecode for every contract. The scheduled
+`public-smoke.yml` workflow runs the same gate hourly from GitHub environment
+variables.
+
+## 12. Owner-Controlled Final Steps
+
+Automation cannot select the repository license, create service accounts,
+approve explorer transactions, supply firsthand Uniswap feedback, record a
+video or submit ETHGlobal forms. Those are intentional manual release gates.
+Do not claim public readiness until each resulting URL and transaction is
+recorded and `pnpm release:verify` passes from outside the team network.

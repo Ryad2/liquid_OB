@@ -14,9 +14,9 @@ React screens and state
         v
 LiquidOBFrontendClient
         |
-        +-- now: deterministic MockLiquidOBClient
+        +-- deterministic MockLiquidOBClient
         |
-        +-- later: LiveLiquidOBClient
+        +-- fail-closed LiveLiquidOBClient
                   |
                   +-- deployment manifest
                   +-- exact curve-math / position SDK
@@ -94,7 +94,7 @@ simulation did not succeed.
 
 ## 4. Method-To-Backend Mapping
 
-| Client method | Mock behavior | Future live implementation |
+| Client method | Mock behavior | Live implementation |
 | --- | --- | --- |
 | `getBootstrap` | Fake chain, addresses, health and feature flags | Validate `deployments/<chainId>.json`; poll RPC/Subgraph/solver health |
 | `listMarkets` | One deterministic WETH/USDC market | Paginated Subgraph market query with `_meta` block |
@@ -262,29 +262,19 @@ calldata, contract addresses, transaction hashes or public-chain behavior.
 Visual marginal samples use floating point and are explicitly labelled mock.
 No screenshot or demo may present them as live data.
 
-## 9. Remaining Live Adapter Implementation Plan
+## 9. Implemented Live Adapter
 
-The native Subgraph in `subgraph/`, deterministic solver in
-`packages/solver-core/`, and HTTP orchestration service in
-`services/solver-api/` now implement the backend side of this boundary. The
-remaining work is the browser adapter and public deployment wiring below.
+`@liquid-ob/frontend-live` implements this boundary. It validates deployment
+manifests and every API response at runtime, computes exact local previews,
+builds canonical Aqua publication plans, consumes simulated solver routes, and
+encodes execute/dock/replace transactions. `apps/web/src/protocol/wallet.ts`
+checks account and chain, sends ordered plan steps, waits for receipts, rejects
+reverts and refreshes indexed product state.
 
-Implement `LiquidOBFrontendClient` in this dependency order:
-
-1. Parse and validate the deployment manifest; implement `getBootstrap`.
-2. Add exact `curve-math`; replace maker preview and emit canonical payload.
-3. Consume the committed Subgraph queries for markets, positions and activity
-   with `_meta` blocks.
-4. Add Lens/RPC refresh for position detail and backing.
-5. Add the solver API transport and validate every response at runtime.
-6. Re-run final route through `eth_call`; expose only successful simulation.
-7. Add generated clients for publish, execute, dock and replace plans.
-8. Set `sendable: true` only for plans built from the validated current
-   deployment and chain.
-9. Switch `apps/web/src/protocol/client.ts` from mock to live based on explicit
-   environment configuration. Never auto-fallback from live to mock.
-10. Run the same contract tests against both clients, then complete E2E wallet
-    tests against the public seeded deployment.
+The remaining acceptance work is environmental: deploy the public topology,
+host the Subgraph/API/app, build with the final immutable URLs, and run browser
+E2E against the seeded public market. Live mode fails at startup rather than
+falling back to fixtures when any required URL or manifest field is absent.
 
 ## 10. Environment Contract
 
@@ -296,15 +286,14 @@ VITE_CHAIN_ID=31337
 VITE_PUBLIC_RPC_URL=
 ```
 
-Future live production:
+Live production:
 
 ```text
 VITE_PROTOCOL_MODE=live
 VITE_CHAIN_ID=<manifest chain id>
 VITE_PUBLIC_RPC_URL=<public browser-safe RPC or empty when proxied>
 VITE_DEPLOYMENT_MANIFEST_URL=<public immutable manifest>
-VITE_SUBGRAPH_URL=<public Graph endpoint>
-VITE_SOLVER_URL=<public HTTPS endpoint; empty only for browser solver>
+VITE_SOLVER_URL=<public HTTPS endpoint>
 ```
 
 Private RPC credentials, deployer keys and sponsor API keys must never use a

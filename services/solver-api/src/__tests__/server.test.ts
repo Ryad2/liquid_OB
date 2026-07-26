@@ -36,6 +36,35 @@ describe('solver HTTP server', () => {
     await server.close()
   })
 
+  it('rejects zero and amounts outside uint256 before calling the solver', async () => {
+    const quote = vi.fn(async () => ({}))
+    const server = await buildServer({ service: { health: async () => ({}), quote } })
+
+    const payload = {
+      marketId: MARKET,
+      side: 'sell',
+      kind: 'exact-input',
+      slippageBps: 50,
+      payer: PAYER,
+      deadlineSeconds: 600,
+    }
+    const zero = await server.inject({
+      method: 'POST',
+      url: '/v1/quote',
+      payload: { ...payload, amount: '0' },
+    })
+    const oversized = await server.inject({
+      method: 'POST',
+      url: '/v1/quote',
+      payload: { ...payload, amount: '1'.repeat(79) },
+    })
+
+    expect(zero.statusCode).toBe(400)
+    expect(oversized.statusCode).toBe(400)
+    expect(quote).not.toHaveBeenCalled()
+    await server.close()
+  })
+
   it('uses simulation for executable routes and applies recipient defaults', async () => {
     const quote = vi.fn(async (route: RouteRequest, simulate: boolean) => ({
       marketId: route.marketId,
@@ -106,6 +135,42 @@ describe('solver HTTP server', () => {
 
     expect(response.statusCode).toBe(400)
     expect(response.json().error.code).toBe('INVALID_REQUEST')
+    await server.close()
+  })
+
+  it('reports liveness, dependency readiness, and bounded Prometheus metrics', async () => {
+    const bootstrap = vi.fn(async () => ({ mode: 'live' }))
+    const server = await buildServer({
+      service: { health: async () => ({ status: 'healthy' }), quote: async () => ({}) },
+      product: {
+        bootstrap,
+        markets: async () => ({}),
+        market: async () => ({}),
+        positions: async () => ({}),
+        position: async () => ({}),
+        activity: async () => ({}),
+      },
+    })
+
+    expect((await server.inject({ method: 'GET', url: '/livez' })).json().status).toBe('alive')
+    expect((await server.inject({ method: 'GET', url: '/readyz' })).json()).toEqual({ status: 'ready' })
+    const metrics = await server.inject({ method: 'GET', url: '/metrics' })
+    expect(metrics.headers['content-type']).toContain('text/plain')
+    expect(metrics.body).toContain('liquid_ob_api_http_requests_total')
+    expect(metrics.body).toContain('route="/livez"')
+    expect(bootstrap).toHaveBeenCalledOnce()
+    await server.close()
+  })
+
+  it('fails readiness when RPC or indexing health is degraded', async () => {
+    const server = await buildServer({
+      service: { health: async () => ({ status: 'degraded' }), quote: async () => ({}) },
+    })
+
+    const response = await server.inject({ method: 'GET', url: '/readyz' })
+
+    expect(response.statusCode).toBe(503)
+    expect(response.json().error.code).toBe('SUBGRAPH_UNAVAILABLE')
     await server.close()
   })
 })

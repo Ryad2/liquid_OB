@@ -31,6 +31,12 @@ version, license, and purpose.
 | OpenZeppelin Contracts | https://github.com/OpenZeppelin/openzeppelin-contracts | `c64a1edb67b6e3f4a15cca8909c9482ad33a02b0` (`v5.4.0`) | MIT | ERC-20, ownership, cryptography, and math dependencies |
 | forge-std | https://github.com/foundry-rs/forge-std | `8e40513d678f392f398620b3ef2b418648b33e89` (`v1.11.0`) | MIT or Apache-2.0 | Solidity test framework |
 | Solady | https://github.com/Vectorized/solady | `acd959aa4bd04720d640bf4e6a5c71037510cc4b` (`v0.1.26`) | MIT | Pinned monotone fixed-point `lnWad` and `expWad` approximation backend |
+| viem | https://github.com/wevm/viem | lockfile-pinned `2.55.8` | MIT | EVM ABI encoding, public RPC reads and transaction preparation |
+| Zod | https://github.com/colinhacks/zod | `4.4.3` | MIT | Runtime validation at API, manifest and MCP trust boundaries |
+| Fastify | https://github.com/fastify/fastify | `5.10.0` | MIT | Stateless Solver/Product HTTP API and lifecycle hooks |
+| The Graph TypeScript and CLI | https://github.com/graphprotocol/graph-tooling | `graph-ts 0.38.2`, `graph-cli 0.98.1` | Apache-2.0 or MIT | Native Subgraph mappings, code generation, build and deployment |
+| Matchstick | https://github.com/LimeChain/matchstick | `0.6.0` | Apache-2.0 | Deterministic Subgraph mapping tests |
+| Model Context Protocol TypeScript SDK | https://github.com/modelcontextprotocol/typescript-sdk | `1.29.0` | MIT | Read-only stdio and stateless Streamable HTTP liquidity tools |
 
 The full compatibility, deployment-address, compiler, and license analysis is
 recorded in [`DEPENDENCY_AUDIT.md`](DEPENDENCY_AUDIT.md).

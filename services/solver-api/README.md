@@ -20,7 +20,14 @@ atomic rollback checks.
 
 ## Endpoints
 
+- `GET /livez`, `GET /readyz`: process and dependency probes.
+- `GET /metrics`: bounded Prometheus HTTP metrics.
 - `GET /v1/health`: chain head, indexed block, lag and indexing status.
+- `GET /v1/bootstrap`: validated live frontend deployment and feature state.
+- `GET /v1/markets`, `GET /v1/markets/:id`: indexed market discovery.
+- `GET /v1/positions`, `GET /v1/positions/:id`: indexed positions with Lens
+  reconciliation on detail reads.
+- `GET /v1/activity`: publish, fill, route and dock history.
 - `POST /v1/quote`: refreshed unsigned route without final taker simulation.
 - `POST /v1/route`: the same route, required to pass complete BatchExecutor
   simulation before it is returned as executable.
@@ -55,3 +62,6 @@ node --env-file=services/solver-api/.env \
 
 For the submitted demo this process must be hosted publicly. Localhost is only
 a development fallback.
+
+The container image is defined in `services/solver-api/Dockerfile`; it runs as
+an unprivileged user and uses `/readyz` for its healthcheck.

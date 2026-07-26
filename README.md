@@ -11,12 +11,15 @@ curve encoding and math, two-sided recycled runtime, official Aqua/SwapVM
 settlement, lifecycle Lens, product Quoter, bounded atomic multi-maker routes,
 adversarial security tests, deployment/seed/replay scripts, generated ABIs, a
 typed position SDK, deterministic multi-maker solver, native Subgraph and
-stateless solver API. The ArcBook product frontend is integrated against the
-stable deterministic mock. Public deployment of the contracts, Subgraph and
-API, followed by the final live frontend adapter, remains pending.
+stateless solver API. ArcBook now has both a deterministic mock and a
+fail-closed live adapter with wallet-driven publish, execute and dock flows.
+A read-only Executable Liquidity MCP, release containers, deployment workflows,
+health/metrics endpoints and a zero-localhost release gate are also implemented.
+Public deployment and hosting remain pending because they require external
+testnet, Graph, DNS/hosting and repository credentials.
 
-Protocol work will be introduced through small, reviewable commits. External
-tools and dependencies are recorded as they are introduced.
+Protocol work was introduced through small, reviewable commits. External tools
+and dependencies are recorded as they are introduced.
 
 The current execution plan is documented in
 [`docs/HACKATHON_PLAN.md`](docs/HACKATHON_PLAN.md).
@@ -70,13 +73,15 @@ The working Uniswap developer feedback document is available in
 
 - `contracts/`: Foundry workspace for EVM contracts and tests.
 - `apps/web/`: React and TypeScript demo application.
-- `packages/`: Shared TypeScript packages such as the future SDK.
+- `packages/`: Shared TypeScript packages and generated clients.
 - `packages/contracts/`: generated ABIs and validated deployment manifests.
 - `packages/position-sdk/`: publish, quote, Lens, execute and dock helpers.
 - `packages/frontend-api/`: stable UI contract, amount helpers, and mock client.
+- `packages/frontend-live/`: manifest-validated live product and transaction adapter.
 - `packages/solver-core/`: deterministic exact-input/output multi-maker solver.
 - `subgraph/`: native protocol indexing, mappings, queries and Matchstick tests.
 - `services/solver-api/`: Graph-to-Lens-to-Quoter route orchestration service.
+- `services/liquidity-mcp/`: reusable Graph-backed executable-liquidity MCP service.
 - `tools/reference/`: development-only high-precision mathematical oracle.
 - `test/vectors/`: committed language-neutral protocol vectors.
 - `docs/`: design decisions, provenance, security notes, and integration logs.
@@ -120,6 +125,10 @@ verified deployment matrix.
 
 The reproducible public deployment and seeded-demo flow is documented in
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+`pnpm release:verify` is the final public gate. It rejects localhost/private
+URLs and verifies the hosted app, contracts, manifest, Subgraph, solver API,
+MCP service, seeded positions and indexed route evidence.
 
 ## Security
 

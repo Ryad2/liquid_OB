@@ -1,0 +1,40 @@
+services:
+  solver-api:
+    build:
+      context: .
+      dockerfile: services/solver-api/Dockerfile
+    env_file: services/solver-api/.env
+    ports:
+      - "3878:3878"
+    restart: unless-stopped
+
+  liquidity-mcp:
+    build:
+      context: .
+      dockerfile: services/liquidity-mcp/Dockerfile
+    env_file: services/liquidity-mcp/.env
+    environment:
+      LIQUID_OB_API_URL: http://solver-api:3878
+    ports:
+      - "3880:3880"
+    depends_on:
+      solver-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_PROTOCOL_MODE: live
+        VITE_CHAIN_ID: ${VITE_CHAIN_ID}
+        VITE_PUBLIC_RPC_URL: ${VITE_PUBLIC_RPC_URL}
+        VITE_DEPLOYMENT_MANIFEST_URL: ${VITE_DEPLOYMENT_MANIFEST_URL}
+        VITE_SOLVER_URL: ${VITE_SOLVER_URL}
+    ports:
+      - "8080:8080"
+    depends_on:
+      solver-api:
+        condition: service_healthy
+    restart: unless-stopped

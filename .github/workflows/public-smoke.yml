@@ -1,0 +1,29 @@
+name: Public demo smoke test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: testnet
+    env:
+      PUBLIC_APP_URL: ${{ vars.PUBLIC_APP_URL }}
+      PUBLIC_API_URL: ${{ vars.PUBLIC_API_URL }}
+      PUBLIC_MANIFEST_URL: ${{ vars.PUBLIC_MANIFEST_URL }}
+      PUBLIC_MCP_URL: ${{ vars.PUBLIC_MCP_URL }}
+      PUBLIC_RPC_URL: ${{ vars.PUBLIC_RPC_URL }}
+      PUBLIC_SUBGRAPH_URL: ${{ secrets.PUBLIC_SUBGRAPH_URL }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+      - run: node scripts/verify-public-demo.mjs

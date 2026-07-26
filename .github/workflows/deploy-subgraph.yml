@@ -1,0 +1,57 @@
+name: Deploy Subgraph
+
+on:
+  workflow_dispatch:
+    inputs:
+      chain_id:
+        required: true
+        default: "84532"
+        description: Chain ID with a committed public manifest
+      graph_network:
+        required: true
+        default: base-sepolia
+        description: Graph network identifier
+      subgraph_slug:
+        required: true
+        description: Subgraph Studio slug
+      graph_node:
+        required: true
+        default: https://api.studio.thegraph.com/deploy/
+        description: Graph deployment node
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: testnet
+    env:
+      GRAPH_DEPLOY_KEY: ${{ secrets.GRAPH_DEPLOY_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .tool-versions
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Configure and build exact deployment
+        run: |
+          test -f "deployments/${{ inputs.chain_id }}.json"
+          pnpm --filter @liquid-ob/subgraph configure -- \
+            --manifest "../deployments/${{ inputs.chain_id }}.json" \
+            --network "${{ inputs.graph_network }}" \
+            --out subgraph.release.yaml
+          pnpm --filter @liquid-ob/subgraph exec graph codegen subgraph.release.yaml
+          pnpm --filter @liquid-ob/subgraph exec graph build subgraph.release.yaml
+      - name: Deploy non-interactively
+        run: |
+          test -n "$GRAPH_DEPLOY_KEY"
+          pnpm --filter @liquid-ob/subgraph exec graph deploy \
+            "${{ inputs.subgraph_slug }}" subgraph.release.yaml \
+            --node "${{ inputs.graph_node }}" \
+            --deploy-key "$GRAPH_DEPLOY_KEY" \
+            --version-label "${GITHUB_SHA::12}"

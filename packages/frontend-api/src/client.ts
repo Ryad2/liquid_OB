@@ -28,9 +28,9 @@ export interface RequestOptions {
 /**
  * The only protocol boundary UI components should consume.
  *
- * The mock implementation is available now. Future live adapters must retain
- * this contract while composing manifests, local curve math, The Graph, the
- * solver API, RPC reads, and transaction encoders behind it.
+ * The mock and live implementations both retain this contract. The live
+ * adapter composes manifests, local curve math, The Graph-backed solver API,
+ * RPC reads, and transaction encoders behind it.
  */
 export interface LiquidOBFrontendClient {
   getBootstrap(options?: RequestOptions): Promise<FrontendBootstrap>

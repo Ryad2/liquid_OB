@@ -22,9 +22,10 @@ A sponsor-specific allowance for local forks can qualify evidence for that
 sponsor, but it does not replace the stronger ETHGlobal finalist live-
 deployment gate.
 
-Liquid OB is **not currently finalist-ready**. The repository and dependency
-proof are useful foundations, but the public product, protocol deployment,
-indexer, solver path, video, and submission evidence do not exist yet.
+Liquid OB is **not currently finalist-ready**. The complete local product,
+indexer, solver, MCP, live adapter and release automation exist, but no public
+deployment/hosting evidence, open-source license, video or final submission
+evidence has been recorded.
 
 ## 2. Page-By-Page Requirement Audit
 
@@ -144,9 +145,10 @@ Audit date: 25 July 2026.
 | Auditable repository | Public GitHub repository, documented architecture, CI, provenance, and coherent local history | PARTIAL | Push every submission commit and link exact source lines, tests, deployment manifests, and transaction evidence |
 | Open source | Third-party notices are preserved, but independent Liquid OB code has no root license | BLOCKED | Select and commit an explicit compatible open-source license before publishing protocol implementation |
 | Deployed | No Liquid OB public deployment or deployment manifest exists | BLOCKED | Deploy the frozen protocol to the selected public network and publish verified addresses and start blocks |
-| Live product | The web app is a local typed-mock integration harness; no public application URL or live adapter exists | BLOCKED | Connect real deployments and services, publish over HTTPS, and verify from a clean browser |
-| Live data | No Liquid OB Subgraph or equivalent public index endpoint is implemented or recorded | BLOCKED | Deploy the Subgraph and expose health/indexed-block evidence |
-| Live solver | No solver package, browser solver, or hosted API exists | BLOCKED | Ship either a deterministic browser solver or a public service with health and quote endpoints |
+| Live product | ArcBook and its fail-closed live wallet adapter are implemented; no public application URL is recorded | BLOCKED EXTERNAL | Build the web image with final URLs, publish over HTTPS, and verify from a clean browser |
+| Live data | Native Subgraph schema/mappings/tests exist; no public Graph endpoint is recorded | BLOCKED EXTERNAL | Deploy the committed manifest and expose indexed-block evidence |
+| Live solver | Deterministic solver, hosted API, probes and metrics exist; no public API URL is recorded | BLOCKED EXTERNAL | Host the immutable API image and pass readiness plus route simulation |
+| Graph MCP | Four read-only tools and public Streamable HTTP transport exist; no public MCP URL is recorded | BLOCKED EXTERNAL | Host the MCP image and verify protocol initialization plus tool demo |
 | Demo video | No submitted video URL exists | BLOCKED | Record, upload, and test the final video link without team credentials |
 | Live finalist judging | Requires an owner action and physical availability | PENDING | Select the finalist add-on and attend the judging panel |
 | Git discipline | Local history contains multiple coherent commits; the public remote is behind local work | PARTIAL | Push before judging and preserve small diffs through the remaining build |
@@ -169,6 +171,7 @@ protocol has not been implemented or deployed.
 | Aqua/SwapVM path | Official or permitted deployed contracts perform real token transfers | Upstream addresses, strategy transaction, and transfer trace |
 | Solver | Routing works without a developer laptop | Browser-side deterministic solver or public HTTPS API with health endpoint |
 | Market discovery | Current positions are discoverable publicly | Live Subgraph endpoint, deployment ID, indexed block, and lag indicator |
+| Graph MCP | Reusable liquidity tools work without a developer laptop | Public Streamable HTTP endpoint, readiness proof and recorded tool calls |
 | Transaction proof | The demo is reproducible after the call | Explorer links for publish, route execution, recycling, and dock |
 | Media | Judges can review asynchronously | Public or unlisted video URL with no login requirement |
 | Submission page | Requirements are easy to audit | Detailed description, screenshots, sponsor map, and all public URLs |
@@ -228,6 +231,8 @@ Do not mark Liquid OB submission-ready until every box is complete:
 - [ ] At least one real public publish/fill/recycle transaction is linked.
 - [ ] Live Graph endpoint returns current Liquid OB positions and index height.
 - [ ] Solver path is public or executes entirely inside the public frontend.
+- [ ] Public MCP endpoint initializes and its four tools return live structured
+      evidence.
 - [ ] Fresh-browser demo succeeds twice without terminal intervention.
 - [ ] Two-to-four-minute submission video is accessible without login.
 - [ ] Four-minute finalist demo and three-minute Q&A have been rehearsed twice.
@@ -254,6 +259,7 @@ SUBGRAPH_ENDPOINT=
 SUBGRAPH_DEPLOYMENT_ID=
 SOLVER_MODE=browser|hosted
 SOLVER_HEALTH_URL=
+PUBLIC_MCP_URL=
 DEMO_PUBLISH_TX=
 DEMO_ROUTE_TX=
 DEMO_DOCK_TX=
@@ -266,12 +272,11 @@ Secrets, private keys, and sponsor API keys must never appear in this manifest.
 
 ## 9. Immediate Consequences For Development
 
-1. Resolve the root-license decision before the first independent protocol
-   implementation is published.
-2. Reconfirm and prove the selected Base mainnet deployment profile before
-   writing a router around assumptions that cannot be deployed publicly.
-3. Preserve local tests, but never count them as the live product.
-4. Deploy the first safe public vertical slice immediately after the contract
-   security and ABI freeze, not during the final submission hours.
-5. Build the Subgraph, solver path, and UI against public services.
+1. Resolve the root-license decision before finalist submission.
+2. Run the protected testnet deployment workflow and manually review the
+   generated manifest and explorer verification before merging it.
+3. Deploy the Subgraph and immutable API/MCP/web images to public HTTPS hosts.
+4. Seed the public market and run `pnpm release:verify`; preserve local tests,
+   but never count them as the live product.
+5. Pass the complete clean-browser wallet flow twice without a terminal.
 6. Record video and project-page evidence before the final feature freeze.
