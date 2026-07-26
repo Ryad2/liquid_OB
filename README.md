@@ -161,6 +161,10 @@ The reproducible public deployment and seeded-demo flow is documented in
 The same runbook includes the supported single-project Vercel topology for the
 ArcBook frontend, solver API and read-only MCP endpoint.
 
+The exact three-minute submission recording sequence, narration, and fallback
+capture plan are documented in
+[`docs/DEMO_VIDEO_SCRIPT.md`](docs/DEMO_VIDEO_SCRIPT.md).
+
 The Base Sepolia default, EVM portability boundary and Aqua/SwapVM deployment
 conditions are documented in
 [`docs/CHAIN_SELECTION.md`](docs/CHAIN_SELECTION.md).
