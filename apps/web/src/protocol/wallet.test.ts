@@ -90,6 +90,17 @@ describe('injected wallet adapter', () => {
     ])
   })
 
+  it('refuses to send the same confirmed plan twice', async () => {
+    const provider = new Provider()
+    const transactionPlan = plan()
+    provider.chainId = '0x14a34'
+    window.ethereum = provider
+
+    await executeTransactionPlan(transactionPlan, account, bootstrap)
+    await expect(executeTransactionPlan(transactionPlan, account, bootstrap)).rejects.toThrow('already confirmed')
+    expect(provider.sends).toBe(2)
+  })
+
   it('rejects a plan created for a different signer', async () => {
     const provider = new Provider()
     provider.chainId = '0x14a34'

@@ -19,6 +19,7 @@ function productFetch(mismatchedField?: string) {
   return vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body)) as { query: string }
     if (body.query.includes('ProductHealth')) return response('unused', [])
+    expect(body.query).toContain('_meta(block: { number: $block })')
     if (body.query.includes('query Markets')) {
       return response('markets', [{
         id: MARKET,
@@ -87,6 +88,7 @@ describe('LiquidOBProductGraphClient', () => {
       const body = JSON.parse(String(init?.body)) as { query: string }
       if (body.query.includes('ProductHealth')) return response('unused', [])
       expect(body.query).toContain('query Positions')
+      expect(body.query).toContain('_meta(block: { number: $block })')
       expect(body.query).not.toContain('orderBy: side')
       return response('positions', [])
     })

@@ -31,6 +31,8 @@ declare global {
   }
 }
 
+const confirmedPlans = new WeakSet<TransactionPlan>()
+
 export function injectedProvider(): EthereumProvider | null {
   return window.ethereum ?? null
 }
@@ -57,6 +59,9 @@ export async function executeTransactionPlan(
   onProgress?: (progress: TransactionProgress) => void,
 ): Promise<`0x${string}`[]> {
   if (!plan.sendable || plan.mode !== 'live') throw new Error('This transaction plan is not sendable.')
+  if (confirmedPlans.has(plan)) {
+    throw new Error('This transaction plan was already confirmed. Prepare a new plan before sending again.')
+  }
   const provider = requireProvider()
   await ensureChain(provider, bootstrap)
   const hashes: `0x${string}`[] = []
@@ -73,6 +78,7 @@ export async function executeTransactionPlan(
     await waitForReceipt(provider, hash)
     onProgress?.({ step: transactionStep, index, total: plan.steps.length, state: 'confirmed', transactionHash: hash })
   }
+  confirmedPlans.add(plan)
   return hashes
 }
 

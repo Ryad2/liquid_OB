@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { ApiError } from './errors.js'
 import type { GraphHealth } from './types.js'
 
-const META = `_meta { block { number hash } hasIndexingErrors }`
+const LATEST_META = `_meta { block { number hash } hasIndexingErrors }`
+const PINNED_META = `_meta(block: { number: $block }) { block { number hash } hasIndexingErrors }`
 const TOKEN = `address symbol name decimals`
 const SIDE = `
   id side branch startPriceWad endPriceWad alphaWad initialReserveWad
@@ -13,10 +14,10 @@ const SIDE = `
   tokenOut { ${TOKEN} }
 `
 
-const HEALTH_QUERY = `query ProductHealth { ${META} }`
+const HEALTH_QUERY = `query ProductHealth { ${LATEST_META} }`
 const MARKETS_QUERY = `
   query Markets($block: Int!, $first: Int!, $skip: Int!) {
-    ${META}
+    ${PINNED_META}
     markets(block: { number: $block }, first: $first, skip: $skip, orderBy: lastUpdateBlock, orderDirection: desc) {
       id marketId positionCount activePositionCount fillCount routeCount
       volumeBaseRaw volumeQuoteRaw lastUpdateBlock lastUpdateTimestamp
@@ -27,7 +28,7 @@ const MARKETS_QUERY = `
 `
 const MARKET_SIDES_QUERY = `
   query MarketSides($block: Int!, $first: Int!, $skip: Int!) {
-    ${META}
+    ${PINNED_META}
     curveSides(
       block: { number: $block }
       where: { active: true, yWad_gt: "0" }
@@ -43,7 +44,7 @@ const MARKET_SIDES_QUERY = `
 `
 const SNAPSHOTS_QUERY = `
   query MarketSnapshots($block: Int!, $day: Int!, $first: Int!, $skip: Int!) {
-    ${META}
+    ${PINNED_META}
     marketSnapshots(
       block: { number: $block }
       where: { day: $day }
@@ -57,7 +58,7 @@ const SNAPSHOTS_QUERY = `
 `
 const POSITIONS_QUERY = `
   query Positions($block: Int!, $where: Position_filter!, $first: Int!, $skip: Int!) {
-    ${META}
+    ${PINNED_META}
     positions(
       block: { number: $block }
       where: $where
@@ -80,7 +81,7 @@ const POSITIONS_QUERY = `
 `
 const FILLS_QUERY = `
   query Fills($block: Int!, $where: Fill_filter!, $first: Int!) {
-    ${META}
+    ${PINNED_META}
     fills(block: { number: $block }, where: $where, first: $first, orderBy: blockNumber, orderDirection: desc) {
       id routeId fillIndex side amountInRaw amountOutRaw blockNumber timestamp transactionHash
       position { id }
@@ -93,7 +94,7 @@ const FILLS_QUERY = `
 `
 const ROUTES_QUERY = `
   query Routes($block: Int!, $where: Route_filter!, $first: Int!) {
-    ${META}
+    ${PINNED_META}
     routes(block: { number: $block }, where: $where, first: $first, orderBy: blockNumber, orderDirection: desc) {
       id routeId side amountInRaw amountOutRaw blockNumber timestamp transactionHash
       market { id marketId }

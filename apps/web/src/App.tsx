@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   ActivityItem,
   Address,
+  Bytes32,
   CurveDraft,
   CurveSample,
   CurveSide,
@@ -62,7 +63,7 @@ interface OperationState {
 }
 
 type ConnectWallet = () => Promise<Address | null>
-type ExecutePlan = (plan: TransactionPlan) => Promise<void>
+type ExecutePlan = (plan: TransactionPlan) => Promise<boolean>
 
 const QUICK_ALPHA_RANGE = 30
 const positionCurveColors: Record<CurveSide, string[]> = {
@@ -77,6 +78,12 @@ const compactNumberFormatter = new Intl.NumberFormat('en-US', {
   notation: 'compact',
   maximumFractionDigits: 1,
 })
+
+function createDraftSalt(): Bytes32 {
+  const bytes = new Uint8Array(32)
+  globalThis.crypto.getRandomValues(bytes)
+  return `0x${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`
+}
 
 function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`
@@ -1936,12 +1943,13 @@ function MakerStudio({
   operation: OperationState
   onExecutePlan: ExecutePlan
 }) {
-  const [draft, setDraft] = useState<PositionDraft>({
+  const [draft, setDraft] = useState<PositionDraft>(() => ({
     baseToken: view.market.baseToken,
     quoteToken: view.market.quoteToken,
+    salt: createDraftSalt(),
     sell: { startPrice: '2004', endPrice: '2350', alpha: '2', initialReserve: '6' },
     buy: { startPrice: '1945', endPrice: '1550', alpha: '0', initialReserve: '12000' },
-  })
+  }))
   const [preview, setPreview] = useState<PositionPreview | null>(null)
   const [previewLoading, setPreviewLoading] = useState(true)
   const [chartSide, setChartSide] = useState<CurveFilter>('all')
@@ -2005,6 +2013,15 @@ function MakerStudio({
     }
   }
 
+  const executePublish = async () => {
+    if (plan === null) return
+    const confirmed = await onExecutePlan(plan)
+    if (!confirmed) return
+    setReviewOpen(false)
+    setPlan(null)
+    setDraft((current) => ({ ...current, salt: createDraftSalt() }))
+  }
+
   return (
     <main className="studio-page">
       <header className="studio-topline">
@@ -2055,9 +2072,7 @@ function MakerStudio({
           plan={plan}
           loading={planLoading}
           operation={{ ...operation, error: planError ?? operation.error }}
-          onExecute={() => {
-            if (plan !== null) void onExecutePlan(plan)
-          }}
+          onExecute={() => void executePublish()}
           onClose={() => setReviewOpen(false)}
         />
       ) : null}
@@ -2195,8 +2210,8 @@ function App() {
     }
   }
 
-  const submitPlan = async (plan: TransactionPlan, account: Address) => {
-    if (view === null) return
+  const submitPlan = async (plan: TransactionPlan, account: Address): Promise<boolean> => {
+    if (view === null) return false
     setOperation({ running: true, message: 'Waiting for wallet…', error: null })
     try {
       const hashes = await executeTransactionPlan(plan, account, view.bootstrap, (progressValue) => {
@@ -2205,16 +2220,29 @@ function App() {
         setOperation({ running: true, message: `${phase} ${position}: ${progressValue.step.title}`, error: null })
       })
       setOperation({ running: true, message: 'Refreshing indexed protocol state…', error: null })
-      setView(await loadGateway())
-      setOperation({ running: false, message: `${hashes.length} transaction${hashes.length === 1 ? '' : 's'} confirmed.`, error: null })
+      let refreshPending = false
+      try {
+        setView(await loadGateway())
+      } catch {
+        refreshPending = true
+      }
+      const confirmation = `${hashes.length} transaction${hashes.length === 1 ? '' : 's'} confirmed.`
+      setOperation({
+        running: false,
+        message: refreshPending ? `${confirmation} Index refresh pending.` : confirmation,
+        error: null,
+      })
+      return true
     } catch (caught) {
       setOperation({ running: false, message: null, error: caught instanceof Error ? caught.message : 'Transaction failed.' })
+      return false
     }
   }
 
   const executePlan: ExecutePlan = async (plan) => {
     const account = walletAddress ?? await connectWallet()
-    if (account !== null) await submitPlan(plan, account)
+    if (account === null) return false
+    return submitPlan(plan, account)
   }
 
   const executeQuote = async () => {
