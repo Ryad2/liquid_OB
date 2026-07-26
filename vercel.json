@@ -4,8 +4,18 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @liquid-ob/web build",
   "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    {
+      "source": "/api/solver",
+      "destination": "/api/solver-handler?__solver_path="
+    },
+    {
+      "source": "/api/solver/:__solver_path*",
+      "destination": "/api/solver-handler"
+    }
+  ],
   "functions": {
-    "api/solver/[...path].ts": {
+    "api/solver-handler.ts": {
       "maxDuration": 60,
       "includeFiles": "{services/solver-api/node_modules/@liquid-ob/**,packages/contracts/**,packages/curve-math/**,packages/frontend-api/**,packages/solver-core/**,deployments/84532.json}"
     },

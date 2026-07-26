@@ -19,6 +19,11 @@ describe('Vercel solver adapter', () => {
     expect(module.solverPath('/api/solver/v1/markets?limit=3')).toBe('/v1/markets?limit=3')
   })
 
+  it('restores nested paths forwarded by the Vercel rewrite', () => {
+    expect(module.solverPath('/api/solver-handler?__solver_path=v1%2Fmarkets&limit=3'))
+      .toBe('/v1/markets?limit=3')
+  })
+
   it('serves Fastify routes through the serverless handler', async () => {
     const server = createServer((request, response) => {
       void module.default(request, response)
