@@ -5,6 +5,7 @@ import type {
   CurveDraft,
   CurveSample,
   CurveSide,
+  DisplayPrice,
   FrontendBootstrap,
   MarketDetail,
   PositionDraft,
@@ -13,7 +14,7 @@ import type {
   RouteQuote,
   TransactionPlan,
 } from '@liquid-ob/frontend-api'
-import { parseUnits } from '@liquid-ob/frontend-api'
+import { parseUnits, parseWad } from '@liquid-ob/frontend-api'
 import { protocolClient } from './protocol/client'
 import {
   connectInjectedWallet,
@@ -25,6 +26,7 @@ import './App.css'
 
 type AppView = 'home' | 'trade' | 'portfolio' | 'studio'
 type CurveFilter = 'all' | CurveSide
+type PortfolioAtlasMode = 'aggregate' | 'positions'
 
 interface GatewayView {
   bootstrap: FrontendBootstrap
@@ -41,6 +43,7 @@ interface ChartSeries {
   progressBps?: number
   reserveLabel: string
   draft?: boolean
+  aggregated?: boolean
 }
 
 interface OperationState {
@@ -51,6 +54,8 @@ interface OperationState {
 
 type ConnectWallet = () => Promise<Address | null>
 type ExecutePlan = (plan: TransactionPlan) => Promise<void>
+
+const MAX_ALPHA = 30
 
 const numberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
@@ -71,6 +76,7 @@ function formatNumber(value: number, maximumFractionDigits = 2) {
 }
 
 function formatPrice(value: number) {
+  if (!Number.isFinite(value)) return '—'
   const magnitude = Math.abs(value)
   if (magnitude >= 1_000_000 || (magnitude > 0 && magnitude < 0.0001)) {
     return value.toExponential(2)
@@ -79,6 +85,22 @@ function formatPrice(value: number) {
   if (magnitude >= 1) return formatNumber(value, 2)
   if (magnitude >= 0.01) return formatNumber(value, 4)
   return value.toPrecision(3)
+}
+
+function decimalFromNumber(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return '0'
+  return value.toLocaleString('en-US', {
+    maximumFractionDigits: 18,
+    useGrouping: false,
+  })
+}
+
+function BrandMark({ variant = 'default' }: { variant?: 'default' | 'large' | 'hero' }) {
+  return (
+    <span className={`brand-mark ${variant === 'default' ? '' : variant}`} aria-hidden="true">
+      <img src="/arcbook-mark.svg" alt="" />
+    </span>
+  )
 }
 
 function branchLabel(branch: PositionSummary['sell']['policy']['branch']) {
@@ -113,17 +135,136 @@ function seriesFromPositions(
   })
 }
 
+function progressAtPrice(samples: CurveSample[], targetPrice: number) {
+  const points = samples.map((sample) => ({
+    price: Number(sample.displayedMarginalPrice.formatted),
+    progressBps: sample.progressBps,
+  })).filter((sample) => Number.isFinite(sample.price) && sample.price > 0)
+  const first = points.at(0)
+  const last = points.at(-1)
+  if (first === undefined || last === undefined) return 0
+  const increasing = last.price >= first.price
+  if ((increasing && targetPrice <= first.price) || (!increasing && targetPrice >= first.price)) return first.progressBps
+  if ((increasing && targetPrice >= last.price) || (!increasing && targetPrice <= last.price)) return last.progressBps
+
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1]!
+    const next = points[index]!
+    const withinSegment = increasing
+      ? targetPrice >= previous.price && targetPrice <= next.price
+      : targetPrice <= previous.price && targetPrice >= next.price
+    if (!withinSegment) continue
+    const logPrevious = Math.log(previous.price)
+    const logNext = Math.log(next.price)
+    const logSpan = logNext - logPrevious
+    const ratio = Math.abs(logSpan) < Number.EPSILON
+      ? 0
+      : (Math.log(targetPrice) - logPrevious) / logSpan
+    return previous.progressBps + ((next.progressBps - previous.progressBps) * Math.max(0, Math.min(ratio, 1)))
+  }
+  return last.progressBps
+}
+
+function aggregatedPortfolioSeries(
+  positions: PositionSummary[],
+  market: MarketDetail,
+): ChartSeries[] {
+  const bid = Number(market.bestBid?.formatted)
+  const ask = Number(market.bestAsk?.formatted)
+  const referencePrice = bid > 0 && ask > 0
+    ? Math.exp((Math.log(bid) + Math.log(ask)) / 2)
+    : 1
+
+  return (['buy', 'sell'] as CurveSide[]).flatMap((side) => {
+    const curves = positions.map((position) => {
+      const curve = position[side]
+      const currentPrice = Number(curve.runtime.currentMarginalPrice.formatted)
+      const endPrice = Number(curve.policy.endPrice.formatted)
+      const available = Number(curve.runtime.availableOutput.formatted)
+      const quoteValue = side === 'sell' ? available * referencePrice : available
+      return {
+        samples: curve.marginalSamples,
+        currentPrice,
+        endPrice,
+        currentProgressBps: curve.runtime.progressBps,
+        quoteValue,
+      }
+    }).filter((curve) => (
+      Number.isFinite(curve.currentPrice)
+      && Number.isFinite(curve.endPrice)
+      && curve.currentPrice > 0
+      && curve.endPrice > 0
+      && Number.isFinite(curve.quoteValue)
+      && curve.quoteValue > 0
+      && curve.samples.length > 0
+    ))
+    if (curves.length === 0) return []
+
+    const startPrice = side === 'sell'
+      ? Math.min(...curves.map((curve) => curve.currentPrice))
+      : Math.max(...curves.map((curve) => curve.currentPrice))
+    const endPrice = side === 'sell'
+      ? Math.max(...curves.map((curve) => curve.endPrice))
+      : Math.min(...curves.map((curve) => curve.endPrice))
+    const logStart = Math.log(startPrice)
+    const logEnd = Math.log(endPrice)
+    const useLogInterpolation = Math.abs(logEnd - logStart) >= Math.log(6)
+    const totalQuoteValue = curves.reduce((total, curve) => total + curve.quoteValue, 0)
+    const templatePrice = curves[0]!.samples[0]!.displayedMarginalPrice
+
+    const samples = Array.from({ length: 61 }, (_, index): CurveSample => {
+      const ratio = index / 60
+      const price = useLogInterpolation
+        ? Math.exp(logStart + ((logEnd - logStart) * ratio))
+        : startPrice + ((endPrice - startPrice) * ratio)
+      const remainingQuoteValue = curves.reduce((total, curve) => {
+        const progress = progressAtPrice(curve.samples, price)
+        const remainingProgress = Math.max(progress, curve.currentProgressBps)
+        const availableSpan = Math.max(10_000 - curve.currentProgressBps, 1)
+        const remainingFraction = Math.max(
+          0,
+          Math.min((10_000 - remainingProgress) / availableSpan, 1),
+        )
+        return total + (curve.quoteValue * remainingFraction)
+      }, 0)
+      const formattedPrice = decimalFromNumber(price)
+      const displayedMarginalPrice: DisplayPrice = {
+        ...templatePrice,
+        wad: parseWad(formattedPrice),
+        formatted: formattedPrice,
+      }
+      return {
+        progressBps: Math.round((1 - (remainingQuoteValue / totalQuoteValue)) * 10_000),
+        displayedMarginalPrice,
+        remainingReserve: decimalFromNumber(remainingQuoteValue),
+      }
+    })
+
+    return [{
+      id: `portfolio-aggregate-${side}`,
+      side,
+      label: side === 'buy' ? 'Aggregated portfolio bid depth' : 'Aggregated portfolio ask depth',
+      samples,
+      reserveLabel: `${formatNumber(totalQuoteValue, 2)} ${market.quoteToken.symbol} eq.`,
+      aggregated: true,
+    }]
+  })
+}
+
 function buildPath(
   samples: CurveSample[],
   xForPrice: (price: number) => number,
   yForProgress: (progressBps: number) => number,
 ) {
-  return samples.map((sample, index) => {
+  return samples.map((sample) => {
     const price = Number(sample.displayedMarginalPrice.formatted)
+    if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(sample.progressBps)) return null
     const x = xForPrice(price)
     const y = yForProgress(sample.progressBps)
-    return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
-  }).join(' ')
+    return { x, y }
+  }).filter((point): point is { x: number; y: number } => point !== null)
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(' ')
 }
 
 function CurveChart({
@@ -144,56 +285,82 @@ function CurveChart({
   const inset = { top: 24, right: 24, bottom: 42, left: 72 }
   const prices = series.flatMap((item) => (
     item.samples.map((sample) => Number(sample.displayedMarginalPrice.formatted))
-  )).filter(Number.isFinite)
+  )).filter((price) => Number.isFinite(price) && price > 0)
   const marketPrices = [market.bestBid, market.bestAsk]
     .filter((price): price is NonNullable<typeof price> => price !== null)
     .map((price) => Number(price.formatted))
-  const values = [...prices, ...marketPrices].filter((price) => price > 0)
+    .filter((price) => Number.isFinite(price) && price > 0)
+  const values = [...prices, ...marketPrices]
   const rawMin = values.length > 0 ? Math.min(...values) : 1
   const rawMax = values.length > 0 ? Math.max(...values) : 2
-  const useLogScale = rawMax / rawMin >= 6
   const rawLogMin = Math.log(rawMin)
   const rawLogMax = Math.log(rawMax)
-  const logPadding = Math.max((rawLogMax - rawLogMin) * 0.06, 0.025)
+  const rawLogSpan = Math.max(rawLogMax - rawLogMin, 0)
+  const useLogScale = rawLogSpan >= Math.log(6)
+  const logPadding = Math.max(rawLogSpan * 0.06, 0.025)
   const linearPadding = Math.max((rawMax - rawMin) * 0.08, rawMax * 0.005)
-  const minPrice = useLogScale
-    ? Math.exp(rawLogMin - logPadding)
-    : Math.max(rawMin - linearPadding, rawMin * 0.5)
-  const maxPrice = useLogScale
-    ? Math.exp(rawLogMax + logPadding)
-    : rawMax + linearPadding
   const innerHeight = height - inset.top - inset.bottom
   const innerWidth = width - inset.left - inset.right
-  const scaleMin = useLogScale ? Math.log(minPrice) : minPrice
-  const scaleMax = useLogScale ? Math.log(maxPrice) : maxPrice
+  const scaleMin = useLogScale
+    ? rawLogMin - logPadding
+    : Math.max(rawMin - linearPadding, rawMin * 0.5)
+  const scaleMax = useLogScale
+    ? rawLogMax + logPadding
+    : rawMax + linearPadding
   const scaleSpan = Math.max(scaleMax - scaleMin, Number.EPSILON)
   const xForPrice = (price: number) => {
-    const scaledPrice = useLogScale ? Math.log(Math.max(price, Number.MIN_VALUE)) : price
-    return inset.left + ((scaledPrice - scaleMin) / scaleSpan) * innerWidth
+    const safePrice = Number.isFinite(price) && price > 0 ? price : rawMin
+    const scaledPrice = useLogScale ? Math.log(safePrice) : safePrice
+    const boundedPrice = Math.max(scaleMin, Math.min(scaledPrice, scaleMax))
+    return inset.left + ((boundedPrice - scaleMin) / scaleSpan) * innerWidth
   }
   const yForProgress = (progressBps: number) => (
     inset.top + (Math.max(0, Math.min(progressBps, 10_000)) / 10_000) * innerHeight
   )
-  const referencePrice = market.bestBid !== null && market.bestAsk !== null
-    ? (Number(market.bestBid.formatted) + Number(market.bestAsk.formatted)) / 2
+  const marketBid = Number(market.bestBid?.formatted)
+  const marketAsk = Number(market.bestAsk?.formatted)
+  const referencePrice = (
+    Number.isFinite(marketBid)
+    && Number.isFinite(marketAsk)
+    && marketBid > 0
+    && marketAsk > 0
+  )
+    ? Math.exp((Math.log(marketBid) + Math.log(marketAsk)) / 2)
     : null
   const priceTicks = Array.from({ length: 5 }, (_, index) => {
     const scaledTick = scaleMin + ((scaleSpan * index) / 4)
-    return useLogScale ? Math.exp(scaledTick) : scaledTick
+    const safeExponent = Math.max(
+      Math.log(Number.MIN_VALUE),
+      Math.min(scaledTick, Math.log(Number.MAX_VALUE)),
+    )
+    return useLogScale ? Math.exp(safeExponent) : scaledTick
   })
   const inventoryTicks = [0, 2_500, 5_000, 7_500, 10_000]
+  const isAggregated = series.some((item) => item.aggregated === true)
+  const aggregateBid = series.find((item) => item.aggregated === true && item.side === 'buy')
+  const aggregateAsk = series.find((item) => item.aggregated === true && item.side === 'sell')
+  const aggregateBidPrice = Number(aggregateBid?.samples.at(0)?.displayedMarginalPrice.formatted)
+  const aggregateAskPrice = Number(aggregateAsk?.samples.at(0)?.displayedMarginalPrice.formatted)
+  const hasAggregateSpread = (
+    Number.isFinite(aggregateBidPrice)
+    && Number.isFinite(aggregateAskPrice)
+    && aggregateBidPrice > 0
+    && aggregateAskPrice > 0
+  )
 
   return (
-    <div className="curve-chart-shell">
+    <div className={`curve-chart-shell ${isAggregated ? 'is-aggregated' : ''}`}>
       <div className="chart-corner-label">
-        <span>Range field</span>
-        <small>INVENTORY REMAINING · %</small>
+        <span>{isAggregated ? 'Portfolio depth' : 'Range field'}</span>
+        <small>{isAggregated ? 'QUOTE-NORMALIZED DEPTH · %' : 'INVENTORY REMAINING · %'}</small>
       </div>
       <svg
         className="curve-chart"
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label="Inventory distribution across each position price range"
+        aria-label={isAggregated
+          ? 'Aggregated portfolio bid and ask depth on a shared price axis'
+          : 'Inventory distribution across each position price range'}
         onMouseLeave={() => onSelect?.(null)}
       >
         <defs>
@@ -219,10 +386,10 @@ function CurveChart({
           )
         })}
 
-        {priceTicks.map((tick) => {
+        {priceTicks.map((tick, index) => {
           const x = xForPrice(tick)
           return (
-            <g key={tick}>
+            <g key={`price-tick-${index}`}>
               <line className="chart-grid-line chart-grid-vertical" x1={x} x2={x} y1={inset.top} y2={height - inset.bottom} />
               <text className="chart-progress-label" x={x} y={height - 14}>{formatPrice(tick)}</text>
             </g>
@@ -233,13 +400,21 @@ function CurveChart({
           const start = item.samples.at(0)
           const end = item.samples.at(-1)
           if (start === undefined || end === undefined) return null
-          const startX = xForPrice(Number(start.displayedMarginalPrice.formatted))
-          const endX = xForPrice(Number(end.displayedMarginalPrice.formatted))
+          const startPrice = Number(start.displayedMarginalPrice.formatted)
+          const endPrice = Number(end.displayedMarginalPrice.formatted)
+          if (
+            !Number.isFinite(startPrice)
+            || !Number.isFinite(endPrice)
+            || startPrice <= 0
+            || endPrice <= 0
+          ) return null
+          const startX = xForPrice(startPrice)
+          const endX = xForPrice(endPrice)
           const isVisible = selectedId === undefined || selectedId === null || selectedId === item.id
           return (
             <rect
               key={`range-${item.id}`}
-              className={`range-band range-band-${item.side} ${isVisible ? 'is-visible' : 'is-muted'}`}
+              className={`range-band range-band-${item.side} ${item.aggregated === true ? 'is-aggregate' : ''} ${isVisible ? 'is-visible' : 'is-muted'}`}
               x={Math.min(startX, endX)}
               y={inset.top}
               width={Math.max(Math.abs(endX - startX), 2)}
@@ -258,9 +433,19 @@ function CurveChart({
               y2={height - inset.bottom}
             />
             <text className="market-reference-label" x={xForPrice(referencePrice)} y={inset.top + 12}>
-              MID {formatNumber(referencePrice, 2)}
+              MID {formatPrice(referencePrice)}
             </text>
           </g>
+        ) : null}
+
+        {hasAggregateSpread ? (
+          <line
+            className="aggregate-spread-link"
+            x1={xForPrice(aggregateBidPrice)}
+            x2={xForPrice(aggregateAskPrice)}
+            y1={yForProgress(0)}
+            y2={yForProgress(0)}
+          />
         ) : null}
 
         {series.map((item) => {
@@ -275,15 +460,19 @@ function CurveChart({
           const activePrice = activeSample === undefined
             ? null
             : Number(activeSample.displayedMarginalPrice.formatted)
-          const activeX = activePrice === null ? null : xForPrice(activePrice)
+          const activeX = activePrice === null || !Number.isFinite(activePrice) || activePrice <= 0
+            ? null
+            : xForPrice(activePrice)
           const activeY = yForProgress(progress)
           const firstSample = item.samples.at(0)
           const lastSample = item.samples.at(-1)
+          const firstPrice = Number(firstSample?.displayedMarginalPrice.formatted)
+          const lastPrice = Number(lastSample?.displayedMarginalPrice.formatted)
 
           return (
             <g
               key={item.id}
-              className={`curve-series ${isSelected ? 'is-selected' : 'is-muted'}`}
+              className={`curve-series ${item.aggregated === true ? 'is-aggregate' : ''} ${isSelected ? 'is-selected' : 'is-muted'}`}
               onMouseEnter={() => onSelect?.(item.id)}
               onFocus={() => onSelect?.(item.id)}
             >
@@ -293,19 +482,19 @@ function CurveChart({
                 tabIndex={onSelect === undefined ? -1 : 0}
                 aria-label={`${item.label}, ${item.reserveLabel}`}
               />
-              <path className={`curve-path curve-${item.side} ${item.draft === true ? 'is-draft' : ''}`} d={path} />
-              {firstSample !== undefined ? (
+              <path className={`curve-path curve-${item.side} ${item.draft === true ? 'is-draft' : ''} ${item.aggregated === true ? 'is-aggregate' : ''}`} d={path} />
+              {firstSample !== undefined && Number.isFinite(firstPrice) && firstPrice > 0 ? (
                 <circle
                   className={`range-endpoint endpoint-${item.side}`}
-                  cx={xForPrice(Number(firstSample.displayedMarginalPrice.formatted))}
+                  cx={xForPrice(firstPrice)}
                   cy={yForProgress(firstSample.progressBps)}
                   r="4"
                 />
               ) : null}
-              {lastSample !== undefined ? (
+              {lastSample !== undefined && Number.isFinite(lastPrice) && lastPrice > 0 ? (
                 <circle
                   className={`range-endpoint endpoint-${item.side}`}
-                  cx={xForPrice(Number(lastSample.displayedMarginalPrice.formatted))}
+                  cx={xForPrice(lastPrice)}
                   cy={yForProgress(lastSample.progressBps)}
                   r="4"
                 />
@@ -321,8 +510,8 @@ function CurveChart({
         })}
       </svg>
       <div className="chart-legend">
-        <span><i className="legend-dot buy" /> Buy curves</span>
-        <span><i className="legend-dot sell" /> Sell curves</span>
+        <span><i className="legend-dot buy" /> {isAggregated ? 'Aggregated bids' : 'Buy curves'}</span>
+        <span><i className="legend-dot sell" /> {isAggregated ? 'Aggregated asks' : 'Sell curves'}</span>
         <span><i className="legend-line" /> Indexed mid price</span>
         <small>PRICE RANGE · {market.quoteToken.symbol}/{market.baseToken.symbol} →</small>
       </div>
@@ -385,7 +574,7 @@ function HeroCurveCanvas({ alpha }: { alpha: number }) {
         context.stroke()
       }
 
-      const normalizedAlpha = Math.max(-1, Math.min(alpha / 20, 1))
+      const normalizedAlpha = Math.max(-1, Math.min(alpha / MAX_ALPHA, 1))
       const buyStart = { x: inset.x, y: inset.y + (innerHeight * 0.88) }
       const buyEnd = { x: inset.x + (innerWidth * 0.47), y: inset.y + (innerHeight * 0.2) }
       const buyControl = {
@@ -487,11 +676,14 @@ function LandingView({
     <main className="landing-page">
       <section className="landing-hero">
         <div className="landing-copy">
-          <span className="landing-eyebrow"><i /> CURVE-NATIVE ORDER BOOK</span>
+          <div className="landing-signature">
+            <BrandMark variant="hero" />
+            <span><b>ARCBOOK</b><small>CURVE-NATIVE ORDER BOOK</small></span>
+          </div>
           <h1 aria-label="Shape the book.">Shape the<br /><em>book.</em></h1>
           <p>ArcBook turns bounded liquidity into executable curves. Market makers shape the range; traders route across the field.</p>
           <div className="landing-actions">
-            <button className="landing-primary" onClick={() => onNavigate('trade')}>Open terminal <span>↗</span></button>
+            <button className="landing-primary" onClick={() => onNavigate('trade')}>Start trading <span>↗</span></button>
             <button className="landing-secondary" onClick={() => onNavigate('studio')}>Shape a curve <span>⌁</span></button>
           </div>
           <div className="landing-proof">
@@ -520,14 +712,14 @@ function LandingView({
               <div className="hero-alpha-control">
                 <input
                   type="range"
-                  min="-20"
-                  max="20"
+                  min={-MAX_ALPHA}
+                  max={MAX_ALPHA}
                   step="0.01"
                   value={alpha}
                   onInput={(event) => setAlpha(Number((event.target as HTMLInputElement).value))}
                   aria-label="Landing curve alpha"
                 />
-                <div><span>−20</span><small>DRAG TO RESHAPE THE BOOK</small><span>+20</span></div>
+                <div><span>−{MAX_ALPHA}</span><small>DRAG TO RESHAPE THE BOOK</small><span>+{MAX_ALPHA}</span></div>
               </div>
             </footer>
           </article>
@@ -588,7 +780,7 @@ function AppShell({
     <div className="app-shell">
       <header className="topbar">
         <button className="brand" onClick={() => onNavigate('home')} aria-label="ArcBook home">
-          <span className="brand-mark"><i /><i /><i /></span>
+          <BrandMark />
           <span className="brand-lockup">
             <b>ARC<span>BOOK</span></b>
             <small>CURVE-NATIVE MARKETS</small>
@@ -1007,7 +1199,7 @@ function PortfolioView({
   operation: OperationState
   onDock: (position: PositionSummary) => void
 }) {
-  const [filter, setFilter] = useState<CurveFilter>('all')
+  const [atlasMode, setAtlasMode] = useState<PortfolioAtlasMode>('aggregate')
   const [selectedCurve, setSelectedCurve] = useState<string | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null)
   const walletPositions = walletAddress === null
@@ -1027,8 +1219,12 @@ function PortfolioView({
       ? Number(item.amountIn.formatted)
       : 0)
   ), 0)
-  const chartSeries = seriesFromPositions(walletPositions, filter)
-  const selectedSeriesId = selectedCurve ?? (selectedPosition === null ? null : `${selectedPosition}-sell`)
+  const chartSeries = atlasMode === 'aggregate'
+    ? aggregatedPortfolioSeries(walletPositions, view.market)
+    : seriesFromPositions(walletPositions)
+  const selectedSeriesId = atlasMode === 'aggregate'
+    ? null
+    : selectedCurve ?? (selectedPosition === null ? null : `${selectedPosition}-sell`)
 
   if (walletAddress === null) {
     return (
@@ -1061,13 +1257,19 @@ function PortfolioView({
 
       <section className="portfolio-chart panel">
         <header className="panel-header portfolio-chart-header">
-          <div><h2>Liquidity atlas</h2><p>Inventory distribution across every position’s own price range.</p></div>
+          <div>
+            <h2>Portfolio depth</h2>
+            <p>{atlasMode === 'aggregate'
+              ? 'Every wallet position, quote-normalized and summed on one shared price axis.'
+              : 'Inspect each position layer and its independent execution range.'}</p>
+          </div>
           <div className="segmented-control compact">
-            {(['all', 'buy', 'sell'] as CurveFilter[]).map((item) => (
-              <button key={item} className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>
-                {item === 'all' ? 'All curves' : `${item} side`}
-              </button>
-            ))}
+            <button className={atlasMode === 'aggregate' ? 'active' : ''} onClick={() => setAtlasMode('aggregate')}>
+              Aggregated depth
+            </button>
+            <button className={atlasMode === 'positions' ? 'active' : ''} onClick={() => setAtlasMode('positions')}>
+              Position layers
+            </button>
           </div>
         </header>
         <CurveChart series={chartSeries} market={view.market} selectedId={selectedSeriesId} onSelect={setSelectedCurve} compact />
@@ -1187,19 +1389,19 @@ function CurveEditor({
         <input
           className={`alpha-slider slider-${side}`}
           type="range"
-          min="-20"
-          max="20"
+          min={-MAX_ALPHA}
+          max={MAX_ALPHA}
           step="0.01"
-          value={Math.max(-20, Math.min(20, Number(value.alpha) || 0))}
+          value={Math.max(-MAX_ALPHA, Math.min(MAX_ALPHA, Number(value.alpha) || 0))}
           onInput={(event) => onChange(
             'alpha',
             (event.target as HTMLInputElement).value,
           )}
           aria-label={`${side} curve alpha`}
         />
-        <div className="alpha-scale"><span>-20 quick range</span><span>0</span><span>+20 quick range</span></div>
+        <div className="alpha-scale"><span>-{MAX_ALPHA}</span><span>0</span><span>+{MAX_ALPHA}</span></div>
         <div className="alpha-presets">
-          {[-20, -10, 0, 10, 20].map((preset) => (
+          {[-30, -15, 0, 15, 30].map((preset) => (
             <button key={preset} className={Number(value.alpha) === preset ? 'active' : ''} onClick={() => onChange('alpha', String(preset))} type="button">
               {preset > 0 ? `+${preset}` : preset}
             </button>
@@ -1404,7 +1606,7 @@ function MakerStudio({
 function LoadingScreen() {
   return (
     <main className="loading-screen">
-      <span className="brand-mark large"><i /><i /><i /></span>
+      <BrandMark variant="large" />
       <div><strong>ArcBook</strong><span>Loading protocol state</span></div>
       <i className="loading-bar" />
     </main>

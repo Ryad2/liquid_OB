@@ -29,7 +29,7 @@ export function displayedPrice(
     baseToken,
     quoteToken,
     wad,
-    formatted: formatWad(wad, 8),
+    formatted: formatWad(wad, 18),
   }
 }
 
