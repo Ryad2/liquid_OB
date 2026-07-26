@@ -23,6 +23,8 @@ describe('ArcBook product frontend', () => {
     expect(
       await screen.findByRole('heading', { name: /shape the book/i }),
     ).toBeInTheDocument()
+    expect(screen.getByText('ARCBOOK FIELD')).toBeInTheDocument()
+    expect(screen.queryByText('WETH–USDC')).not.toBeInTheDocument()
     expect(screen.getByRole('slider', { name: /landing curve alpha/i })).toHaveValue('4.2')
 
     fireEvent.click(screen.getByRole('button', { name: /start trading/i }))
@@ -88,15 +90,18 @@ describe('ArcBook product frontend', () => {
     expect(
       await screen.findByRole('heading', { name: /your liquidity, tied to your address/i }),
     ).toBeInTheDocument()
-    expect(screen.queryByText('Portfolio depth')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Position map' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /connect wallet/i }))
 
-    expect(await screen.findByRole('heading', { name: 'Portfolio depth' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Position map' })).toBeInTheDocument()
     expect(screen.getByText('3 total')).toBeInTheDocument()
-    expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
-
-    fireEvent.click(screen.getByRole('button', { name: /position layers/i }))
     expect(container.querySelectorAll('.curve-path')).toHaveLength(6)
+    expect(screen.getByText('P1 · B')).toBeInTheDocument()
+    expect(screen.getByText('P3 · S')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /net depth/i }))
+    expect(await screen.findByRole('heading', { name: 'Net depth' })).toBeInTheDocument()
+    expect(container.querySelectorAll('.curve-path')).toHaveLength(2)
   })
 })
