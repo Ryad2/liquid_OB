@@ -15,5 +15,5 @@
     "exactOptionalPropertyTypes": true,
     "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "../../api/solver"]
 }

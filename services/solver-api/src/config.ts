@@ -18,9 +18,11 @@ export interface RuntimeConfig {
   corsOrigins: string[]
 }
 
-export async function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Promise<RuntimeConfig> {
-  const manifestPath = resolve(env.LIQUID_OB_MANIFEST ?? 'deployments/31337.json')
-  const manifest = parseDeploymentManifest(JSON.parse(await readFile(manifestPath, 'utf8')))
+export async function loadRuntimeConfig(
+  env: NodeJS.ProcessEnv = process.env,
+  fetcher: typeof fetch = fetch,
+): Promise<RuntimeConfig> {
+  const manifest = parseDeploymentManifest(await loadManifest(env, fetcher))
   if (!manifest.release.public && env.LIQUID_OB_ALLOW_LOCAL_MANIFEST !== 'true') {
     throw new ApiError(
       'INVALID_REQUEST',
@@ -40,6 +42,28 @@ export async function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): P
     pageSize: integer(env.SOLVER_API_PAGE_SIZE, 200, 1, 1_000, 'SOLVER_API_PAGE_SIZE'),
     corsOrigins: (env.SOLVER_API_CORS_ORIGINS ?? '').split(',').map((value) => value.trim()).filter(Boolean),
   }
+}
+
+async function loadManifest(env: NodeJS.ProcessEnv, fetcher: typeof fetch): Promise<unknown> {
+  const manifestUrl = env.LIQUID_OB_MANIFEST_URL?.trim()
+  if (manifestUrl !== undefined && manifestUrl !== '') {
+    let url: URL
+    try {
+      url = new URL(manifestUrl)
+    } catch {
+      throw new ApiError('INVALID_REQUEST', 500, 'LIQUID_OB_MANIFEST_URL must be an absolute HTTP(S) URL')
+    }
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      throw new ApiError('INVALID_REQUEST', 500, 'LIQUID_OB_MANIFEST_URL must use HTTP(S)')
+    }
+    const response = await fetcher(url, { signal: AbortSignal.timeout(10_000) })
+    if (!response.ok) {
+      throw new ApiError('INVALID_REQUEST', 500, `Deployment manifest returned HTTP ${response.status}`)
+    }
+    return response.json()
+  }
+  const manifestPath = resolve(env.LIQUID_OB_MANIFEST ?? 'deployments/31337.json')
+  return JSON.parse(await readFile(manifestPath, 'utf8')) as unknown
 }
 
 function required(value: string | undefined, name: string): string {

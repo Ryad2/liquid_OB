@@ -125,6 +125,8 @@ verified deployment matrix.
 
 The reproducible public deployment and seeded-demo flow is documented in
 [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+The same runbook includes the supported single-project Vercel topology for the
+ArcBook frontend, solver API and read-only MCP endpoint.
 
 The Base Sepolia default, EVM portability boundary and Aqua/SwapVM deployment
 conditions are documented in

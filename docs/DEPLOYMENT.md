@@ -183,6 +183,65 @@ manifest before codegen, build and deployment.
 
 ## 10. Hosted Services
 
+### Vercel reference deployment
+
+The repository includes `vercel.json` and serverless adapters so one Vercel
+project can host the complete public application:
+
+```text
+https://<project>.vercel.app/                 ArcBook Vite application
+https://<project>.vercel.app/api/solver/*     stateless solver API
+https://<project>.vercel.app/api/mcp/*        read-only Streamable HTTP MCP
+```
+
+Use the repository root as the Vercel Root Directory and do not override the
+commands from `vercel.json`. Configure these Production and Preview variables:
+
+```text
+VITE_PROTOCOL_MODE=live
+VITE_CHAIN_ID=84532
+VITE_PUBLIC_RPC_URL=https://sepolia.base.org
+VITE_DEPLOYMENT_MANIFEST_URL=<immutable raw deployments/84532.json URL>
+VITE_SOLVER_URL=https://<project>.vercel.app/api/solver
+
+SOLVER_API_RPC_URL=https://sepolia.base.org
+SOLVER_API_SUBGRAPH_URL=<deployed Graph endpoint>
+SOLVER_API_MAX_INDEX_LAG=5
+SOLVER_API_MAX_FILLS=8
+SOLVER_API_RESERVE_COUNT=8
+SOLVER_API_PAGE_SIZE=200
+SOLVER_API_CORS_ORIGINS=https://<project>.vercel.app
+LIQUID_OB_MANIFEST_URL=<same immutable raw manifest URL>
+LIQUID_OB_ALLOW_LOCAL_MANIFEST=false
+
+LIQUIDITY_MCP_TRANSPORT=http
+LIQUIDITY_MCP_ALLOWED_ORIGINS=https://<project>.vercel.app
+LIQUID_OB_API_URL=https://<project>.vercel.app/api/solver
+LIQUIDITY_MCP_TIMEOUT_MS=8000
+```
+
+`STANDARD_DEX_SUBGRAPH_URL` is optional and only enables the comparison MCP
+tool. Supabase is deliberately not part of this topology: contract state is
+authoritative on Base Sepolia, The Graph supplies indexed discovery, and the
+solver/API remain stateless. A SQL replica would create a second state source
+without improving the demo route.
+
+Deploy only after `deployments/84532.json` and the Subgraph are public. The
+serverless solver fetches and validates that manifest at cold start and
+refuses local manifests unless explicitly opted in. After the first production
+deployment, replace every `<project>` placeholder with the canonical Vercel
+domain and redeploy once so CORS and frontend URLs are exact.
+
+```bash
+pnpm dlx vercel@latest login
+pnpm dlx vercel@latest link
+pnpm dlx vercel@latest --prod
+```
+
+Vercel credentials, Graph deploy keys and wallet private keys must be entered
+through their respective secret stores; none belong in Git or in `VITE_`
+variables.
+
 `publish-images.yml` publishes immutable-SHA and `latest` images for:
 
 - `solver-api`: Graph discovery, Lens/Quoter refresh, product reads and final
@@ -213,10 +272,10 @@ Set only public HTTPS endpoints, then run:
 
 ```bash
 PUBLIC_APP_URL=https://app.example \
-PUBLIC_API_URL=https://api.example \
-PUBLIC_MANIFEST_URL=https://app.example/deployments/84532.json \
+PUBLIC_API_URL=https://app.example/api/solver \
+PUBLIC_MANIFEST_URL=https://raw.githubusercontent.com/OWNER/REPO/COMMIT/deployments/84532.json \
 PUBLIC_SUBGRAPH_URL=https://gateway.thegraph.com/api/KEY/subgraphs/id/ID \
-PUBLIC_MCP_URL=https://mcp.example \
+PUBLIC_MCP_URL=https://app.example/api/mcp \
 PUBLIC_RPC_URL=https://rpc.example \
 pnpm release:verify
 ```

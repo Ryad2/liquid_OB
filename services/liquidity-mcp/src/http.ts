@@ -12,8 +12,8 @@ interface HttpOptions {
   allowedOrigins: string[]
 }
 
-export async function startHttpServer(service: ExecutableLiquidityService, options: HttpOptions): Promise<Server> {
-  const server = createServer(async (request, response) => {
+export function createHttpHandler(service: ExecutableLiquidityService, options: HttpOptions) {
+  return async (request: IncomingMessage, response: ServerResponse): Promise<void> => {
     securityHeaders(response)
     if (!originAllowed(request, options.allowedOrigins)) {
       sendJson(response, 403, { error: 'Origin is not allowed' })
@@ -71,7 +71,11 @@ export async function startHttpServer(service: ExecutableLiquidityService, optio
       await transport.close().catch(() => undefined)
       await mcp.close().catch(() => undefined)
     }
-  })
+  }
+}
+
+export async function startHttpServer(service: ExecutableLiquidityService, options: HttpOptions): Promise<Server> {
+  const server = createServer(createHttpHandler(service, options))
   await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
     server.listen(options.port, options.host, () => {

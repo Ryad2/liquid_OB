@@ -15,5 +15,5 @@
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": true
   },
-  "include": ["src"]
+  "include": ["src", "../../api/mcp"]
 }
